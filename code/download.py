@@ -10,6 +10,7 @@ import geojson
 import geopandas as gpd
 import gpxpy
 import gpxpy.gpx
+import pandas as pd
 import requests
 from shapely.geometry import LineString, mapping
 from shapely.ops import linemerge
@@ -30,7 +31,7 @@ def find_data_dir():
     else:
         cwd = Path(__file__).absolute()
 
-    data_dir = (cwd / '..' / 'data' / 'pct').resolve()
+    data_dir = (cwd / '..' / 'data').resolve()
     return data_dir
 
 
@@ -45,12 +46,38 @@ class OpenStreetMap(Download):
         super(OpenStreetMap, self).__init__()
         self.arg = arg
 
+class StatePlaneZones(Download):
+    """docstring for StatePlaneZones"""
+    def __init__(self):
+        super(StatePlaneZones, self).__init__()
+
+    def downloaded(self):
+        return (self.data_dir / 'proj' / 'state_planes.geojson').exists()
+
+    def download(self):
+        # Helpful list of state planes and their boundaries
+        url = 'http://sandbox.idre.ucla.edu/mapshare/data/usa/other/spcszn83.zip'
+        zones = gpd.read_file(url)
+        epsg_zones = pd.read_csv(self.data_dir / 'proj' / 'state_planes.csv')
+        zones = zones.merge(epsg_zones,
+                            left_on='ZONENAME',
+                            right_on='zone',
+                            validate='1:1')
+
+        minimal = zones[['geometry', 'epsg', 'zone']]
+        minimal = minimal.rename(columns={'zone': 'name'})
+        minimal.to_file(self.data_dir / 'proj' / 'state_planes.geojson',
+                        driver='GeoJSON')
+
 
 class Halfmile(Download):
     """docstring for Halfmile"""
     def __init__(self):
         super(Halfmile, self).__init__()
-        self.download()
+
+    def downloaded(self):
+        return (self.data_dir / 'pct' / 'line' / 'halfmile' / 'full.geojson').exists()
+
 
     def download(self):
         urls = [
@@ -109,7 +136,7 @@ class Halfmile(Download):
 
         # Serialize to GeoJSON
         feature = geojson.Feature(geometry=mapping(full))
-        save_dir = self.data_dir / 'line' / 'halfmile'
+        save_dir = self.data_dir / 'pct' / 'line' / 'halfmile'
         save_dir.mkdir(parents=True, exist_ok=True)
 
         with open(save_dir / 'full.geojson', 'w') as f:
