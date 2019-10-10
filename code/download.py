@@ -14,8 +14,6 @@ import requests
 from shapely.geometry import LineString, mapping
 from shapely.ops import linemerge
 
-# self = Download()
-
 
 def in_ipython():
     try:
@@ -24,22 +22,37 @@ def in_ipython():
         return False
 
 
+def find_data_dir():
+    if in_ipython():
+        # Note, this will get the path of the file this is called from;
+        # __file__ doesn't exist in IPython
+        cwd = Path().absolute()
+    else:
+        cwd = Path(__file__).absolute()
+
+    data_dir = (cwd / '..' / 'data' / 'pct').resolve()
+    return data_dir
+
+
 class Download:
     def __init__(self):
-        self.data_dir = self.find_data_dir()
+        self.data_dir = find_data_dir()
 
-    def find_data_dir(self):
-        if in_ipython():
-            # Note, this will get the path of the file this is called from;
-            # __file__ doesn't exist in IPython
-            cwd = Path().absolute()
-        else:
-            cwd = Path(__file__).absolute()
 
-        data_dir = (cwd / '..' / 'data' / 'pct').resolve()
-        return data_dir
+class OpenStreetMap(Download):
+    """docstring for OpenStreetMap"""
+    def __init__(self, arg):
+        super(OpenStreetMap, self).__init__()
+        self.arg = arg
 
-    def halfmile(self):
+
+class Halfmile(Download):
+    """docstring for Halfmile"""
+    def __init__(self):
+        super(Halfmile, self).__init__()
+        self.download()
+
+    def download(self):
         urls = [
             'https://www.pctmap.net/wp-content/uploads/pct/ca_state_gps.zip',
             'https://www.pctmap.net/wp-content/uploads/pct/or_state_gps.zip',
@@ -113,10 +126,18 @@ class Download:
         with open(save_dir / 'alternates.geojson', 'w') as f:
             geojson.dump(fc, f)
 
-    def usfs_track():
+
+class USFS(Download):
+    """docstring for USFS"""
+    def __init__(self):
+        super(USFS, self).__init__()
+
+    def download():
         url = 'https://www.fs.usda.gov/Internet/FSE_DOCUMENTS/stelprdb5332131.zip'
         r = requests.get(url)
         z = ZipFile(BytesIO(r.content))
+        # Use zipMemoryFile to have no I/O
+        # https://fiona.readthedocs.io/en/latest/manual.html#memoryfile-and-zipmemoryfile
         with TemporaryDirectory() as d:
             z.extractall(d)
             shp = gpd.read_file(d + '/PacificCrestTrail.shp')
