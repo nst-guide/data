@@ -1,5 +1,6 @@
 # In the future, I'll include the data/ folder in Git, but for now, data's changing too often
-data/
+/data/*
+!data/proj/state_planes.csv
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
