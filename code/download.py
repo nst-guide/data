@@ -74,9 +74,13 @@ class Halfmile(Download):
     """docstring for Halfmile"""
     def __init__(self):
         super(Halfmile, self).__init__()
+        self.save_dir = self.data_dir / 'pct' / 'line' / 'halfmile'
+        self.save_dir.mkdir(parents=True, exist_ok=True)
+
 
     def downloaded(self):
-        return (self.data_dir / 'pct' / 'line' / 'halfmile' / 'full.geojson').exists()
+        files = ['full.geojson', 'alternates.geojson', 'sections.geojson']
+        return all((self.save_dir / f).exists() for f in files)
 
 
     def download(self):
@@ -129,6 +133,17 @@ class Halfmile(Download):
 
                         routes['alt'].append(d)
 
+
+        # Save sections as individual geojson
+        features = [
+            geojson.Feature(geometry=mapping(d['line']),
+                            properties={'name': d['name']})
+            for d in routes['sections']
+        ]
+        fc = geojson.FeatureCollection(features)
+        with open(self.save_dir / 'sections.geojson', 'w') as f:
+            geojson.dump(fc, f)
+
         # Create full route from sections
         sects = [x['line'] for x in routes['sections']]
         full = linemerge(sects)
@@ -136,10 +151,7 @@ class Halfmile(Download):
 
         # Serialize to GeoJSON
         feature = geojson.Feature(geometry=mapping(full))
-        save_dir = self.data_dir / 'pct' / 'line' / 'halfmile'
-        save_dir.mkdir(parents=True, exist_ok=True)
-
-        with open(save_dir / 'full.geojson', 'w') as f:
+        with open(self.save_dir / 'full.geojson', 'w') as f:
             geojson.dump(feature, f)
 
         # Create features from alternates
@@ -150,7 +162,7 @@ class Halfmile(Download):
         ]
         fc = geojson.FeatureCollection(features)
 
-        with open(save_dir / 'alternates.geojson', 'w') as f:
+        with open(self.save_dir / 'alternates.geojson', 'w') as f:
             geojson.dump(fc, f)
 
 
