@@ -12,7 +12,7 @@ import gpxpy
 import gpxpy.gpx
 import pandas as pd
 import requests
-from shapely.geometry import LineString, mapping
+from shapely.geometry import LineString, mapping, box
 from shapely.ops import linemerge
 
 
@@ -144,6 +144,9 @@ class Halfmile(DataSource):
         with open(self.save_dir / 'sections.geojson', 'w') as f:
             geojson.dump(fc, f)
 
+        # Create bounding boxes for each section
+        self.create_bbox_for_sections()
+
         # Create full route from sections
         sects = [x['line'] for x in routes['sections']]
         full = linemerge(sects)
@@ -163,6 +166,25 @@ class Halfmile(DataSource):
         fc = geojson.FeatureCollection(features)
 
         with open(self.save_dir / 'alternates.geojson', 'w') as f:
+            geojson.dump(fc, f)
+
+
+    def create_bbox_for_sections(self):
+        with open(self.save_dir / 'sections.geojson') as f:
+            fc = geojson.load(f)
+
+        features = []
+        for feature in fc['features']:
+            name = feature['properties']['name']
+            bounds = LineString(feature['geometry']['coordinates']).bounds
+            bbox = box(*bounds)
+            features.append(geojson.Feature(geometry=mapping(bbox), properties={'name': name}))
+
+        fc = geojson.FeatureCollection(features)
+
+        save_dir = self.data_dir / 'pct' / 'polygon' / 'halfmile'
+        save_dir.mkdir(parents=True, exist_ok=True)
+        with open(save_dir / 'bbox.geojson', 'w') as f:
             geojson.dump(fc, f)
 
 
