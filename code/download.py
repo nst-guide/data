@@ -35,18 +35,18 @@ def find_data_dir():
     return data_dir
 
 
-class Download:
+class DataSource:
     def __init__(self):
         self.data_dir = find_data_dir()
 
 
-class OpenStreetMap(Download):
+class OpenStreetMap(DataSource):
     """docstring for OpenStreetMap"""
     def __init__(self, arg):
         super(OpenStreetMap, self).__init__()
         self.arg = arg
 
-class StatePlaneZones(Download):
+class StatePlaneZones(DataSource):
     """docstring for StatePlaneZones"""
     def __init__(self):
         super(StatePlaneZones, self).__init__()
@@ -70,7 +70,7 @@ class StatePlaneZones(Download):
                         driver='GeoJSON')
 
 
-class Halfmile(Download):
+class Halfmile(DataSource):
     """docstring for Halfmile"""
     def __init__(self):
         super(Halfmile, self).__init__()
@@ -166,7 +166,7 @@ class Halfmile(Download):
             geojson.dump(fc, f)
 
 
-class USFS(Download):
+class USFS(DataSource):
     """docstring for USFS"""
     def __init__(self):
         super(USFS, self).__init__()
