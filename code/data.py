@@ -7,6 +7,7 @@ from pathlib import Path
 from subprocess import run
 from zipfile import ZipFile
 
+import pint
 import geojson
 import geopandas as gpd
 import gpxpy
@@ -283,3 +284,37 @@ class USFS(DataSource):
         save_dir.mkdir(parents=True, exist_ok=True)
         with open(save_dir / 'full.geojson', 'w') as f:
             geojson.dump(feature, f)
+
+    def buffer(self, distance=20):
+        """Create buffer around USFS pct track
+
+        Args:
+            distance: buffer radius in miles
+        """
+        path = self.data_dir / 'pct' / 'line' / 'usfs' / 'full.geojson'
+        if not path.exists():
+            self.download()
+
+        with open(path) as f:
+            linestring = geojson.load(f)
+
+        l = shape(linestring['geometry'])
+
+        # Reproject to EPSG 3488
+        l_new = util.reproject(l, 'epsg:4326', 'epsg:3488')
+
+        # Make 20 mile buffer for now
+        ureg = pint.UnitRegistry()
+        miles = distance
+        meters = (miles * ureg.miles).to(ureg.meters).magnitude
+        polygon = l_new.buffer(meters)
+
+        # Reproject back to EPSG 4326
+        polygon_new = util.reproject(polygon, 'epsg:3488', 'epsg:4326')
+        feature = geojson.Feature(geometry=mapping(polygon_new))
+
+        save_dir = self.data_dir / 'pct' / 'polygon' / 'usfs'
+        save_dir.mkdir(parents=True, exist_ok=True)
+        with open(save_dir / f'buffer{distance}mi.geojson', 'w') as f:
+            geojson.dump(feature, f)
+        linestring['geometry'].keys()
