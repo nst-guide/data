@@ -5,7 +5,6 @@ import urllib.request
 from io import BytesIO
 from pathlib import Path
 from subprocess import run
-from tempfile import TemporaryDirectory
 from zipfile import ZipFile
 
 import geojson
@@ -14,8 +13,11 @@ import gpxpy
 import gpxpy.gpx
 import pandas as pd
 import requests
-from shapely.geometry import LineString, box, mapping, shape
+from fiona.io import ZipMemoryFile
+from shapely.geometry import LineString, MultiLineString, box, mapping, shape
 from shapely.ops import linemerge
+
+import util
 
 
 def in_ipython():
@@ -246,14 +248,38 @@ class USFS(DataSource):
     def __init__(self):
         super(USFS, self).__init__()
 
-    def download():
+    def downloaded(self):
+        save_dir = self.data_dir / 'pct' / 'line' / 'usfs'
+        files = ['full.geojson']
+        return all((save_dir / f).exists() for f in files)
+
+    def download(self):
         url = 'https://www.fs.usda.gov/Internet/FSE_DOCUMENTS/stelprdb5332131.zip'
         r = requests.get(url)
-        z = ZipFile(BytesIO(r.content))
-        # Use zipMemoryFile to have no I/O
-        # https://fiona.readthedocs.io/en/latest/manual.html#memoryfile-and-zipmemoryfile
-        with TemporaryDirectory() as d:
-            z.extractall(d)
-            shp = gpd.read_file(d + '/PacificCrestTrail.shp')
+        with ZipMemoryFile(BytesIO(r.content)) as z:
+            with z.open('PacificCrestTrail.shp') as collection:
+                fc = list(collection)
 
-        z.namelist()
+        multilinestrings = []
+        for feature in fc:
+            multilinestrings.append(shape(feature['geometry']))
+
+        # There's at least one multilinestring in the shapefile. This needs to
+        # be converted to linestring before I can use linemerge()
+        linestrings = []
+        for line in multilinestrings:
+            if isinstance(line, LineString):
+                linestrings.append(line)
+            elif isinstance(line, MultiLineString):
+                linestrings.extend(line)
+
+        full = linemerge(linestrings)
+
+        # Reproject from EPSG 3310 to WGS84 (EPSG 4326)
+        full = util.reproject(full, 'epsg:3310', 'epsg:4326')
+        feature = geojson.Feature(geometry=mapping(full))
+
+        save_dir = self.data_dir / 'pct' / 'line' / 'usfs'
+        save_dir.mkdir(parents=True, exist_ok=True)
+        with open(save_dir / 'full.geojson', 'w') as f:
+            geojson.dump(feature, f)
