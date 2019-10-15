@@ -1,5 +1,6 @@
 # General downloads
 
+from lxml import etree as ET
 import re
 import urllib.request
 from io import BytesIO
@@ -79,6 +80,7 @@ class OpenStreetMap(DataSource):
             tmp.write(poly_text)
             tmp.seek(0)
 
+            # TODO: put intermediate extracts into a tmp directory
             for state in states:
                 osm_path = folder / f'{state}-latest.osm.pbf'
                 new_path = folder / f'{state}-pct.o5m'
@@ -99,6 +101,54 @@ class OpenStreetMap(DataSource):
 
             # Now pct.o5m exists on disk and includes everything within a 20
             # mile buffer
+
+
+    def get_pct_track(self):
+        path = self.data_dir / 'raw' / 'osm' / 'pct.o5m'
+        if not path.exists():
+            self.download_extracts()
+
+        new_path = self.data_dir / 'raw' / 'osm' / 'pct_dependents.osm'
+
+        # Use osmfilter to get just the PCT relation and its dependents
+        pct_relation_id = 1225378
+        cmd = f'osmfilter {path} --keep-relations="@id={pct_relation_id}" '
+        cmd += f'--keep-ways= --keep-nodes= -o={new_path}'
+        run(cmd, shell=True, check=True)
+
+        # Open XML
+        f = open(new_path)
+        parser = ET.parse(f)
+        doc = parser.getroot()
+
+        # Get PCT relation
+        pct = doc.find(f"relation/[@id='{pct_relation_id}']")
+
+        # Get list of ways
+        # These are references to way ids
+        way_refs = pct.findall("member/[@type='way']")
+        ways = [doc.find(f"way/[@id='{member.get('ref')}']") for member in way_refs]
+
+        nodes = []
+        # NOTE None can be in ways. Maybe for ways outside the bbox of this osm file
+        for way in ways:
+            node_refs = way.findall('nd')
+            nodes.extend([doc.find(f"node/[@id='{member.get('ref')}']") for member in node_refs])
+
+        for n in nodes:
+            if n is None:
+                print('isnone')
+                break
+
+        points = [(float(n.get('lon')), float(n.get('lat'))) for n in nodes if n is not None]
+
+        ls = geojson.LineString(points)
+        save_dir = self.data_dir / 'pct' / 'line' / 'osm'
+        save_dir.mkdir(parents=True, exist_ok=True)
+
+        with open(save_dir / 'full.geojson', 'w') as f:
+            geojson.dump(ls, f)
+
 
 
 class StatePlaneZones(DataSource):
