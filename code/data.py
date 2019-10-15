@@ -7,12 +7,12 @@ from pathlib import Path
 from subprocess import run
 from zipfile import ZipFile
 
-import pint
 import geojson
 import geopandas as gpd
 import gpxpy
 import gpxpy.gpx
 import pandas as pd
+import pint
 import requests
 from fiona.io import ZipMemoryFile
 from shapely.geometry import LineString, MultiLineString, box, mapping, shape
