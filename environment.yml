@@ -12,6 +12,8 @@ dependencies:
   - pandas
   - pip
   - python=3
+  - lxml
+  - pyproj
   - requests
   - shapely
   - pip:
