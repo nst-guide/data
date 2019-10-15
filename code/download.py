@@ -12,9 +12,12 @@ import gpxpy
 import gpxpy.gpx
 import pandas as pd
 import requests
-from shapely.geometry import LineString, mapping, box
+from shapely.geometry import LineString, mapping, box, shape
 from shapely.ops import linemerge
 
+import urllib.request
+import util
+from subprocess import run
 
 def in_ipython():
     try:
@@ -42,9 +45,60 @@ class DataSource:
 
 class OpenStreetMap(DataSource):
     """docstring for OpenStreetMap"""
-    def __init__(self, arg):
+    def __init__(self):
         super(OpenStreetMap, self).__init__()
-        self.arg = arg
+        self.trail_ids = {'pct': 1225378}
+
+    def download_extracts(self):
+        """Downloads extracts from geofabrik, then creates an .o5m file using bounding boxes created from each section of Halfmile data
+        """
+
+        # Download US West extract from geofabrik
+        folder = self.data_dir / 'raw' / 'osm'
+        folder.mkdir(parents=True, exist_ok=True)
+
+        for state in ['california', 'oregon', 'washington']:
+            path = folder / f'{state}-latest.osm.pbf'
+            url = 'http://download.geofabrik.de/north-america/us-west-latest.osm.pbf'
+            urllib.request.urlretrieve(url, path)
+
+        # Get bounding boxes for each section of the trail from halfmile
+        with open(self.data_dir / 'pct' / 'polygon' / 'halfmile' / 'bbox.geojson') as f:
+            bboxes = geojson.load(f)
+
+        for bbox_feature in bboxes['features']:
+            polygon = shape(bbox_feature['geometry'])
+            bbox_str = ','.join(str(x) for x in polygon.bounds)
+            name = bbox_feature['properties']['name']
+            name = name.lower().replace(' ', '_')
+
+            new_path = folder / f'{name}.o5m'
+
+            if name == 'ca_sec_r':
+                path = [folder / f'{state}-latest.osm.pbf' for state in ['california', 'oregon']]
+                path = ' '.join([(str(x)) for x in path])
+            elif name == 'wa_sec_h':
+                path = [folder / f'{state}-latest.osm.pbf' for state in ['oregon', 'washington']]
+                path = ' '.join([(str(x)) for x in path])
+            elif name.startswith('ca'):
+                path = folder / 'california-latest.osm.pbf'
+            elif name.startswith('or'):
+                path = folder / 'oregon-latest.osm.pbf'
+            elif name.startswith('wa'):
+                path = folder / 'washington-latest.osm.pbf'
+
+            cmd = [
+                'osmconvert',
+                path,
+                '--out-o5m',
+                f'-b={bbox_str}',
+                '>',
+                new_path
+            ]
+            cmd = ' '.join([str(x) for x in cmd])
+            run(cmd, shell=True, check=True)
+
+
 
 class StatePlaneZones(DataSource):
     """docstring for StatePlaneZones"""
