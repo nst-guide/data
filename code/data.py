@@ -62,7 +62,8 @@ class OpenStreetMap(DataSource):
             urllib.request.urlretrieve(url, path)
 
         # Get bounding boxes for each section of the trail from halfmile
-        with open(self.data_dir / 'pct' / 'polygon' / 'halfmile' / 'bbox.geojson') as f:
+        with open(self.data_dir / 'pct' / 'polygon' / 'halfmile' /
+                  'bbox.geojson') as f:
             bboxes = geojson.load(f)
 
         for bbox_feature in bboxes['features']:
@@ -74,10 +75,16 @@ class OpenStreetMap(DataSource):
             new_path = folder / f'{name}.o5m'
 
             if name == 'ca_sec_r':
-                path = [folder / f'{state}-latest.osm.pbf' for state in ['california', 'oregon']]
+                path = [
+                    folder / f'{state}-latest.osm.pbf'
+                    for state in ['california', 'oregon']
+                ]
                 path = ' '.join([(str(x)) for x in path])
             elif name == 'wa_sec_h':
-                path = [folder / f'{state}-latest.osm.pbf' for state in ['oregon', 'washington']]
+                path = [
+                    folder / f'{state}-latest.osm.pbf'
+                    for state in ['oregon', 'washington']
+                ]
                 path = ' '.join([(str(x)) for x in path])
             elif name.startswith('ca'):
                 path = folder / 'california-latest.osm.pbf'
@@ -87,16 +94,11 @@ class OpenStreetMap(DataSource):
                 path = folder / 'washington-latest.osm.pbf'
 
             cmd = [
-                'osmconvert',
-                path,
-                '--out-o5m',
-                f'-b={bbox_str}',
-                '>',
+                'osmconvert', path, '--out-o5m', f'-b={bbox_str}', '>',
                 new_path
             ]
             cmd = ' '.join([str(x) for x in cmd])
             run(cmd, shell=True, check=True)
-
 
 
 class StatePlaneZones(DataSource):
@@ -130,11 +132,9 @@ class Halfmile(DataSource):
         self.save_dir = self.data_dir / 'pct' / 'line' / 'halfmile'
         self.save_dir.mkdir(parents=True, exist_ok=True)
 
-
     def downloaded(self):
         files = ['full.geojson', 'alternates.geojson', 'sections.geojson']
         return all((self.save_dir / f).exists() for f in files)
-
 
     def download(self):
         urls = [
@@ -186,7 +186,6 @@ class Halfmile(DataSource):
 
                         routes['alt'].append(d)
 
-
         # Save sections as individual geojson
         features = [
             geojson.Feature(geometry=mapping(d['line']),
@@ -221,7 +220,6 @@ class Halfmile(DataSource):
         with open(self.save_dir / 'alternates.geojson', 'w') as f:
             geojson.dump(fc, f)
 
-
     def create_bbox_for_sections(self):
         with open(self.save_dir / 'sections.geojson') as f:
             fc = geojson.load(f)
@@ -231,7 +229,9 @@ class Halfmile(DataSource):
             name = feature['properties']['name']
             bounds = LineString(feature['geometry']['coordinates']).bounds
             bbox = box(*bounds)
-            features.append(geojson.Feature(geometry=mapping(bbox), properties={'name': name}))
+            features.append(
+                geojson.Feature(geometry=mapping(bbox),
+                                properties={'name': name}))
 
         fc = geojson.FeatureCollection(features)
 
