@@ -3,17 +3,19 @@ channels:
   - conda-forge
 dependencies:
   - beautifulsoup4
+  - fiona
   - gdal # needed?
   - geojson
   - geopandas
   - gpxpy
   - jupyter
+  - lxml
   - numpy
   - pandas
+  - pint
   - pip
-  - python=3
-  - lxml
   - pyproj
+  - python=3
   - requests
   - shapely
   - pip:
