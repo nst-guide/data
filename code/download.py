@@ -1,8 +1,10 @@
 # General downloads
 
 import re
+import urllib.request
 from io import BytesIO
 from pathlib import Path
+from subprocess import run
 from tempfile import TemporaryDirectory
 from zipfile import ZipFile
 
@@ -12,12 +14,9 @@ import gpxpy
 import gpxpy.gpx
 import pandas as pd
 import requests
-from shapely.geometry import LineString, mapping, box, shape
+from shapely.geometry import LineString, box, mapping, shape
 from shapely.ops import linemerge
 
-import urllib.request
-import util
-from subprocess import run
 
 def in_ipython():
     try:
