@@ -5,6 +5,7 @@ import urllib.request
 from io import BytesIO
 from pathlib import Path
 from subprocess import run
+from tempfile import NamedTemporaryFile
 from zipfile import ZipFile
 
 import geojson
@@ -60,48 +61,44 @@ class OpenStreetMap(DataSource):
         folder.mkdir(parents=True, exist_ok=True)
 
         for state in ['california', 'oregon', 'washington']:
-            path = folder / f'{state}-latest.osm.pbf'
+            osm_path = folder / f'{state}-latest.osm.pbf'
             url = 'http://download.geofabrik.de/north-america/us-west-latest.osm.pbf'
-            urllib.request.urlretrieve(url, path)
+            urllib.request.urlretrieve(url, osm_path)
 
-        # Get bounding boxes for each section of the trail from halfmile
-        with open(self.data_dir / 'pct' / 'polygon' / 'halfmile' /
-                  'bbox.geojson') as f:
-            bboxes = geojson.load(f)
+        # Get buffer from USFS track
+        path = self.data_dir / 'pct' / 'polygon' / 'usfs' / 'buffer20mi.geojson'
+        with path.open() as f:
+            p = geojson.load(f)
 
-        for bbox_feature in bboxes['features']:
-            polygon = shape(bbox_feature['geometry'])
-            bbox_str = ','.join(str(x) for x in polygon.bounds)
-            name = bbox_feature['properties']['name']
-            name = name.lower().replace(' ', '_')
+        # Create OSM extract around trail
+        buffer = shape(p['geometry'])
+        poly_text = util.coords_to_osm_poly(list(buffer.exterior.coords))
+        states = ['california', 'oregon', 'washington']
 
-            new_path = folder / f'{name}.o5m'
+        with NamedTemporaryFile('w+', suffix='.poly') as tmp:
+            tmp.write(poly_text)
+            tmp.seek(0)
 
-            if name == 'ca_sec_r':
-                path = [
-                    folder / f'{state}-latest.osm.pbf'
-                    for state in ['california', 'oregon']
+            for state in states:
+                osm_path = folder / f'{state}-latest.osm.pbf'
+                new_path = folder / f'{state}-pct.o5m'
+                cmd = [
+                    'osmconvert', osm_path, '--out-o5m', f'-B={tmp.name}', '>',
+                    new_path
                 ]
-                path = ' '.join([(str(x)) for x in path])
-            elif name == 'wa_sec_h':
-                path = [
-                    folder / f'{state}-latest.osm.pbf'
-                    for state in ['oregon', 'washington']
-                ]
-                path = ' '.join([(str(x)) for x in path])
-            elif name.startswith('ca'):
-                path = folder / 'california-latest.osm.pbf'
-            elif name.startswith('or'):
-                path = folder / 'oregon-latest.osm.pbf'
-            elif name.startswith('wa'):
-                path = folder / 'washington-latest.osm.pbf'
+                cmd = ' '.join([str(x) for x in cmd])
+                run(cmd, shell=True, check=True)
 
-            cmd = [
-                'osmconvert', path, '--out-o5m', f'-b={bbox_str}', '>',
-                new_path
-            ]
-            cmd = ' '.join([str(x) for x in cmd])
+            cmd = 'osmconvert '
+            for state in states:
+                new_path = folder / f'{state}-pct.o5m'
+                cmd += f'{new_path} '
+            new_path = folder / f'pct.o5m'
+            cmd += f'-o={new_path}'
             run(cmd, shell=True, check=True)
+
+            # Now pct.o5m exists on disk and includes everything within a 20
+            # mile buffer
 
 
 class StatePlaneZones(DataSource):

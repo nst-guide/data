@@ -47,3 +47,14 @@ def osm_poly_to_geojson(lines):
 
     feature_collection = geojson.FeatureCollection(features)
     return feature_collection
+
+def coords_to_osm_poly(coords):
+    lines = [
+        'poly_name',
+        'first_area',
+    ]
+    for coord in coords:
+        lines.append(f'    {coord[0]}    {coord[1]}')
+    lines.append('END')
+    lines.append('END')
+    return '\n'.join(lines)
