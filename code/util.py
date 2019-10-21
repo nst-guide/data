@@ -48,6 +48,24 @@ def osm_poly_to_geojson(lines):
     feature_collection = geojson.FeatureCollection(features)
     return feature_collection
 
+
+def multipolygon_to_osm_poly(multipolygon):
+    """Generate OSM .poly file from Shapely MultiPolygon"""
+    lines = ['poly_name']
+    section_counter = 1
+    for polygon in multipolygon:
+        lines.append(str(section_counter))
+        section_counter += 1
+
+        for coord in polygon.exterior.coords:
+            lines.append(f'    {coord[0]}    {coord[1]}')
+
+        lines.append('END')
+
+    lines.append('END')
+    return '\n'.join(lines)
+
+
 def coords_to_osm_poly(coords):
     lines = [
         'poly_name',
