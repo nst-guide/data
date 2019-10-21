@@ -1,8 +1,8 @@
 from functools import partial
 
+import geojson
 import pyproj
 from shapely.ops import transform
-import geojson
 
 WGS = 'epsg:4326'
 WEB_MERCATOR = 'epsg:3857'
