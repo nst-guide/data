@@ -182,7 +182,8 @@ class Halfmile(DataSource):
         self.save_dir = self.data_dir / 'pct' / 'line' / 'halfmile'
         self.save_dir.mkdir(parents=True, exist_ok=True)
 
-    def downloaded(self):
+    def downloaded(self) -> bool:
+        """Check if files are downloaded"""
         files = ['full.geojson', 'alternates.geojson', 'sections.geojson']
         return all((self.save_dir / f).exists() for f in files)
 
@@ -290,6 +291,16 @@ class Halfmile(DataSource):
         with open(save_dir / 'bbox.geojson', 'w') as f:
             geojson.dump(fc, f)
 
+    def trail(self) -> gpd.GeoDataFrame:
+        """Get Halfmile trail as GeoDataFrame
+        """
+        if self.downloaded():
+            path = self.save_dir / 'full.geojson'
+            trail = gpd.read_file(path)
+            return trail
+
+        raise ValueError('trails not yet downloaded')
+
 
 class USFS(DataSource):
     """docstring for USFS"""
@@ -331,6 +342,16 @@ class USFS(DataSource):
         save_dir.mkdir(parents=True, exist_ok=True)
         with open(save_dir / 'full.geojson', 'w') as f:
             geojson.dump(feature, f)
+
+    def trail(self):
+        """Load trail into GeoDataFrame"""
+
+        if self.downloaded():
+            path = self.data_dir / 'pct' / 'line' / 'usfs' / 'full.geojson'
+            trail = gpd.read_file(path)
+            return trail
+
+        raise ValueError('trails not yet downloaded')
 
     def buffer(self, distance=20):
         """Create buffer around USFS pct track
