@@ -23,6 +23,7 @@ from shapely.geometry import LineString, MultiLineString, box, mapping, shape
 from shapely.ops import linemerge
 
 import util
+import geom
 
 
 def in_ipython():
@@ -103,7 +104,6 @@ class OpenStreetMap(DataSource):
 
             # Now pct.o5m exists on disk and includes everything within a 20
             # mile buffer
-
 
     def get_pct_track(self):
         path = self.data_dir / 'raw' / 'osm' / 'pct.o5m'
@@ -356,38 +356,26 @@ class USFS(DataSource):
         raise ValueError('trails not yet downloaded')
 
     def buffer(self, distance=20):
+        path = self.data_dir / 'pct' / 'polygon' / 'usfs' / f'buffer{distance}mi.geojson'
+        if not path.exists():
+            self._create_buffer(distance=distance)
+
+        return gpd.read_file(path)
+
+    def _create_buffer(self, distance=20):
         """Create buffer around USFS pct track
 
         Args:
             distance: buffer radius in miles
         """
-        path = self.data_dir / 'pct' / 'line' / 'usfs' / 'full.geojson'
-        if not path.exists():
-            self.download()
-
-        with open(path) as f:
-            linestring = geojson.load(f)
-
-        l = shape(linestring['geometry'])
-
-        # Reproject to EPSG 3488
-        l_new = util.reproject(l, 'epsg:4326', 'epsg:3488')
-
-        # Make 20 mile buffer for now
-        ureg = pint.UnitRegistry()
-        miles = distance
-        meters = (miles * ureg.miles).to(ureg.meters).magnitude
-        polygon = l_new.buffer(meters)
-
-        # Reproject back to EPSG 4326
-        polygon_new = util.reproject(polygon, 'epsg:3488', 'epsg:4326')
-        feature = geojson.Feature(geometry=mapping(polygon_new))
+        trail = self.trail()
+        buffer = geom.buffer(trail, distance=20, unit='mile')
 
         save_dir = self.data_dir / 'pct' / 'polygon' / 'usfs'
         save_dir.mkdir(parents=True, exist_ok=True)
-        with open(save_dir / f'buffer{distance}mi.geojson', 'w') as f:
-            geojson.dump(feature, f)
-        linestring['geometry'].keys()
+
+        buffer.to_file(save_dir / f'buffer{distance}mi.geojson',
+                       driver='GeoJSON')
 
 
 class WildernessBoundaries(DataSource):
@@ -422,4 +410,5 @@ class WildernessBoundaries(DataSource):
         intersection = sjoin(gdf, trail, how='inner')
 
         # Save to GeoJSON
-        intersection.to_file(self.save_dir / 'wilderness.geojson', driver='GeoJSON')
+        intersection.to_file(self.save_dir / 'wilderness.geojson',
+                             driver='GeoJSON')
