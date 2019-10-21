@@ -1,6 +1,5 @@
 # General downloads
 
-from lxml import etree as ET
 import re
 import urllib.request
 from io import BytesIO
@@ -9,6 +8,7 @@ from subprocess import run
 from tempfile import NamedTemporaryFile
 from zipfile import ZipFile
 
+import fiona
 import geojson
 import geopandas as gpd
 import gpxpy
@@ -17,6 +17,8 @@ import pandas as pd
 import pint
 import requests
 from fiona.io import ZipMemoryFile
+from geopandas.tools import sjoin
+from lxml import etree as ET
 from shapely.geometry import LineString, MultiLineString, box, mapping, shape
 from shapely.ops import linemerge
 
@@ -307,7 +309,7 @@ class USFS(DataSource):
     def __init__(self):
         super(USFS, self).__init__()
 
-    def downloaded(self):
+    def downloaded(self) -> bool:
         save_dir = self.data_dir / 'pct' / 'line' / 'usfs'
         files = ['full.geojson']
         return all((save_dir / f).exists() for f in files)
@@ -343,7 +345,7 @@ class USFS(DataSource):
         with open(save_dir / 'full.geojson', 'w') as f:
             geojson.dump(feature, f)
 
-    def trail(self):
+    def trail(self) -> gpd.GeoDataFrame:
         """Load trail into GeoDataFrame"""
 
         if self.downloaded():
@@ -386,3 +388,38 @@ class USFS(DataSource):
         with open(save_dir / f'buffer{distance}mi.geojson', 'w') as f:
             geojson.dump(feature, f)
         linestring['geometry'].keys()
+
+
+class WildernessBoundaries(DataSource):
+    def __init__(self):
+        super(WildernessBoundaries, self).__init__()
+        self.save_dir = self.data_dir / 'pct' / 'polygon' / 'bound'
+        self.save_dir.mkdir(exist_ok=True, parents=True)
+
+    def downloaded(self) -> bool:
+        files = ['full.geojson']
+        return all((save_dir / f).exists() for f in files)
+
+    def download(self):
+        """Download shapefile of wilderness boundaries and intersect with PCT track
+        """
+
+        # Load the FeatureCollection into a GeoDataFrame
+        url = 'http://www.wilderness.net/GIS/Wilderness_Areas.zip'
+        r = requests.get(url)
+        with fiona.BytesCollection(bytes(r.content)) as f:
+            crs = f.crs
+            gdf = gpd.GeoDataFrame.from_features(f, crs=crs)
+
+        # Reproject to WGS84
+        gdf = gdf.to_crs(epsg=4326)
+
+        # Load Halfmile track for intersections
+        trail = Halfmile().trail()
+        trail = trail.to_crs(epsg=4326)
+
+        # Intersect with the trail
+        intersection = sjoin(gdf, trail, how='inner')
+
+        # Save to GeoJSON
+        intersection.to_file(self.save_dir / 'wilderness.geojson', driver='GeoJSON')
