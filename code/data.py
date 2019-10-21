@@ -358,14 +358,24 @@ class USFS(DataSource):
 
         raise ValueError('trails not yet downloaded')
 
-    def buffer(self, distance=20):
+    def buffer(self, distance: float=20) -> gpd.GeoDataFrame:
+        """Load cached buffer
+
+        If the buffer doesn't yet exist, creates it and saves it to disk
+
+        Args:
+            distance: buffer radius in miles
+
+        Returns:
+            GeoDataFrame with buffer geometry
+        """
         path = self.data_dir / 'pct' / 'polygon' / 'usfs' / f'buffer{distance}mi.geojson'
         if not path.exists():
             self._create_buffer(distance=distance)
 
         return gpd.read_file(path)
 
-    def _create_buffer(self, distance=20):
+    def _create_buffer(self, distance: float=20):
         """Create buffer around USFS pct track
 
         Args:
