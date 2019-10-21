@@ -55,38 +55,41 @@ class OpenStreetMap(DataSource):
     def __init__(self):
         super(OpenStreetMap, self).__init__()
         self.trail_ids = {'pct': 1225378}
+        self.raw_dir = self.data_dir / 'raw' / 'osm'
+        self.raw_dir.mkdir(parents=True, exist_ok=True)
 
-    def download_extracts(self):
-        """Downloads extracts from geofabrik, then creates an .o5m file using bounding boxes created from each section of Halfmile data
+    def _download_states(self, states, overwrite=False):
+        """Download state-level OSM extracts from geofabrik
         """
+        for state in states:
+            osm_path = self.raw_dir / f'{state}-latest.osm.pbf'
+            url = f'http://download.geofabrik.de/north-america/us/{state}-latest.osm.pbf'
+            if overwrite or (not osm_path.exists()):
+                urllib.request.urlretrieve(url, osm_path)
 
-        # Download US West extract from geofabrik
-        folder = self.data_dir / 'raw' / 'osm'
-        folder.mkdir(parents=True, exist_ok=True)
+    def create_extracts(self):
+        """Creates .o5m file for buffer area around trail
 
-        for state in ['california', 'oregon', 'washington']:
-            osm_path = folder / f'{state}-latest.osm.pbf'
-            url = 'http://download.geofabrik.de/north-america/us-west-latest.osm.pbf'
-            urllib.request.urlretrieve(url, osm_path)
+        TODO: include town geometries
+        """
+        states=['california', 'oregon', 'washington']
+        self._download_states(states, overwrite=False)
 
         # Get buffer from USFS track
-        path = self.data_dir / 'pct' / 'polygon' / 'usfs' / 'buffer20mi.geojson'
-        with path.open() as f:
-            p = geojson.load(f)
+        buffer = USFS().buffer()
+        exterior_coords = list(buffer.iloc[0].geometry.exterior.coords)
 
         # Create OSM extract around trail
-        buffer = shape(p['geometry'])
-        poly_text = util.coords_to_osm_poly(list(buffer.exterior.coords))
-        states = ['california', 'oregon', 'washington']
-
+        poly_text = util.coords_to_osm_poly(exterior_coords)
         with NamedTemporaryFile('w+', suffix='.poly') as tmp:
+            # Write the .poly file
             tmp.write(poly_text)
             tmp.seek(0)
 
             # TODO: put intermediate extracts into a tmp directory
             for state in states:
-                osm_path = folder / f'{state}-latest.osm.pbf'
-                new_path = folder / f'{state}-pct.o5m'
+                osm_path = self.raw_dir / f'{state}-latest.osm.pbf'
+                new_path = self.raw_dir / f'{state}-pct.o5m'
                 cmd = [
                     'osmconvert', osm_path, '--out-o5m', f'-B={tmp.name}', '>',
                     new_path
@@ -96,9 +99,9 @@ class OpenStreetMap(DataSource):
 
             cmd = 'osmconvert '
             for state in states:
-                new_path = folder / f'{state}-pct.o5m'
+                new_path = self.raw_dir / f'{state}-pct.o5m'
                 cmd += f'{new_path} '
-            new_path = folder / f'pct.o5m'
+            new_path = self.raw_dir / f'pct.o5m'
             cmd += f'-o={new_path}'
             run(cmd, shell=True, check=True)
 
