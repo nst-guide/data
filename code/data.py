@@ -398,7 +398,7 @@ class WildernessBoundaries(DataSource):
 
     def downloaded(self) -> bool:
         files = ['full.geojson']
-        return all((save_dir / f).exists() for f in files)
+        return all((self.save_dir / f).exists() for f in files)
 
     def download(self):
         """Download shapefile of wilderness boundaries and intersect with PCT track

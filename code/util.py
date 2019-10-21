@@ -26,7 +26,7 @@ def web_mercator_to_wgs(obj):
 
 def osm_poly_to_geojson(lines):
     lines = [line.rstrip() for line in lines]
-    name = lines[0]
+    # name = lines[0]
 
     section_starts = [ind for ind, line in enumerate(lines) if line[:3] not in ['   ', 'END']]
     section_ends = [ind for ind, line in enumerate(lines) if line[:3] == 'END']
