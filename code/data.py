@@ -50,6 +50,22 @@ class DataSource:
         self.data_dir = find_data_dir()
 
 
+class Towns(DataSource):
+    """Town information
+
+    For now, town boundaries are drawn by hand.
+    """
+    def __init__(self):
+        super(Towns, self).__init__()
+        self.save_dir = self.data_dir / 'pct' / 'polygon' / 'bound' / 'town'
+
+    def boundaries(self) -> gpd.GeoDataFrame:
+        """Get town boundaries
+        """
+        files = list(self.save_dir.glob('*/*.geojson'))
+        return pd.concat([gpd.read_file(f) for f in files])
+
+
 class OpenStreetMap(DataSource):
     """docstring for OpenStreetMap"""
     def __init__(self):
@@ -72,15 +88,22 @@ class OpenStreetMap(DataSource):
 
         TODO: include town geometries
         """
-        states=['california', 'oregon', 'washington']
+        states = ['california', 'oregon', 'washington']
         self._download_states(states, overwrite=False)
 
-        # Get buffer from USFS track
-        buffer = USFS().buffer()
-        exterior_coords = list(buffer.iloc[0].geometry.exterior.coords)
+        # Get town boundaries and buffer from USFS track
+        # Then generate the union of the two
+        # The length of the multipolygon created from `.unary_union` is 3, which
+        # I believe means that all towns that currently have a hand-drawn
+        # geometry (except Winthrop, WA and Bend, OR) are within 20 miles of the
+        # trail and are included in the trail buffer.
+        trail_buffer = USFS().buffer(distance=20)
+        towns = Towns().boundaries()
+        union = pd.concat([trail_buffer, towns],
+                          sort=False).geometry.unary_union
 
         # Create OSM extract around trail
-        poly_text = util.coords_to_osm_poly(exterior_coords)
+        poly_text = util.multipolygon_to_osm_poly(union)
         with NamedTemporaryFile('w+', suffix='.poly') as tmp:
             # Write the .poly file
             tmp.write(poly_text)
@@ -106,7 +129,7 @@ class OpenStreetMap(DataSource):
             run(cmd, shell=True, check=True)
 
             # Now pct.o5m exists on disk and includes everything within a 20
-            # mile buffer
+            # mile buffer and all towns
 
     def get_pct_track(self):
         path = self.data_dir / 'raw' / 'osm' / 'pct.o5m'
@@ -358,7 +381,7 @@ class USFS(DataSource):
 
         raise ValueError('trails not yet downloaded')
 
-    def buffer(self, distance: float=20) -> gpd.GeoDataFrame:
+    def buffer(self, distance: float = 20) -> gpd.GeoDataFrame:
         """Load cached buffer
 
         If the buffer doesn't yet exist, creates it and saves it to disk
@@ -375,7 +398,7 @@ class USFS(DataSource):
 
         return gpd.read_file(path)
 
-    def _create_buffer(self, distance: float=20):
+    def _create_buffer(self, distance: float = 20):
         """Create buffer around USFS pct track
 
         Args:
