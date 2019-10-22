@@ -414,23 +414,25 @@ class USFS(DataSource):
                        driver='GeoJSON')
 
 
-class WildernessBoundaries(DataSource):
+class PolygonSource(DataSource):
     def __init__(self):
-        super(WildernessBoundaries, self).__init__()
-        self.save_dir = self.data_dir / 'pct' / 'polygon' / 'bound'
-        self.save_dir.mkdir(exist_ok=True, parents=True)
+        super(PolygonSource, self).__init__()
+        self.save_dir = self.data_dir / 'pct' / 'polygon'
+        self.url = None
+        self.filename = None
 
     def downloaded(self) -> bool:
-        files = ['full.geojson']
+        files = [self.filename]
         return all((self.save_dir / f).exists() for f in files)
 
     def download(self):
-        """Download shapefile of wilderness boundaries and intersect with PCT track
+        """Download polygon shapefile and intersect with PCT track
         """
+        assert self.url is not None, 'self.url must be set'
+        assert self.filename is not None, 'self.filename must be set'
 
         # Load the FeatureCollection into a GeoDataFrame
-        url = 'http://www.wilderness.net/GIS/Wilderness_Areas.zip'
-        r = requests.get(url)
+        r = requests.get(self.url)
         with fiona.BytesCollection(bytes(r.content)) as f:
             crs = f.crs
             gdf = gpd.GeoDataFrame.from_features(f, crs=crs)
@@ -446,5 +448,31 @@ class WildernessBoundaries(DataSource):
         intersection = sjoin(gdf, trail, how='inner')
 
         # Save to GeoJSON
-        intersection.to_file(self.save_dir / 'wilderness.geojson',
+        self.save_dir.mkdir(exist_ok=True, parents=True)
+        intersection.to_file(self.save_dir / self.filename,
                              driver='GeoJSON')
+
+    def boundary(self) -> gpd.GeoDataFrame:
+        """Load Polygon boundary as GeoDataFrame
+        """
+        if self.downloaded():
+            path = self.save_dir / self.filename
+            polygon = gpd.read_file(path)
+            return polygon
+
+        raise ValueError('trails not yet downloaded')
+
+
+class WildernessBoundaries(PolygonSource):
+    def __init__(self):
+        super(WildernessBoundaries, self).__init__()
+        self.save_dir = self.data_dir / 'pct' / 'polygon' / 'bound'
+        self.url = 'http://www.wilderness.net/GIS/Wilderness_Areas.zip'
+        self.filename = 'wilderness.geojson'
+
+class NationalParkBoundaries(PolygonSource):
+    def __init__(self):
+        super(NationalParkBoundaries, self).__init__()
+        self.save_dir = self.data_dir / 'pct' / 'polygon' / 'bound'
+        self.url = 'https://opendata.arcgis.com/datasets/b1598d3df2c047ef88251016af5b0f1e_0.zip?outSR=%7B%22latestWkid%22%3A3857%2C%22wkid%22%3A102100%7D'
+        self.filename = 'nationalpark.geojson'
