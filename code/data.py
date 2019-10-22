@@ -449,11 +449,10 @@ class PolygonSource(DataSource):
 
         # Save to GeoJSON
         self.save_dir.mkdir(exist_ok=True, parents=True)
-        intersection.to_file(self.save_dir / self.filename,
-                             driver='GeoJSON')
+        intersection.to_file(self.save_dir / self.filename, driver='GeoJSON')
 
-    def boundary(self) -> gpd.GeoDataFrame:
-        """Load Polygon boundary as GeoDataFrame
+    def polygon(self) -> gpd.GeoDataFrame:
+        """Load Polygon as GeoDataFrame
         """
         if self.downloaded():
             path = self.save_dir / self.filename
@@ -470,9 +469,26 @@ class WildernessBoundaries(PolygonSource):
         self.url = 'http://www.wilderness.net/GIS/Wilderness_Areas.zip'
         self.filename = 'wilderness.geojson'
 
+
 class NationalParkBoundaries(PolygonSource):
     def __init__(self):
         super(NationalParkBoundaries, self).__init__()
         self.save_dir = self.data_dir / 'pct' / 'polygon' / 'bound'
         self.url = 'https://opendata.arcgis.com/datasets/b1598d3df2c047ef88251016af5b0f1e_0.zip?outSR=%7B%22latestWkid%22%3A3857%2C%22wkid%22%3A102100%7D'
         self.filename = 'nationalpark.geojson'
+
+
+class NationalForestBoundaries(PolygonSource):
+    def __init__(self):
+        super(NationalForestBoundaries, self).__init__()
+        self.save_dir = self.data_dir / 'pct' / 'polygon' / 'bound'
+        self.url = 'https://data.fs.usda.gov/geodata/edw/edw_resources/shp/S_USA.AdministrativeForest.zip'
+        self.filename = 'nationalforest.geojson'
+
+
+class StateBoundaries(PolygonSource):
+    def __init__(self):
+        super(StateBoundaries, self).__init__()
+        self.save_dir = self.data_dir / 'pct' / 'polygon' / 'bound'
+        self.url = 'https://www2.census.gov/geo/tiger/TIGER2017//STATE/tl_2017_us_state.zip'
+        self.filename = 'state.geojson'
