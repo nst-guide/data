@@ -427,11 +427,14 @@ class PolygonSource(DataSource):
         files = [self.filename]
         return all((self.save_dir / f).exists() for f in files)
 
-    def download(self):
+    def download(self, overwrite=False):
         """Download polygon shapefile and intersect with PCT track
         """
         assert self.url is not None, 'self.url must be set'
         assert self.filename is not None, 'self.filename must be set'
+
+        if self.downloaded() or (not overwrite):
+            return
 
         # Load the FeatureCollection into a GeoDataFrame
         r = requests.get(self.url)
