@@ -76,7 +76,7 @@ class FSTopo:
 
         intersecting_bboxes = []
         for ll_point in ll_points:
-            ur_point = (ll_point[0] + 0.125, ll_point[1] + 0.125)
+            ur_point = (ll_point[0] + stepsize, ll_point[1] + stepsize)
             bbox = box(*ll_point, *ur_point)
             if bbox.intersects(buffer_polygon):
                 intersecting_bboxes.append(bbox)
