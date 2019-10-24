@@ -16,6 +16,7 @@ dependencies:
   - pip
   - pyproj
   - python=3
+  - python-dotenv
   - requests
   - shapely
   - pip:
