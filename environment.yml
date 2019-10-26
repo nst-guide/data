@@ -15,8 +15,9 @@ dependencies:
   - pint
   - pip
   - pyproj
-  - python=3
   - python-dotenv
+  - python=3
+  - rasterio
   - requests
   - shapely
   - pip:
