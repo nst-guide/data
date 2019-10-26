@@ -27,7 +27,7 @@ from shapely.ops import linemerge
 
 import geom
 import util
-from grid import TenthDegree
+from grid import TenthDegree, OneDegree
 
 
 def in_ipython():
@@ -796,3 +796,40 @@ class Transit(DataSource):
                                       properties=properties)
             features.append(feature)
         geojson.FeatureCollection(features)
+
+
+class NationalElevationDataset(DataSource):
+    def __init__(self):
+        super(NationalElevationDataset, self).__init__()
+
+        self.trail = USFS().trail().geometry.iloc[0]
+
+    def download(self, overwrite=False):
+        """Download 1/3 arc-second elevation data
+        """
+        save_dir = self.data_dir / 'raw' / 'elevation'
+        save_dir.mkdir(parents=True, exist_ok=True)
+
+        urls = self._get_download_urls()
+        for url in urls:
+            save_path = save_dir / (Path(url).stem + '.zip')
+            if overwrite or (not save_path.exists()):
+                urlretrieve(url, save_path)
+
+    def _get_download_urls(self):
+        """Create download urls
+        """
+        intersecting_bboxes = OneDegree().get_cells(self.trail)
+
+        # The elevation datasets are identified by the _UPPER_ latitude and
+        # _LOWER_ longitude, i.e. max and min repsectively
+        baseurl = 'https://prd-tnm.s3.amazonaws.com/StagedProducts/Elevation'
+        baseurl += '/13/ArcGrid/'
+        urls = []
+        for bbox in intersecting_bboxes:
+            lat = str(int(bbox.bounds[3]))
+            lon = str(int(abs(bbox.bounds[0])))
+            url = baseurl + f'USGS_NED_13_n{lat}w{lon}_ArcGrid.zip'
+            urls.append(url)
+
+        return urls
