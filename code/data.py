@@ -869,6 +869,26 @@ class USGSHydrography(DataSource):
         self._download_boundaries(overwrite=overwrite)
         self._download_nhd(overwrite=overwrite)
 
+    def load_nhd_iter(self) -> str:
+        """Iterator to load NHD data for polygons that intersect the trail
+
+        For now, this just yields the _path_ to the file, instead of the opened
+        file, because I can only open a single layer of the GDB at a time, and
+        I'll probably want more than one layer.
+        """
+        # Get all files in the raw hydrography folder conforming to NHD HU8 file
+        # name
+        # NOTE: If in the future I add more trails, this won't be performant,
+        # because it could be trying to match PCT water boundaries to another
+        # trail.
+        name_regex = re.compile(r'^NHD_H_\d{8}_HU8_GDB.zip$')
+        nhd_files = [
+            path for path in self.raw_dir.iterdir()
+            if name_regex.search(path.name)
+        ]
+        for f in nhd_files:
+            yield f
+
     def _download_boundaries(self, overwrite):
         """
         Hydrologic Units range from 1-18. The PCT only covers parts of 16, 17,
