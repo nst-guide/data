@@ -20,5 +20,6 @@ dependencies:
   - rasterio
   - requests
   - shapely
+  - xlrd
   - pip:
     - python-language-server[all]
