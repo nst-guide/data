@@ -857,6 +857,94 @@ class NationalElevationDataset(DataSource):
         return urls
 
 
+class USGSHydrography(DataSource):
+    def __init__(self):
+        super(USGSHydrography, self).__init__()
+        self.raw_dir = self.data_dir / 'raw' / 'hydrology'
+        self.raw_dir.mkdir(parents=True, exist_ok=True)
+        self.hu2_list = [16, 17, 18]
+        self.trail = Halfmile().trail().to_crs(epsg=4326)
+
+    def download(self, overwrite=False):
+        self._download_boundaries(overwrite=overwrite)
+        self._download_nhd(overwrite=overwrite)
+
+    def _download_boundaries(self, overwrite):
+        """
+        Hydrologic Units range from 1-18. The PCT only covers parts of 16, 17,
+        and 18. For other trails you'd want to cover the entire US, then get
+        boundaries from it.
+        """
+        baseurl = 'https://prd-tnm.s3.amazonaws.com/StagedProducts/Hydrography/'
+        baseurl += 'WBD/HU2/GDB/'
+        for hu2_id in self.hu2_list:
+            name = f'WBD_{hu2_id}_HU2_GDB.zip'
+            url = baseurl + name
+            path = self.raw_dir / name
+            if overwrite or (not path.exists()):
+                urlretrieve(url, path)
+
+    def _download_nhd(self, overwrite):
+        """Download National Hydrography Dataset for trail
+        """
+        baseurl = 'https://prd-tnm.s3.amazonaws.com/StagedProducts/Hydrography/'
+        baseurl += 'NHD/HU8/HighResolution/GDB/'
+
+        gdfs = self._get_HU8_units_for_trail()
+        hu8_ids = gdfs['HUC8'].unique()
+
+        for hu8_id in hu8_ids:
+            name = f'NHD_H_{hu8_id}_HU8_GDB.zip'
+            url = baseurl + name
+            path = self.raw_dir / name
+            if overwrite or (not path.exists()):
+                urlretrieve(url, path)
+
+    def _get_HU8_units_for_trail(self):
+        """Find HU8 units that trail intersects
+
+        This allows to find the names of the NHD datasets that need to be downloaded
+        """
+        all_intersecting_hu8 = []
+        for hu2_id in self.hu2_list:
+            # Get subbasin/hu8 boundaries for this region
+            hu8 = self._load_HU8_boundaries(hu2_id)
+
+            # Reproject to WGS84
+            hu8 = hu8.to_crs(epsg=4326)
+
+            # Intersect with the trail
+            intersecting_hu8 = sjoin(hu8, self.trail, how='inner')
+
+            # Append
+            all_intersecting_hu8.append(intersecting_hu8)
+
+        return pd.concat(all_intersecting_hu8)
+
+    def _load_HU8_boundaries(self, hu2_id):
+        """Load Subregion Watershed boundaries
+
+        Watershed boundaries are split up by USGS into a hierarchy of smaller
+        and smaller areas. In _download_boundaries, the watershed boundary
+        dataset is downloaded for `HU2` (Region), which is the second-largest
+        collection, behind the full national file.
+
+        In order to download the minimum amount of data from the National
+        Hydrology Dataset (NHD), I want to download those at the `HU8`
+        (Subbasin) level, so that I'm not downloading data for areas far from
+        the trail. (`HU8` is the smallest area files that exist for NHD.) So
+        here, I'm just extracting the `HU8` boundaries from the larger `HU2`
+        watershed boundary datasets.
+        """
+
+        name = f'WBD_{hu2_id}_HU2_GDB.zip'
+        path = self.raw_dir / name
+        layers = fiona.listlayers(str(path))
+        assert 'WBDHU8' in layers, 'HU8 boundaries not in WBD dataset'
+
+        return gpd.read_file(path, layer='WBDHU8')
+
+
 class PCTWaterReport(DataSource):
     def __init__(self):
         super(PCTWaterReport, self).__init__()
