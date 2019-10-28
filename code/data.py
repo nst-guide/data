@@ -236,6 +236,7 @@ class Halfmile(DataSource):
             'sections': [],
             'alt': [],
         }
+        point_features = []
 
         name_re = re.compile(r'^((?:CA|OR|WA) Sec [A-Z])(?: - (.+))?$')
 
@@ -244,10 +245,11 @@ class Halfmile(DataSource):
             z = ZipFile(BytesIO(r.content))
             names = z.namelist()
             names = [x for x in names if '__MACOSX' not in x]
-            names = [x for x in names if 'tracks' in x]
-            names = sorted(names)
+            tracks_names = [x for x in names if 'tracks' in x]
+            waypoints_names = [x for x in names if 'waypoints' in x]
+            tracks_names = sorted(tracks_names)
 
-            for name in names:
+            for name in tracks_names:
                 gpx = gpxpy.parse(z.read(name).decode('utf-8'))
 
                 for track in gpx.tracks:
@@ -268,6 +270,24 @@ class Halfmile(DataSource):
                         d['name'] = alt_name
 
                         routes['alt'].append(d)
+
+            for name in waypoints_names:
+                gpx = gpxpy.parse(z.read(name).decode('utf-8'))
+                for wpt in gpx.waypoints:
+                    pt = Point(wpt.longitude, wpt.latitude, wpt.elevation)
+                    attrs = {
+                        'name': wpt.name,
+                        'description': wpt.description,
+                        'symbol': wpt.symbol,
+                    }
+                    point_features.append(
+                        geojson.Feature(geometry=pt, properties=attrs))
+
+        point_fc = geojson.FeatureCollection(point_features)
+        save_dir = self.data_dir / 'pct' / 'point' / 'halfmile'
+        save_dir.mkdir(parents=True, exist_ok=True)
+        with open(save_dir / 'waypoints.geojson', 'w') as f:
+            geojson.dump(point_fc, f)
 
         # Save sections as individual geojson
         features = [
