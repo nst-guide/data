@@ -3,6 +3,7 @@
 import json
 import os
 import re
+from datetime import datetime
 from io import BytesIO
 from pathlib import Path
 from subprocess import run
@@ -22,12 +23,13 @@ from fiona.io import ZipMemoryFile
 from geopandas.tools import sjoin
 from haversine import haversine
 from lxml import etree as ET
-from shapely.geometry import LineString, MultiLineString, box, mapping, shape
+from shapely.geometry import (LineString, MultiLineString, Point, box, mapping,
+                              shape)
 from shapely.ops import linemerge
 
 import geom
 import util
-from grid import TenthDegree, OneDegree
+from grid import OneDegree, TenthDegree
 
 
 def in_ipython():
@@ -833,3 +835,214 @@ class NationalElevationDataset(DataSource):
             urls.append(url)
 
         return urls
+
+
+class PCTWaterReport(DataSource):
+    def __init__(self):
+        super(PCTWaterReport, self).__init__()
+
+        load_dotenv()
+        self.google_api_key = os.getenv('GOOGLE_SHEETS_API_KEY')
+        assert self.google_api_key is not None, 'Google API Key missing'
+
+        self.waypoints = gpd.read_file(self.data_dir / 'pct' / 'point' /
+                                       'halfmile' / 'waypoints.geojson')
+        self.waypoint_names = self.waypoints['name'].unique()
+
+    def download(self, overwrite=False):
+        """Download PCT Water report spreadsheets
+
+        For now, since I can't get the Google Drive API to work, you have to
+        download the folder manually from Google Drive. If you right click on
+        the folder, you can download the entire archive at once.
+
+        Put the downloaded ZIP file at data/raw/pctwater/pctwater.zip
+        """
+        pass
+
+    def import_files(self):
+        """Import water reports into a single DataFrame
+        """
+        raw_dir = self.data_dir / 'raw' / 'pctwater'
+        z = ZipFile(raw_dir / 'pctwater.zip')
+        names = z.namelist()
+        names = sorted([x for x in names if 'snow' not in x.lower()])
+
+        date_re = r'(20\d{2}-[0-3]\d-[0-3]\d)( [0-2]\d_[0-6]\d_[0-6]\d)?'
+
+        dfs = []
+        for n in names:
+            date_match = re.search(date_re, n)
+            if date_match:
+                if date_match.group(1) == '2011-30-12':
+                    fmt = '%Y-%d-%m'
+                else:
+                    fmt = '%Y-%m-%d'
+                file_date = datetime.strptime(date_match.group(1), fmt)
+            else:
+                file_date = datetime.now()
+
+            # Read all sheets of Excel workbook into list
+            _dfs = pd.read_excel(z.open(n), header=None, sheet_name=None)
+            for df in _dfs.values():
+                df = self._clean_dataframe(df)
+                if df is not None:
+                    dfs.append([file_date, df])
+
+        single_df = pd.concat([x[1] for x in dfs], sort=False)
+        single_df.to_csv(raw_dir / 'single.csv')
+
+    def _clean_dataframe(self, df):
+        # TODO: merge with waypoint data to get stable lat/lon positions
+
+        # In 2017, a sheet in the workbook is for snow reports
+        if df.iloc[0, 0] == 'Pacific Crest Trail Snow & Ford Report':
+            return None
+
+        df = self._assemble_df_with_named_columns(df)
+        df = self._resolve_df_names(df)
+
+        # column 'map' should meet the map regex
+        # Keep only rows that meet regex
+        map_col_regex = re.compile(r'^[A-Z][0-9]{,2}$')
+        df = df[df['map'].str.match(map_col_regex).fillna(False)]
+
+        df = self._split_report_rows(df)
+        return df
+
+    def _resolve_df_names(self, df):
+        """
+        Columns should be
+        [map, mile, waypoint, location, report, date, reported by, posted]
+        """
+        # To lower case
+        df = df.rename(mapper=lambda x: x.lower(), axis='columns')
+
+        # Rename any necessary columns
+        rename_dict = {
+            '2015 mile\nhalfmile app': 'mile_old',
+            'old mile*': 'mile_old',
+            'miles (nobo)': 'mile',
+            'report ("-" means no report)': 'report'
+        }
+        df = df.rename(columns=rename_dict)
+
+        should_be = [
+            'map', 'mile', 'mile_old', 'waypoint', 'location', 'report',
+            'date', 'reported by', 'posted'
+        ]
+        invalid_cols = set(df.columns).difference(should_be)
+        if invalid_cols:
+            raise ValueError(f'extraneous column {invalid_cols}')
+
+        return df
+
+    def _split_report_rows(self, df):
+        """Split multiple reports into individual rows
+        """
+        # Remove empty report rows
+        df = df[df['report'].fillna('').str.len() > 0]
+
+        # Sometimes there's no data in the excel sheet, i.e. at the beginning of
+        # the season
+        if len(df) == 0:
+            return None
+
+        # Create new columns
+        idx_cols = df.columns.difference(['report'])
+        new_cols_df = pd.DataFrame(df['report'].str.split('\n').tolist())
+        # name columns as report0, report1, report2
+        new_cols_df = new_cols_df.rename(mapper=lambda col: f'report{col}',
+                                         axis=1)
+
+        # Append these new columns to full df
+        assert len(df) == len(new_cols_df)
+        df = pd.concat(
+            [df.reset_index(drop=True),
+             new_cols_df.reset_index(drop=True)],
+            axis=1)
+        assert len(df) == len(new_cols_df)
+
+        # Remove original 'report' column
+        df = df.drop('report', axis=1)
+
+        # Melt from wide to long
+        # Bug prevents working when date is a datetime dtype
+        df['date'] = df['date'].astype(str)
+        reshaped = pd.wide_to_long(df,
+                                   stubnames='report',
+                                   i=idx_cols,
+                                   j='report_num')
+        reshaped = reshaped.reset_index()
+        # remove new j column
+        reshaped = reshaped.drop('report_num', axis=1)
+        # Remove extra rows created from melt
+        reshaped = reshaped[~reshaped['report'].isna()]
+
+        return reshaped
+
+    def _assemble_df_with_named_columns(self,
+                                        df: pd.DataFrame) -> pd.DataFrame:
+        """Create DataFrame with named columns
+
+        Column order changes across time in the water reports. Instead of
+        relying solely on order, first remove the pre-header lines, attach
+        labels, and reassemble as DataFrame.
+        """
+        column_names = None
+        past_header = False
+        rows = []
+        for row in df.itertuples(index=False, name='Pandas'):
+            # print(row)
+            if str(row[0]).lower() == 'map':
+                column_names = row
+                past_header = True
+                continue
+
+            if not past_header:
+                continue
+
+            rows.append(row)
+
+        if column_names is None:
+            raise ValueError('column names not found')
+
+        return pd.DataFrame.from_records(rows, columns=column_names)
+
+    # def _list_google_sheets_files(self):
+    #     """
+    #     NOTE: was unable to get this to work. Each time I tried to list files, I got
+    #     "Shared drive not found: 0B3jydhFdh1E2aVRaVEx0SlJPUGs"
+    #     """
+    #     from googleapiclient.discovery import build
+    #     from google_auth_oauthlib.flow import InstalledAppFlow, Flow
+    #
+    #     client_secret_path = Path('~/.credentials/google_sheets_client_secret.json')
+    #     client_secret_path = client_secret_path.expanduser().resolve()
+    #
+    #     flow = Flow.from_client_secrets_file(
+    #         str(client_secret_path),
+    #         scopes=['https://www.googleapis.com/auth/drive.readonly'],
+    #         redirect_uri='urn:ietf:wg:oauth:2.0:oob')
+    #
+    #     # flow = InstalledAppFlow.from_client_secrets_file(
+    #     #     str(client_secret_path),
+    #     #     scopes=['drive', 'sheets'])
+    #     auth_uri = flow.authorization_url()
+    #     print(auth_uri[0])
+    #
+    #     token = flow.fetch_token(code='insert token from oauth screen')
+    #     credentials = flow.credentials
+    #
+    #     # drive_service = build('drive', 'v3', developerKey=self.google_api_key)
+    #     drive_service = build('drive', 'v3', credentials=credentials)
+    #     results = drive_service.files().list(
+    #         pageSize=10,
+    #         q=("sharedWithMe"),
+    #         driveId='0B3jydhFdh1E2aVRaVEx0SlJPUGs',
+    #         includeItemsFromAllDrives=True,
+    #         supportsAllDrives=True,
+    #         corpora="drive",
+    #         fields="*").execute()
+    #     items = results.get('files', [])
+    #     len(items)
