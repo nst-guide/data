@@ -6,7 +6,8 @@
       "type": "Feature",
       "properties": {
         "section": "CA_I",
-        "id": "kennedy_meadows_north"
+        "id": "kennedy_meadows_north",
+        "name": "Kennedy Meadows North"
       },
       "geometry": {
         "type": "Polygon",

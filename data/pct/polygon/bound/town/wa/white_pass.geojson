@@ -6,7 +6,8 @@
       "type": "Feature",
       "properties": {
         "section": "WA_H",
-        "id": "white_pass"
+        "id": "white_pass",
+        "name": "White Pass"
       },
       "geometry": {
         "type": "Polygon",

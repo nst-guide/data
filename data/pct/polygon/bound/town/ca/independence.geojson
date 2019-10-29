@@ -6,7 +6,8 @@
       "type": "Feature",
       "properties": {
         "section": "CA_H",
-        "id": "independence"
+        "id": "independence",
+        "name": "Independence"
       },
       "geometry": {
         "type": "Polygon",

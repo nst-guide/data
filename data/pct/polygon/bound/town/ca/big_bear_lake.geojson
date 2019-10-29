@@ -6,7 +6,8 @@
       "type": "Feature",
       "properties": {
         "id": "big_bear_lake",
-        "section": "CA_C"
+        "section": "CA_C",
+        "name": "Big Bear Lake"
       },
       "geometry": {
         "type": "Polygon",

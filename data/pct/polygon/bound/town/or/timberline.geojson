@@ -6,7 +6,8 @@
       "type": "Feature",
       "properties": {
         "section": "OR_G",
-        "id": "timberline"
+        "id": "timberline",
+        "name": "Timberline"
       },
       "geometry": {
         "type": "Polygon",

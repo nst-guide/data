@@ -6,7 +6,8 @@
       "type": "Feature",
       "properties": {
         "section": "CA_A",
-        "id": "warner_springs"
+        "id": "warner_springs",
+        "name": "Warner Springs"
       },
       "geometry": {
         "type": "Polygon",

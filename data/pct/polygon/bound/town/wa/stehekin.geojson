@@ -6,7 +6,8 @@
       "type": "Feature",
       "properties": {
         "section": "WA_K",
-        "id": "stehekin"
+        "id": "stehekin",
+        "name": "Stehekin"
       },
       "geometry": {
         "type": "Polygon",

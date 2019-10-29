@@ -99,12 +99,14 @@ class Towns(DataSource):
     def _fix_town_ids(self):
         files = sorted(self.save_dir.glob('*/*.geojson'))
         for f in files:
-            name = Path(f).stem
+            identifier = Path(f).stem
+            name = ' '.join(s.capitalize() for s in identifier.split('_'))
             with open(f) as x:
                 d = json.load(x)
 
-            d['features'][0]['id'] = name
-            d['features'][0]['properties']['id'] = name
+            d['features'][0]['id'] = identifier
+            d['features'][0]['properties']['id'] = identifier
+            d['features'][0]['properties']['name'] = name
 
             with open(f, 'w') as x:
                 json.dump(d, x, indent=2)

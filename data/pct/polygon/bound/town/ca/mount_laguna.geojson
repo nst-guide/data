@@ -6,7 +6,8 @@
       "type": "Feature",
       "properties": {
         "section": "CA_A",
-        "id": "mount_laguna"
+        "id": "mount_laguna",
+        "name": "Mount Laguna"
       },
       "geometry": {
         "type": "Polygon",

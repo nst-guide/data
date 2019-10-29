@@ -6,7 +6,8 @@
       "type": "Feature",
       "properties": {
         "section": "OR_D",
-        "id": "diamond_lake"
+        "id": "diamond_lake",
+        "name": "Diamond Lake"
       },
       "geometry": {
         "type": "Polygon",

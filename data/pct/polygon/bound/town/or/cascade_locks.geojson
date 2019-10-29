@@ -6,7 +6,8 @@
       "type": "Feature",
       "properties": {
         "section": "OR_G",
-        "id": "cascade_locks"
+        "id": "cascade_locks",
+        "name": "Cascade Locks"
       },
       "geometry": {
         "type": "Polygon",

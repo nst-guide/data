@@ -6,7 +6,8 @@
       "type": "Feature",
       "properties": {
         "section": "CA_L",
-        "id": "sierra_city"
+        "id": "sierra_city",
+        "name": "Sierra City"
       },
       "geometry": {
         "type": "Polygon",

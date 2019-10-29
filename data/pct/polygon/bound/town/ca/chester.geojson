@@ -6,7 +6,8 @@
       "type": "Feature",
       "properties": {
         "section": "CA_N",
-        "id": "chester"
+        "id": "chester",
+        "name": "Chester"
       },
       "geometry": {
         "type": "Polygon",

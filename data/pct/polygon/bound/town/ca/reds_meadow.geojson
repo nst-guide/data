@@ -6,7 +6,8 @@
       "type": "Feature",
       "properties": {
         "section": "CA_H",
-        "id": "reds_meadow"
+        "id": "reds_meadow",
+        "name": "Reds Meadow"
       },
       "geometry": {
         "type": "Polygon",

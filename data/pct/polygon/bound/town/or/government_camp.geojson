@@ -6,7 +6,8 @@
       "type": "Feature",
       "properties": {
         "section": "OR_G",
-        "id": "government_camp"
+        "id": "government_camp",
+        "name": "Government Camp"
       },
       "geometry": {
         "type": "Polygon",

@@ -6,7 +6,8 @@
       "type": "Feature",
       "properties": {
         "section": "OR_F",
-        "id": "olallie_lake"
+        "id": "olallie_lake",
+        "name": "Olallie Lake"
       },
       "geometry": {
         "type": "Polygon",

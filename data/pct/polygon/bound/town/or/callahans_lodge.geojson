@@ -6,7 +6,8 @@
       "type": "Feature",
       "properties": {
         "section": "CA_R",
-        "id": "callahans_lodge"
+        "id": "callahans_lodge",
+        "name": "Callahans Lodge"
       },
       "geometry": {
         "type": "Polygon",

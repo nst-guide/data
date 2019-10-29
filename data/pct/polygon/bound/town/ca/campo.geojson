@@ -6,7 +6,8 @@
       "type": "Feature",
       "properties": {
         "section": "CA_A",
-        "id": "campo"
+        "id": "campo",
+        "name": "Campo"
       },
       "geometry": {
         "type": "Polygon",

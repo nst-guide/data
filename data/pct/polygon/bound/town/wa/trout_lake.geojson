@@ -6,7 +6,8 @@
       "type": "Feature",
       "properties": {
         "section": "WA_H",
-        "id": "trout_lake"
+        "id": "trout_lake",
+        "name": "Trout Lake"
       },
       "geometry": {
         "type": "Polygon",

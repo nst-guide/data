@@ -6,7 +6,8 @@
       "type": "Feature",
       "properties": {
         "id": "agua_dulce",
-        "section": "CA_D"
+        "section": "CA_D",
+        "name": "Agua Dulce"
       },
       "geometry": {
         "type": "Polygon",

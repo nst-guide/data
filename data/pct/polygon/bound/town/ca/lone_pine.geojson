@@ -6,7 +6,8 @@
       "type": "Feature",
       "properties": {
         "section": "CA_H",
-        "id": "lone_pine"
+        "id": "lone_pine",
+        "name": "Lone Pine"
       },
       "geometry": {
         "type": "Polygon",

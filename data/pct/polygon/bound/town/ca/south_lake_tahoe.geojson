@@ -6,7 +6,8 @@
       "type": "Feature",
       "properties": {
         "section": "CA_K",
-        "id": "south_lake_tahoe"
+        "id": "south_lake_tahoe",
+        "name": "South Lake Tahoe"
       },
       "geometry": {
         "type": "Polygon",

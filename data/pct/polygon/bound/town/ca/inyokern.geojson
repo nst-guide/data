@@ -6,7 +6,8 @@
       "type": "Feature",
       "properties": {
         "section": "CA_G",
-        "id": "inyokern"
+        "id": "inyokern",
+        "name": "Inyokern"
       },
       "geometry": {
         "type": "Polygon",

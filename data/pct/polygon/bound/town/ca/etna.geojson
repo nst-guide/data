@@ -6,7 +6,8 @@
       "type": "Feature",
       "properties": {
         "section": "CA_P",
-        "id": "etna"
+        "id": "etna",
+        "name": "Etna"
       },
       "geometry": {
         "type": "Polygon",

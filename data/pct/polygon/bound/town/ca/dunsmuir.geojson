@@ -6,7 +6,8 @@
       "type": "Feature",
       "properties": {
         "section": "CA_O",
-        "id": "dunsmuir"
+        "id": "dunsmuir",
+        "name": "Dunsmuir"
       },
       "geometry": {
         "type": "Polygon",

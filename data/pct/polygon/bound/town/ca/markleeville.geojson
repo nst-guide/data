@@ -6,7 +6,8 @@
       "type": "Feature",
       "properties": {
         "section": "CA_J",
-        "id": "markleeville"
+        "id": "markleeville",
+        "name": "Markleeville"
       },
       "geometry": {
         "type": "Polygon",

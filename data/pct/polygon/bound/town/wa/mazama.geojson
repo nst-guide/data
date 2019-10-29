@@ -6,7 +6,8 @@
       "type": "Feature",
       "properties": {
         "section": "WA_L",
-        "id": "mazama"
+        "id": "mazama",
+        "name": "Mazama"
       },
       "geometry": {
         "type": "Polygon",

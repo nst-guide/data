@@ -6,7 +6,8 @@
       "type": "Feature",
       "properties": {
         "section": "CA_P",
-        "id": "castella"
+        "id": "castella",
+        "name": "Castella"
       },
       "geometry": {
         "type": "Polygon",

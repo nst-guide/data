@@ -6,7 +6,8 @@
       "type": "Feature",
       "properties": {
         "section": "CA_H",
-        "id": "vvr"
+        "id": "vvr",
+        "name": "Vvr"
       },
       "geometry": {
         "type": "Polygon",

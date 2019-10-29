@@ -6,7 +6,8 @@
       "type": "Feature",
       "properties": {
         "section": "CA_H",
-        "id": "tuolumne_meadows"
+        "id": "tuolumne_meadows",
+        "name": "Tuolumne Meadows"
       },
       "geometry": {
         "type": "Polygon",

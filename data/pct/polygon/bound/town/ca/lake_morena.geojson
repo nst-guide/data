@@ -6,7 +6,8 @@
       "type": "Feature",
       "properties": {
         "section": "CA_A",
-        "id": "lake_morena"
+        "id": "lake_morena",
+        "name": "Lake Morena"
       },
       "geometry": {
         "type": "Polygon",

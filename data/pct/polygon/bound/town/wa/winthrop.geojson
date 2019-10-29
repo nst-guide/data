@@ -6,7 +6,8 @@
       "type": "Feature",
       "properties": {
         "section": "WA_L",
-        "id": "winthrop"
+        "id": "winthrop",
+        "name": "Winthrop"
       },
       "geometry": {
         "type": "Polygon",

@@ -6,7 +6,8 @@
       "type": "Feature",
       "properties": {
         "section": "CA_B",
-        "id": "idyllwild"
+        "id": "idyllwild",
+        "name": "Idyllwild"
       },
       "geometry": {
         "type": "Polygon",

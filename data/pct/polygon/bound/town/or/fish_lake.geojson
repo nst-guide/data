@@ -6,7 +6,8 @@
       "type": "Feature",
       "properties": {
         "section": "OR_B",
-        "id": "fish_lake"
+        "id": "fish_lake",
+        "name": "Fish Lake"
       },
       "geometry": {
         "type": "Polygon",

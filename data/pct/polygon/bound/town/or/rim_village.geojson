@@ -6,7 +6,8 @@
       "type": "Feature",
       "properties": {
         "section": "OR_C",
-        "id": "rim_village"
+        "id": "rim_village",
+        "name": "Rim Village"
       },
       "geometry": {
         "type": "Polygon",

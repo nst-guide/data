@@ -6,7 +6,8 @@
       "type": "Feature",
       "properties": {
         "section": "WA_H",
-        "id": "stevenson"
+        "id": "stevenson",
+        "name": "Stevenson"
       },
       "geometry": {
         "type": "Polygon",

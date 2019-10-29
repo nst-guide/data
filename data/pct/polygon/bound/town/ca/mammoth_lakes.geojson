@@ -6,7 +6,8 @@
       "type": "Feature",
       "properties": {
         "section": "CA_H",
-        "id": "mammoth_lakes"
+        "id": "mammoth_lakes",
+        "name": "Mammoth Lakes"
       },
       "geometry": {
         "type": "Polygon",

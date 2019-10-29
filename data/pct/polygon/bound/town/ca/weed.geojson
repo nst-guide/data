@@ -6,7 +6,8 @@
       "type": "Feature",
       "properties": {
         "section": "CA_P",
-        "id": "weed"
+        "id": "weed",
+        "name": "Weed"
       },
       "geometry": {
         "type": "Polygon",

@@ -6,7 +6,8 @@
       "type": "Feature",
       "properties": {
         "section": "WA_I",
-        "id": "snoqualmie_pass"
+        "id": "snoqualmie_pass",
+        "name": "Snoqualmie Pass"
       },
       "geometry": {
         "type": "Polygon",

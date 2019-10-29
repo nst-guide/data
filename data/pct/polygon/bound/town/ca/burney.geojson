@@ -6,7 +6,8 @@
       "type": "Feature",
       "properties": {
         "id": "burney",
-        "section": "CA_N"
+        "section": "CA_N",
+        "name": "Burney"
       },
       "geometry": {
         "type": "Polygon",

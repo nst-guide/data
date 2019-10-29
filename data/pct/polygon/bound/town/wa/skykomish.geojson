@@ -6,7 +6,8 @@
       "type": "Feature",
       "properties": {
         "section": "WA_J",
-        "id": "skykomish"
+        "id": "skykomish",
+        "name": "Skykomish"
       },
       "geometry": {
         "type": "Polygon",

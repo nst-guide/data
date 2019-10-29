@@ -6,7 +6,8 @@
       "type": "Feature",
       "properties": {
         "section": "CA_F",
-        "id": "lake_isabella"
+        "id": "lake_isabella",
+        "name": "Lake Isabella"
       },
       "geometry": {
         "type": "Polygon",

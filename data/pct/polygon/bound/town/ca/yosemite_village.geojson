@@ -6,7 +6,8 @@
       "type": "Feature",
       "properties": {
         "section": "CA_I",
-        "id": "yosemite_village"
+        "id": "yosemite_village",
+        "name": "Yosemite Village"
       },
       "geometry": {
         "type": "Polygon",

@@ -6,7 +6,8 @@
       "type": "Feature",
       "properties": {
         "id": "bucks_lake",
-        "section": "CA_M"
+        "section": "CA_M",
+        "name": "Bucks Lake"
       },
       "geometry": {
         "type": "Polygon",

@@ -6,7 +6,8 @@
       "type": "Feature",
       "properties": {
         "section": "CA_E",
-        "id": "hikertown"
+        "id": "hikertown",
+        "name": "Hikertown"
       },
       "geometry": {
         "type": "Polygon",

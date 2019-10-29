@@ -6,7 +6,8 @@
       "type": "Feature",
       "properties": {
         "section": "CA_E",
-        "id": "tehachapi"
+        "id": "tehachapi",
+        "name": "Tehachapi"
       },
       "geometry": {
         "type": "Polygon",

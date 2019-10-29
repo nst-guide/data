@@ -6,7 +6,8 @@
       "type": "Feature",
       "properties": {
         "section": "CA_N",
-        "id": "burney_falls"
+        "id": "burney_falls",
+        "name": "Burney Falls"
       },
       "geometry": {
         "type": "Polygon",

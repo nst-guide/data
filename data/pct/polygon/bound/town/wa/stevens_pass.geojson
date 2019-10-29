@@ -6,7 +6,8 @@
       "type": "Feature",
       "properties": {
         "section": "WA_J",
-        "id": "stevens_pass"
+        "id": "stevens_pass",
+        "name": "Stevens Pass"
       },
       "geometry": {
         "type": "Polygon",

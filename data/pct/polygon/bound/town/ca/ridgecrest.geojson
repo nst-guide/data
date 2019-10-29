@@ -6,7 +6,8 @@
       "type": "Feature",
       "properties": {
         "section": "CA_G",
-        "id": "ridgecrest"
+        "id": "ridgecrest",
+        "name": "Ridgecrest"
       },
       "geometry": {
         "type": "Polygon",

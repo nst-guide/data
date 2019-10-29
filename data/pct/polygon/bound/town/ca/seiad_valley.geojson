@@ -6,7 +6,8 @@
       "type": "Feature",
       "properties": {
         "section": "CA_Q",
-        "id": "seiad_valley"
+        "id": "seiad_valley",
+        "name": "Seiad Valley"
       },
       "geometry": {
         "type": "Polygon",

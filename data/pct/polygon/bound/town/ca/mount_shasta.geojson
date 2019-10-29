@@ -6,7 +6,8 @@
       "type": "Feature",
       "properties": {
         "section": "CA_P",
-        "id": "mount_shasta"
+        "id": "mount_shasta",
+        "name": "Mount Shasta"
       },
       "geometry": {
         "type": "Polygon",

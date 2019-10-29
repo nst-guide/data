@@ -6,7 +6,8 @@
       "type": "Feature",
       "properties": {
         "id": "bishop",
-        "section": "CA_H"
+        "section": "CA_H",
+        "name": "Bishop"
       },
       "geometry": {
         "type": "Polygon",

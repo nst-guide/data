@@ -6,7 +6,8 @@
       "type": "Feature",
       "properties": {
         "section": "CA_N",
-        "id": "drakesbad"
+        "id": "drakesbad",
+        "name": "Drakesbad"
       },
       "geometry": {
         "type": "Polygon",

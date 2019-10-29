@@ -6,7 +6,8 @@
       "type": "Feature",
       "properties": {
         "section": "CA_L",
-        "id": "soda_springs"
+        "id": "soda_springs",
+        "name": "Soda Springs"
       },
       "geometry": {
         "type": "Polygon",

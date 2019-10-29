@@ -6,7 +6,8 @@
       "type": "Feature",
       "properties": {
         "id": "acton",
-        "section": "CA_D"
+        "section": "CA_D",
+        "name": "Acton"
       },
       "geometry": {
         "type": "Polygon",

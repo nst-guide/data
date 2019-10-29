@@ -6,7 +6,8 @@
       "type": "Feature",
       "properties": {
         "section": "CA_K",
-        "id": "donner_pass"
+        "id": "donner_pass",
+        "name": "Donner Pass"
       },
       "geometry": {
         "type": "Polygon",

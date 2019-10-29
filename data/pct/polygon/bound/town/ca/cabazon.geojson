@@ -6,7 +6,8 @@
       "type": "Feature",
       "properties": {
         "section": "CA_C",
-        "id": "cabazon"
+        "id": "cabazon",
+        "name": "Cabazon"
       },
       "geometry": {
         "type": "Polygon",

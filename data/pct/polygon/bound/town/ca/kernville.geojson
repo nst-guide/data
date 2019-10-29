@@ -6,7 +6,8 @@
       "type": "Feature",
       "properties": {
         "section": "CA_F",
-        "id": "kernville"
+        "id": "kernville",
+        "name": "Kernville"
       },
       "geometry": {
         "type": "Polygon",

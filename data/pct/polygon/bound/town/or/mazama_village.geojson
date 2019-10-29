@@ -6,7 +6,8 @@
       "type": "Feature",
       "properties": {
         "section": "OR_C",
-        "id": "mazama_village"
+        "id": "mazama_village",
+        "name": "Mazama Village"
       },
       "geometry": {
         "type": "Polygon",

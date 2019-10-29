@@ -6,7 +6,8 @@
       "type": "Feature",
       "properties": {
         "section": "WA_J",
-        "id": "leavenworth"
+        "id": "leavenworth",
+        "name": "Leavenworth"
       },
       "geometry": {
         "type": "Polygon",

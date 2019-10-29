@@ -6,7 +6,8 @@
       "type": "Feature",
       "properties": {
         "section": "CA_R",
-        "id": "ashland"
+        "id": "ashland",
+        "name": "Ashland"
       },
       "geometry": {
         "type": "Polygon",
