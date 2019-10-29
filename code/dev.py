@@ -12,11 +12,32 @@ import shapely.geometry
 from keplergl import KeplerGl
 from shapely.geometry import mapping
 
+SHAPELY_GEOJSON_CLASSES = [
+    shapely.geometry.LineString,
+    shapely.geometry.LinearRing,
+    shapely.geometry.MultiLineString,
+    shapely.geometry.MultiPoint,
+    shapely.geometry.MultiPolygon,
+    shapely.geometry.Point,
+    shapely.geometry.Polygon,
+    geojson.Feature,
+    geojson.FeatureCollection,
+    geojson.GeoJSON,
+    geojson.GeoJSONEncoder,
+    geojson.GeometryCollection,
+    geojson.LineString,
+    geojson.MultiLineString,
+    geojson.MultiPoint,
+    geojson.MultiPolygon,
+    geojson.Point,
+    geojson.Polygon,
+]
+
 
 class Visualize:
     """Quickly visualize data in browser over Mapbox tiles with the help of the AMAZING kepler.gl.
     """
-    def __init__(self, data=None):
+    def __init__(self, data=None, names=None, read_only=False):
         """Visualize data using kepler.gl
 
         Args:
@@ -34,15 +55,8 @@ class Visualize:
         self.map = KeplerGl(config=self.config)
 
         if data is not None:
-            if isinstance(data, Iterable):
-                name_id = 0
-                for item in data:
-                    self.add_data(item, f'data_{name_id}')
-                    name_id += 1
-            else:
-                self.add_data(item, f'data_0')
-
-            self.render()
+            self.add_data(data=data, names=names)
+            self.render(read_only=read_only)
 
     @property
     def config(self):
@@ -64,43 +78,38 @@ class Visualize:
         keplergl_config['config']['config'].pop('mapState')
         return keplergl_config['config']
 
-    def add_data(self, data, name):
+    def add_data(self, data, names=None):
         """Add data to kepler map
 
         Data should be either GeoJSON or GeoDataFrame. Kepler isn't aware of the
         geojson or shapely package, so if I supply an object from one of these
         libraries, first convert it to a GeoJSON dict.
         """
-        shapely_geojson_classes = [
-            shapely.geometry.LineString,
-            shapely.geometry.LinearRing,
-            shapely.geometry.MultiLineString,
-            shapely.geometry.MultiPoint,
-            shapely.geometry.MultiPolygon,
-            shapely.geometry.Point,
-            shapely.geometry.Polygon,
-            geojson.Feature,
-            geojson.FeatureCollection,
-            geojson.GeoJSON,
-            geojson.GeoJSONEncoder,
-            geojson.GeometryCollection,
-            geojson.LineString,
-            geojson.MultiLineString,
-            geojson.MultiPoint,
-            geojson.MultiPolygon,
-            geojson.Point,
-            geojson.Polygon,
-        ]
-        if any(isinstance(data, c) for c in shapely_geojson_classes):
-            data = dict(mapping(data))
+        # Make `data` iterable
+        if not isinstance(data, Iterable):
+            data = [data]
 
-        self.map.add_data(data=data, name=name)
+        # Make `names` iterable and of the same length as `data`
+        if isinstance(names, Iterable):
+            # Already iterable, make sure they're the same length
+            msg = 'data and names are iterables different length'
+            assert len(data) == len(names), msg
+        else:
+            # `names` not iterable, make sure it's the same length as `data`
+            name_stub = 'data' if names is None else names
+            names = [f'{name_stub}_{x}' for x in range(len(data))]
 
-    def render(self, open_chrome=True):
+        for datum, name in zip(data, names):
+            if any(isinstance(datum, c) for c in SHAPELY_GEOJSON_CLASSES):
+                datum = dict(mapping(datum))
+
+            self.map.add_data(data=datum, name=name)
+
+    def render(self, open_chrome=True, read_only=False):
         """Export kepler.gl map to HTML file and open in Chrome
         """
         html_path = 'demo.html'
-        self.map.save_to_html(file_name=html_path)
+        self.map.save_to_html(file_name=html_path, read_only=read_only)
 
         # Open Chrome to saved page
         # Note, path to Chrome executable likely different on Windows/Linux
