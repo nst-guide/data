@@ -2,10 +2,11 @@
   "type": "FeatureCollection",
   "features": [
     {
-      "id": "0",
+      "id": "diamond_lake",
       "type": "Feature",
       "properties": {
-        "section": "OR_D"
+        "section": "OR_D",
+        "id": "diamond_lake"
       },
       "geometry": {
         "type": "Polygon",

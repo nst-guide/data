@@ -2,10 +2,11 @@
   "type": "FeatureCollection",
   "features": [
     {
-      "id": "0",
+      "id": "idyllwild",
       "type": "Feature",
       "properties": {
-        "section": "CA_B"
+        "section": "CA_B",
+        "id": "idyllwild"
       },
       "geometry": {
         "type": "Polygon",

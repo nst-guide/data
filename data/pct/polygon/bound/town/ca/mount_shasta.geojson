@@ -2,10 +2,11 @@
   "type": "FeatureCollection",
   "features": [
     {
-      "id": "0",
+      "id": "mount_shasta",
       "type": "Feature",
       "properties": {
-        "section": "CA_P"
+        "section": "CA_P",
+        "id": "mount_shasta"
       },
       "geometry": {
         "type": "Polygon",

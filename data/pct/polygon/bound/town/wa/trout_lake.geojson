@@ -2,10 +2,11 @@
   "type": "FeatureCollection",
   "features": [
     {
-      "id": "0",
+      "id": "trout_lake",
       "type": "Feature",
       "properties": {
-        "section": "WA_H"
+        "section": "WA_H",
+        "id": "trout_lake"
       },
       "geometry": {
         "type": "Polygon",

@@ -2,10 +2,11 @@
   "type": "FeatureCollection",
   "features": [
     {
-      "id": "0",
+      "id": "lake_isabella",
       "type": "Feature",
       "properties": {
-        "section": "CA_F"
+        "section": "CA_F",
+        "id": "lake_isabella"
       },
       "geometry": {
         "type": "Polygon",

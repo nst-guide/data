@@ -2,10 +2,11 @@
   "type": "FeatureCollection",
   "features": [
     {
-      "id": "0",
+      "id": "stevenson",
       "type": "Feature",
       "properties": {
-        "section": "WA_H"
+        "section": "WA_H",
+        "id": "stevenson"
       },
       "geometry": {
         "type": "Polygon",

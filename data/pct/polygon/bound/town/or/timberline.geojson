@@ -2,10 +2,11 @@
   "type": "FeatureCollection",
   "features": [
     {
-      "id": "0",
+      "id": "timberline",
       "type": "Feature",
       "properties": {
-        "section": "OR_G"
+        "section": "OR_G",
+        "id": "timberline"
       },
       "geometry": {
         "type": "Polygon",

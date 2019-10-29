@@ -2,10 +2,11 @@
   "type": "FeatureCollection",
   "features": [
     {
-      "id": "0",
+      "id": "independence",
       "type": "Feature",
       "properties": {
-        "section": "CA_H"
+        "section": "CA_H",
+        "id": "independence"
       },
       "geometry": {
         "type": "Polygon",

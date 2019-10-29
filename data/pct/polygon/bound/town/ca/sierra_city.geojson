@@ -2,10 +2,11 @@
   "type": "FeatureCollection",
   "features": [
     {
-      "id": "0",
+      "id": "sierra_city",
       "type": "Feature",
       "properties": {
-        "section": "CA_L"
+        "section": "CA_L",
+        "id": "sierra_city"
       },
       "geometry": {
         "type": "Polygon",

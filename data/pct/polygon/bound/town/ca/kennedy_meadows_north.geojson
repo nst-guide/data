@@ -2,10 +2,11 @@
   "type": "FeatureCollection",
   "features": [
     {
-      "id": "0",
+      "id": "kennedy_meadows_north",
       "type": "Feature",
       "properties": {
-        "section": "CA_I"
+        "section": "CA_I",
+        "id": "kennedy_meadows_north"
       },
       "geometry": {
         "type": "Polygon",

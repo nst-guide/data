@@ -2,10 +2,11 @@
   "type": "FeatureCollection",
   "features": [
     {
-      "id": "0",
+      "id": "stehekin",
       "type": "Feature",
       "properties": {
-        "section": "WA_K"
+        "section": "WA_K",
+        "id": "stehekin"
       },
       "geometry": {
         "type": "Polygon",

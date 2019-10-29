@@ -2,10 +2,10 @@
   "type": "FeatureCollection",
   "features": [
     {
-      "id": "0",
+      "id": "burney",
       "type": "Feature",
       "properties": {
-        "id": "0",
+        "id": "burney",
         "section": "CA_N"
       },
       "geometry": {

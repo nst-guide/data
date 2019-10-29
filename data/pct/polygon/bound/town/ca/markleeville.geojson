@@ -2,10 +2,11 @@
   "type": "FeatureCollection",
   "features": [
     {
-      "id": "0",
+      "id": "markleeville",
       "type": "Feature",
       "properties": {
-        "section": "CA_J"
+        "section": "CA_J",
+        "id": "markleeville"
       },
       "geometry": {
         "type": "Polygon",

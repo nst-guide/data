@@ -2,10 +2,11 @@
   "type": "FeatureCollection",
   "features": [
     {
-      "id": "0",
+      "id": "campo",
       "type": "Feature",
       "properties": {
-        "section": "CA_A"
+        "section": "CA_A",
+        "id": "campo"
       },
       "geometry": {
         "type": "Polygon",

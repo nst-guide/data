@@ -2,10 +2,11 @@
   "type": "FeatureCollection",
   "features": [
     {
-      "id": "0",
+      "id": "burney_falls",
       "type": "Feature",
       "properties": {
-        "section": "CA_N"
+        "section": "CA_N",
+        "id": "burney_falls"
       },
       "geometry": {
         "type": "Polygon",

@@ -2,10 +2,11 @@
   "type": "FeatureCollection",
   "features": [
     {
-      "id": "0",
+      "id": "soda_springs",
       "type": "Feature",
       "properties": {
-        "section": "CA_L"
+        "section": "CA_L",
+        "id": "soda_springs"
       },
       "geometry": {
         "type": "Polygon",

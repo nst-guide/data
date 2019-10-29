@@ -2,10 +2,11 @@
   "type": "FeatureCollection",
   "features": [
     {
-      "id": "0",
+      "id": "castella",
       "type": "Feature",
       "properties": {
-        "section": "CA_P"
+        "section": "CA_P",
+        "id": "castella"
       },
       "geometry": {
         "type": "Polygon",

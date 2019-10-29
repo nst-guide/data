@@ -2,10 +2,11 @@
   "type": "FeatureCollection",
   "features": [
     {
-      "id": "0",
+      "id": "dunsmuir",
       "type": "Feature",
       "properties": {
-        "section": "CA_O"
+        "section": "CA_O",
+        "id": "dunsmuir"
       },
       "geometry": {
         "type": "Polygon",

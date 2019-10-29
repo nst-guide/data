@@ -2,10 +2,11 @@
   "type": "FeatureCollection",
   "features": [
     {
-      "id": "0",
+      "id": "tehachapi",
       "type": "Feature",
       "properties": {
-        "section": "CA_E"
+        "section": "CA_E",
+        "id": "tehachapi"
       },
       "geometry": {
         "type": "Polygon",

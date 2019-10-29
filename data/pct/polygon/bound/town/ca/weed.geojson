@@ -2,10 +2,11 @@
   "type": "FeatureCollection",
   "features": [
     {
-      "id": "0",
+      "id": "weed",
       "type": "Feature",
       "properties": {
-        "section": "CA_P"
+        "section": "CA_P",
+        "id": "weed"
       },
       "geometry": {
         "type": "Polygon",

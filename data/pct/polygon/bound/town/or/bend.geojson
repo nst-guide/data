@@ -2,10 +2,11 @@
   "type": "FeatureCollection",
   "features": [
     {
-      "id": "0",
+      "id": "bend",
       "type": "Feature",
       "properties": {
-        "section": "OR_E"
+        "section": "OR_E",
+        "id": "bend"
       },
       "geometry": {
         "type": "Polygon",

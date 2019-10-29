@@ -2,10 +2,11 @@
   "type": "FeatureCollection",
   "features": [
     {
-      "id": "0",
+      "id": "mazama_village",
       "type": "Feature",
       "properties": {
-        "section": "OR_C"
+        "section": "OR_C",
+        "id": "mazama_village"
       },
       "geometry": {
         "type": "Polygon",

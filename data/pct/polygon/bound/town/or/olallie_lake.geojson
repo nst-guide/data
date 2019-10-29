@@ -2,10 +2,11 @@
   "type": "FeatureCollection",
   "features": [
     {
-      "id": "0",
+      "id": "olallie_lake",
       "type": "Feature",
       "properties": {
-        "section": "OR_F"
+        "section": "OR_F",
+        "id": "olallie_lake"
       },
       "geometry": {
         "type": "Polygon",

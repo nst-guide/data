@@ -2,10 +2,11 @@
   "type": "FeatureCollection",
   "features": [
     {
-      "id": "0",
+      "id": "seiad_valley",
       "type": "Feature",
       "properties": {
-        "section": "CA_Q"
+        "section": "CA_Q",
+        "id": "seiad_valley"
       },
       "geometry": {
         "type": "Polygon",

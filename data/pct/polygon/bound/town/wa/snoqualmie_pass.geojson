@@ -2,10 +2,11 @@
   "type": "FeatureCollection",
   "features": [
     {
-      "id": "0",
+      "id": "snoqualmie_pass",
       "type": "Feature",
       "properties": {
-        "section": "WA_I"
+        "section": "WA_I",
+        "id": "snoqualmie_pass"
       },
       "geometry": {
         "type": "Polygon",

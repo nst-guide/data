@@ -2,10 +2,11 @@
   "type": "FeatureCollection",
   "features": [
     {
-      "id": "0",
+      "id": "mammoth_lakes",
       "type": "Feature",
       "properties": {
-        "section": "CA_H"
+        "section": "CA_H",
+        "id": "mammoth_lakes"
       },
       "geometry": {
         "type": "Polygon",

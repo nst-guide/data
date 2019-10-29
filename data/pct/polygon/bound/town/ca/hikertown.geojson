@@ -2,10 +2,11 @@
   "type": "FeatureCollection",
   "features": [
     {
-      "id": "0",
+      "id": "hikertown",
       "type": "Feature",
       "properties": {
-        "section": "CA_E"
+        "section": "CA_E",
+        "id": "hikertown"
       },
       "geometry": {
         "type": "Polygon",

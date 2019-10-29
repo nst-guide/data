@@ -2,10 +2,11 @@
   "type": "FeatureCollection",
   "features": [
     {
-      "id": "0",
+      "id": "cabazon",
       "type": "Feature",
       "properties": {
-        "section": "CA_C"
+        "section": "CA_C",
+        "id": "cabazon"
       },
       "geometry": {
         "type": "Polygon",

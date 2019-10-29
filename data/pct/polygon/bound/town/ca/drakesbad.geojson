@@ -2,10 +2,11 @@
   "type": "FeatureCollection",
   "features": [
     {
-      "id": "0",
+      "id": "drakesbad",
       "type": "Feature",
       "properties": {
-        "section": "CA_N"
+        "section": "CA_N",
+        "id": "drakesbad"
       },
       "geometry": {
         "type": "Polygon",

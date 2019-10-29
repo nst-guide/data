@@ -2,10 +2,11 @@
   "type": "FeatureCollection",
   "features": [
     {
-      "id": "0",
+      "id": "lake_morena",
       "type": "Feature",
       "properties": {
-        "section": "CA_A"
+        "section": "CA_A",
+        "id": "lake_morena"
       },
       "geometry": {
         "type": "Polygon",

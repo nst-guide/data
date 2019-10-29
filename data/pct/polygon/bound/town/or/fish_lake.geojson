@@ -2,10 +2,11 @@
   "type": "FeatureCollection",
   "features": [
     {
-      "id": "0",
+      "id": "fish_lake",
       "type": "Feature",
       "properties": {
-        "section": "OR_B"
+        "section": "OR_B",
+        "id": "fish_lake"
       },
       "geometry": {
         "type": "Polygon",

@@ -2,10 +2,11 @@
   "type": "FeatureCollection",
   "features": [
     {
-      "id": "0",
+      "id": "south_lake_tahoe",
       "type": "Feature",
       "properties": {
-        "section": "CA_K"
+        "section": "CA_K",
+        "id": "south_lake_tahoe"
       },
       "geometry": {
         "type": "Polygon",

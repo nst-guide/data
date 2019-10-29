@@ -2,10 +2,11 @@
   "type": "FeatureCollection",
   "features": [
     {
-      "id": "0",
+      "id": "mazama",
       "type": "Feature",
       "properties": {
-        "section": "WA_L"
+        "section": "WA_L",
+        "id": "mazama"
       },
       "geometry": {
         "type": "Polygon",

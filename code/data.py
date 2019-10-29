@@ -92,8 +92,22 @@ class Towns(DataSource):
             # If a town is touching two trail sections (like Belden), then just
             # pick one of them
             bound['section'] = min_dist['section'].iloc[0]
+            # NOTE! This will overwrite town id's not sure how to stop that
             with open(boundary_file, 'w') as f:
                 f.write(bound.to_json(show_bbox=True, indent=2))
+
+    def _fix_town_ids(self):
+        files = sorted(self.save_dir.glob('*/*.geojson'))
+        for f in files:
+            name = Path(f).stem
+            with open(f) as x:
+                d = json.load(x)
+
+            d['features'][0]['id'] = name
+            d['features'][0]['properties']['id'] = name
+
+            with open(f, 'w') as x:
+                json.dump(d, x, indent=2)
 
 
 class OpenStreetMap(DataSource):

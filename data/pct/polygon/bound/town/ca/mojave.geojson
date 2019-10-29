@@ -2,10 +2,11 @@
   "type": "FeatureCollection",
   "features": [
     {
-      "id": "0",
+      "id": "mojave",
       "type": "Feature",
       "properties": {
-        "section": "CA_F"
+        "section": "CA_F",
+        "id": "mojave"
       },
       "geometry": {
         "type": "Polygon",

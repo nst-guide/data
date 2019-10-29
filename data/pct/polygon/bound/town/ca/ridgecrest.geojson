@@ -2,10 +2,11 @@
   "type": "FeatureCollection",
   "features": [
     {
-      "id": "0",
+      "id": "ridgecrest",
       "type": "Feature",
       "properties": {
-        "section": "CA_G"
+        "section": "CA_G",
+        "id": "ridgecrest"
       },
       "geometry": {
         "type": "Polygon",

@@ -2,10 +2,11 @@
   "type": "FeatureCollection",
   "features": [
     {
-      "id": "0",
+      "id": "yosemite_village",
       "type": "Feature",
       "properties": {
-        "section": "CA_I"
+        "section": "CA_I",
+        "id": "yosemite_village"
       },
       "geometry": {
         "type": "Polygon",

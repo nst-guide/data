@@ -2,10 +2,11 @@
   "type": "FeatureCollection",
   "features": [
     {
-      "id": "0",
+      "id": "white_pass",
       "type": "Feature",
       "properties": {
-        "section": "WA_H"
+        "section": "WA_H",
+        "id": "white_pass"
       },
       "geometry": {
         "type": "Polygon",

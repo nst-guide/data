@@ -2,10 +2,10 @@
   "type": "FeatureCollection",
   "features": [
     {
-      "id": "0",
+      "id": "bucks_lake",
       "type": "Feature",
       "properties": {
-        "id": "0",
+        "id": "bucks_lake",
         "section": "CA_M"
       },
       "geometry": {

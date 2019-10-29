@@ -2,10 +2,11 @@
   "type": "FeatureCollection",
   "features": [
     {
-      "id": "0",
+      "id": "callahans_lodge",
       "type": "Feature",
       "properties": {
-        "section": "CA_R"
+        "section": "CA_R",
+        "id": "callahans_lodge"
       },
       "geometry": {
         "type": "Polygon",

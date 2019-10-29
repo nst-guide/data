@@ -2,10 +2,11 @@
   "type": "FeatureCollection",
   "features": [
     {
-      "id": "0",
+      "id": "leavenworth",
       "type": "Feature",
       "properties": {
-        "section": "WA_J"
+        "section": "WA_J",
+        "id": "leavenworth"
       },
       "geometry": {
         "type": "Polygon",

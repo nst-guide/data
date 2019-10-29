@@ -2,10 +2,11 @@
   "type": "FeatureCollection",
   "features": [
     {
-      "id": "0",
+      "id": "chester",
       "type": "Feature",
       "properties": {
-        "section": "CA_N"
+        "section": "CA_N",
+        "id": "chester"
       },
       "geometry": {
         "type": "Polygon",

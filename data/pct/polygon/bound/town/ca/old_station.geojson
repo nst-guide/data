@@ -2,10 +2,11 @@
   "type": "FeatureCollection",
   "features": [
     {
-      "id": "0",
+      "id": "old_station",
       "type": "Feature",
       "properties": {
-        "section": "CA_N"
+        "section": "CA_N",
+        "id": "old_station"
       },
       "geometry": {
         "type": "Polygon",

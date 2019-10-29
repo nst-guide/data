@@ -2,10 +2,11 @@
   "type": "FeatureCollection",
   "features": [
     {
-      "id": "0",
+      "id": "lone_pine",
       "type": "Feature",
       "properties": {
-        "section": "CA_H"
+        "section": "CA_H",
+        "id": "lone_pine"
       },
       "geometry": {
         "type": "Polygon",

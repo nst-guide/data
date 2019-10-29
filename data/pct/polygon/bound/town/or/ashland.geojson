@@ -2,10 +2,11 @@
   "type": "FeatureCollection",
   "features": [
     {
-      "id": "0",
+      "id": "ashland",
       "type": "Feature",
       "properties": {
-        "section": "CA_R"
+        "section": "CA_R",
+        "id": "ashland"
       },
       "geometry": {
         "type": "Polygon",

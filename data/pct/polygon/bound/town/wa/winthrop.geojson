@@ -2,10 +2,11 @@
   "type": "FeatureCollection",
   "features": [
     {
-      "id": "0",
+      "id": "winthrop",
       "type": "Feature",
       "properties": {
-        "section": "WA_L"
+        "section": "WA_L",
+        "id": "winthrop"
       },
       "geometry": {
         "type": "Polygon",

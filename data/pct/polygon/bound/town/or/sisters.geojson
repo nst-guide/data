@@ -2,10 +2,11 @@
   "type": "FeatureCollection",
   "features": [
     {
-      "id": "0",
+      "id": "sisters",
       "type": "Feature",
       "properties": {
-        "section": "OR_E"
+        "section": "OR_E",
+        "id": "sisters"
       },
       "geometry": {
         "type": "Polygon",

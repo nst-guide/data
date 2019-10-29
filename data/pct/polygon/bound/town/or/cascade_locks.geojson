@@ -2,10 +2,11 @@
   "type": "FeatureCollection",
   "features": [
     {
-      "id": "0",
+      "id": "cascade_locks",
       "type": "Feature",
       "properties": {
-        "section": "OR_G"
+        "section": "OR_G",
+        "id": "cascade_locks"
       },
       "geometry": {
         "type": "Polygon",

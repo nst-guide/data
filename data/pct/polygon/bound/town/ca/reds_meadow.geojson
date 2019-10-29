@@ -2,10 +2,11 @@
   "type": "FeatureCollection",
   "features": [
     {
-      "id": "0",
+      "id": "reds_meadow",
       "type": "Feature",
       "properties": {
-        "section": "CA_H"
+        "section": "CA_H",
+        "id": "reds_meadow"
       },
       "geometry": {
         "type": "Polygon",
