@@ -211,117 +211,92 @@ class Halfmile(DataSource):
     """docstring for Halfmile"""
     def __init__(self):
         super(Halfmile, self).__init__()
-        self.save_dir = self.data_dir / 'pct' / 'line' / 'halfmile'
-        self.save_dir.mkdir(parents=True, exist_ok=True)
+        self.line_dir = self.data_dir / 'pct' / 'line' / 'halfmile'
+        self.line_dir.mkdir(parents=True, exist_ok=True)
+        self.point_dir = self.data_dir / 'pct' / 'point' / 'halfmile'
+        self.point_dir.mkdir(parents=True, exist_ok=True)
+        self.raw_dir = self.data_dir / 'raw' / 'halfmile'
+        self.raw_dir.mkdir(parents=True, exist_ok=True)
 
     def downloaded(self) -> bool:
         """Check if files are downloaded"""
         files = ['full.geojson', 'alternates.geojson', 'sections.geojson']
         return all((self.save_dir / f).exists() for f in files)
 
-    def download(self):
-        urls = [
-            'https://www.pctmap.net/wp-content/uploads/pct/ca_state_gps.zip',
-            'https://www.pctmap.net/wp-content/uploads/pct/or_state_gps.zip',
-            'https://www.pctmap.net/wp-content/uploads/pct/wa_state_gps.zip'
-        ]
+    def download(self, overwrite=False):
+        """Download Halfmile tracks and waypoints
+        """
+        states = ['ca', 'or', 'wa']
         headers = {
             'User-Agent':
             'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/77.0.3865.90 Safari/537.36',
         }
 
-        # Collection of shapely LineStrings
-        routes = {
-            'full': [],
-            'sections': [],
-            'alt': [],
-        }
-        point_features = []
+        # First just download the zip files to the raw directory
+        for state in states:
+            url = 'https://www.pctmap.net/wp-content/uploads/pct/'
+            url += f'{state}_state_gps.zip'
+
+            local_path = self.raw_dir / Path(url).name
+            if overwrite or (not local_path.exists()):
+                # Use requests instead of urlretrieve because of the need to
+                # pass a user-agent
+                r = requests.get(url, headers=headers)
+                with open(local_path, 'wb') as f:
+                    f.write(r.content)
+
+        # Use these cached zip files to extract tracks and waypoints
+        for state in states:
+            with ZipFile(self.raw_dir / f'{state}_state_gps.zip') as z:
+                names = [x for x in z.namelist() if '__MACOSX' not in x]
+                trk_names = sorted([x for x in names if 'tracks' in x])
+                for trk_name in trk_names:
+                    fc = self._parse_track_gpx(z.read(trk_name))
+                    path = Path(trk_name).stem + '.geojson'
+                    with open(self.line_dir / path, 'w') as f:
+                        geojson.dump(fc, f)
+
+                wpt_names = sorted([x for x in names if 'waypoints' in x])
+                for wpt_name in wpt_names:
+                    fc = self._parse_waypoints_gpx(z.read(wpt_name))
+                    path = Path(wpt_name).stem + '.geojson'
+                    with open(self.point_dir / path, 'w') as f:
+                        geojson.dump(fc, f)
+
+    def _parse_track_gpx(self, b):
+        gpx = gpxpy.parse(b.decode('utf-8'))
 
         name_re = re.compile(r'^((?:CA|OR|WA) Sec [A-Z])(?: - (.+))?$')
 
-        for url in urls:
-            r = requests.get(url, headers=headers)
-            z = ZipFile(BytesIO(r.content))
-            names = z.namelist()
-            names = [x for x in names if '__MACOSX' not in x]
-            tracks_names = [x for x in names if 'tracks' in x]
-            waypoints_names = [x for x in names if 'waypoints' in x]
-            tracks_names = sorted(tracks_names)
+        features = []
+        for track in gpx.tracks:
+            assert len(track.segments) == 1, 'More than 1 segment in GPX track'
 
-            for name in tracks_names:
-                gpx = gpxpy.parse(z.read(name).decode('utf-8'))
+            l = LineString([(x.longitude, x.latitude, x.elevation)
+                            for x in track.segments[0].points])
 
-                for track in gpx.tracks:
-                    assert len(track.segments) == 1
-                    line = [(x.longitude, x.latitude, x.elevation)
-                            for x in track.segments[0].points]
-                    linestring = LineString(line)
+            section_name, alt_name = name_re.match(track.name).groups()
+            name = alt_name if alt_name else section_name
+            alternate = bool(alt_name)
+            properties = {'name': name, 'alternate': alternate}
+            features.append(geojson.Feature(geometry=l, properties=properties))
 
-                    section_name, alt_name = name_re.match(track.name).groups()
+        return geojson.FeatureCollection(features)
 
-                    d = {'line': linestring}
-                    if not alt_name:
-                        d['name'] = section_name
+    def _parse_waypoints_gpx(self, b):
+        gpx = gpxpy.parse(b.decode('utf-8'))
+        features = []
+        for wpt in gpx.waypoints:
+            pt = Point(wpt.longitude, wpt.latitude, wpt.elevation)
+            properties = {
+                'name': wpt.name,
+                'description': wpt.description,
+                'symbol': wpt.symbol,
+            }
+            features.append(geojson.Feature(geometry=pt,
+                                            properties=properties))
 
-                        routes['sections'].append(d)
-
-                    else:
-                        d['name'] = alt_name
-
-                        routes['alt'].append(d)
-
-            for name in waypoints_names:
-                gpx = gpxpy.parse(z.read(name).decode('utf-8'))
-                for wpt in gpx.waypoints:
-                    pt = Point(wpt.longitude, wpt.latitude, wpt.elevation)
-                    attrs = {
-                        'name': wpt.name,
-                        'description': wpt.description,
-                        'symbol': wpt.symbol,
-                    }
-                    point_features.append(
-                        geojson.Feature(geometry=pt, properties=attrs))
-
-        point_fc = geojson.FeatureCollection(point_features)
-        save_dir = self.data_dir / 'pct' / 'point' / 'halfmile'
-        save_dir.mkdir(parents=True, exist_ok=True)
-        with open(save_dir / 'waypoints.geojson', 'w') as f:
-            geojson.dump(point_fc, f)
-
-        # Save sections as individual geojson
-        features = [
-            geojson.Feature(geometry=mapping(d['line']),
-                            properties={'name': d['name']})
-            for d in routes['sections']
-        ]
-        fc = geojson.FeatureCollection(features)
-        with open(self.save_dir / 'sections.geojson', 'w') as f:
-            geojson.dump(fc, f)
-
-        # Create bounding boxes for each section
-        self.create_bbox_for_sections()
-
-        # Create full route from sections
-        sects = [x['line'] for x in routes['sections']]
-        full = linemerge(sects)
-        routes['full'] = full
-
-        # Serialize to GeoJSON
-        feature = geojson.Feature(geometry=mapping(full))
-        with open(self.save_dir / 'full.geojson', 'w') as f:
-            geojson.dump(feature, f)
-
-        # Create features from alternates
-        features = [
-            geojson.Feature(geometry=mapping(d['line']),
-                            properties={'name': d['name']})
-            for d in routes['alt']
-        ]
-        fc = geojson.FeatureCollection(features)
-
-        with open(self.save_dir / 'alternates.geojson', 'w') as f:
-            geojson.dump(fc, f)
+        return geojson.FeatureCollection(features)
 
     def create_bbox_for_sections(self):
         with open(self.save_dir / 'sections.geojson') as f:
@@ -343,15 +318,46 @@ class Halfmile(DataSource):
         with open(save_dir / 'bbox.geojson', 'w') as f:
             geojson.dump(fc, f)
 
-    def trail(self) -> gpd.GeoDataFrame:
+    @property
+    def trk_geojsons(self):
+        return sorted(self.line_dir.glob('*.geojson'))
+
+    def trail_iter(self, alternates=True):
+        """Iterate over sorted trail sections
+        """
+        for f in self.trk_geojsons:
+            gdf = gpd.read_file(f)
+            if not alternates:
+                gdf = gdf[~gdf['alternate']]
+            yield gdf.to_crs(epsg=4326)
+
+    def trail_full(self, alternates=True) -> gpd.GeoDataFrame:
         """Get Halfmile trail as GeoDataFrame
         """
-        if self.downloaded():
-            path = self.save_dir / 'full.geojson'
-            trail = gpd.read_file(path)
-            return trail
+        gdfs = []
+        for trk in self.trk_geojsons:
+            gdfs.append(gpd.read_file(trk))
 
-        raise ValueError('trails not yet downloaded')
+        gdf = pd.concat(gdfs)
+        if not alternates:
+            gdf = gdf[~gdf['alternate']]
+
+        return gdf.to_crs(epsg=4326)
+
+    @property
+    def wpt_geojsons(self):
+        return sorted(self.point_dir.glob('*.geojson'))
+
+    def wpt_iter(self):
+        for f in self.wpt_geojsons:
+            yield gpd.read_file(f).to_crs(epsg=4326)
+
+    def wpt_full(self):
+        gdfs = []
+        for geojson_file in self.wpt_geojsons:
+            gdfs.append(gpd.read_file(geojson_file))
+
+        return pd.concat(gdfs).to_crs(epsg=4326)
 
 
 class USFS(DataSource):
@@ -523,7 +529,7 @@ class PolygonSource(DataSource):
         gdf = gdf.to_crs(epsg=4326)
 
         # Load Halfmile track for intersections
-        trail = Halfmile().trail()
+        trail = Halfmile().trail_full(alternates=True)
         trail = trail.to_crs(epsg=4326)
 
         # Intersect with the trail
@@ -862,7 +868,7 @@ class USGSHydrography(DataSource):
         self.raw_dir = self.data_dir / 'raw' / 'hydrology'
         self.raw_dir.mkdir(parents=True, exist_ok=True)
         self.hu2_list = [16, 17, 18]
-        self.trail = Halfmile().trail().to_crs(epsg=4326)
+        self.trail = Halfmile().trail(alternates=True)
 
     def download(self, overwrite=False):
         self._download_boundaries(overwrite=overwrite)
