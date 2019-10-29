@@ -322,11 +322,21 @@ class Halfmile(DataSource):
     def trk_geojsons(self):
         return sorted(self.line_dir.glob('*.geojson'))
 
+    def _add_section_to_gdf(self, gdf, geojson_fname):
+        # parse filename to get section
+        sect_regex = re.compile(r'^(CA|OR|WA)_Sec_([A-Z])')
+        state, letter = sect_regex.match(geojson_fname.stem).groups()
+        section_id = f'{state}_{letter}'
+        gdf['section'] = section_id
+        return gdf
+
     def trail_iter(self, alternates=True):
         """Iterate over sorted trail sections
         """
         for f in self.trk_geojsons:
             gdf = gpd.read_file(f)
+            gdf = self._add_section_to_gdf(gdf, f)
+
             if not alternates:
                 gdf = gdf[~gdf['alternate']]
             yield gdf.to_crs(epsg=4326)
@@ -335,8 +345,10 @@ class Halfmile(DataSource):
         """Get Halfmile trail as GeoDataFrame
         """
         gdfs = []
-        for trk in self.trk_geojsons:
-            gdfs.append(gpd.read_file(trk))
+        for f in self.trk_geojsons:
+            gdf = gpd.read_file(f)
+            gdf = self._add_section_to_gdf(gdf, f)
+            gdfs.append(gdf)
 
         gdf = pd.concat(gdfs)
         if not alternates:
@@ -350,12 +362,16 @@ class Halfmile(DataSource):
 
     def wpt_iter(self):
         for f in self.wpt_geojsons:
-            yield gpd.read_file(f).to_crs(epsg=4326)
+            gdf = gpd.read_file(f)
+            gdf = self._add_section_to_gdf(gdf, f)
+            yield gdf.to_crs(epsg=4326)
 
     def wpt_full(self):
         gdfs = []
-        for geojson_file in self.wpt_geojsons:
-            gdfs.append(gpd.read_file(geojson_file))
+        for f in self.wpt_geojsons:
+            gdf = gpd.read_file(f)
+            gdf = self._add_section_to_gdf(gdf, f)
+            gdfs.append(gdf)
 
         return pd.concat(gdfs).to_crs(epsg=4326)
 
