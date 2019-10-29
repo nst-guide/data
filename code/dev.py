@@ -3,7 +3,6 @@
 import json
 import os
 import webbrowser
-from collections.abc import Iterable
 from pathlib import Path
 
 import dotenv
@@ -86,11 +85,11 @@ class Visualize:
         libraries, first convert it to a GeoJSON dict.
         """
         # Make `data` iterable
-        if not isinstance(data, Iterable):
+        if not isinstance(data, list):
             data = [data]
 
         # Make `names` iterable and of the same length as `data`
-        if isinstance(names, Iterable):
+        if isinstance(names, list):
             # Already iterable, make sure they're the same length
             msg = 'data and names are iterables different length'
             assert len(data) == len(names), msg
