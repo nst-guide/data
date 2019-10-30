@@ -1,6 +1,7 @@
 # General downloads
 
 import json
+import math
 import os
 import re
 from datetime import datetime
@@ -11,6 +12,7 @@ from tempfile import NamedTemporaryFile
 from urllib.request import urlretrieve
 from zipfile import ZipFile
 
+import rasterio
 import fiona
 import geojson
 import geopandas as gpd
@@ -932,10 +934,12 @@ class Transit(DataSource):
 
 
 class NationalElevationDataset(DataSource):
-    def __init__(self):
+    def __init__(self, trail=None):
         super(NationalElevationDataset, self).__init__()
 
-        self.trail = USFS().trail().geometry.iloc[0]
+        if trail is None:
+            self.trail = USFS().trail().geometry.iloc[0]
+
         self.raw_dir = self.data_dir / 'raw' / 'elevation'
         self.raw_dir.mkdir(parents=True, exist_ok=True)
 
@@ -965,6 +969,45 @@ class NationalElevationDataset(DataSource):
             urls.append(url)
 
         return urls
+
+    def files(self, ext):
+        return sorted(self.raw_dir.glob(f'*IMG{ext}'))
+
+    def extract(self):
+        """Unzip elevation ZIP files
+
+        Only extract .img file from ZIP file to keep directory clean
+        """
+        zip_fnames = self.files('.zip')
+        for zip_fname in zip_fnames:
+            img_name = zip_fname.stem + '.img'
+            cmd = ['unzip', '-o', zip_fname, img_name]
+            run(cmd, check=True)
+
+    def query(self, lon: float, lat: float) -> float:
+        """Query elevation data for given point
+
+        Args:
+            lon: longitude
+            lat: latitude
+
+        Returns elevation for point (in meters)
+        """
+        # Find file given lon, lat
+        s = f'n{int(abs(math.ceil(lat)))}w{int(abs(math.floor(lon)))}'
+        fname = [x for x in self.files('.img') if s in str(x)]
+        assert len(fname) == 1, 'More than one elevation file matched query'
+        fname = fname[0]
+
+        # Read metadata of file
+        dataset = rasterio.open(fname)
+
+        # Find x, y of elevation square inside raster
+        x, y = dataset.index(lon, lat)
+        arr = dataset.read(1, window=([x, x + 1], [y, y + 1]))
+        assert arr.shape == (1, 1), 'array has more than one value'
+        value = arr[0, 0]
+        return value
 
 
 class USGSHydrography(DataSource):
