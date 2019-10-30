@@ -4,13 +4,42 @@ import pandas as pd
 from geopandas.tools import sjoin
 
 import data
-from data import Halfmile, Towns
+from data import Halfmile, NationalElevationDataset, Towns
 from geom import buffer
 
 
 class Trail:
-    def __init__(self):
-        pass
+    def __init__(self, route: gpd.GeoDataFrame):
+        super(Trail, self).__init__()
+        self.route = route
+
+    def add_elevations_to_route(self):
+        new_geoms = []
+        for row in self.route.itertuples():
+            # Get coordinates for line
+            g = self._get_elevations_for_linestring(row.geometry)
+            new_geoms.append(g)
+
+    def _get_elevations_for_linestring(self, line):
+        dem = NationalElevationDataset()
+
+        # NOTE: temporary; remove when all elevation data files are
+        # downloaded and unzipped
+        coords = [
+            coord for coord in line.coords
+            if -117 <= coord[0] <= -116 and 32 <= coord[1] <= 33
+        ]
+
+        elevs = []
+        for coord in coords:
+            elevs.append(
+                dem.query(lon=coord[0],
+                          lat=coord[1],
+                          num_buffer=2,
+                          interp_kind='cubic'))
+
+        all_coords_z = [(x[0][0], x[0][1], x[1]) for x in zip(coords, elevs)]
+        return LineString(all_coords_z)
 
 
 class PacificCrestTrail(Trail):
