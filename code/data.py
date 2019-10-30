@@ -12,13 +12,13 @@ from tempfile import NamedTemporaryFile
 from urllib.request import urlretrieve
 from zipfile import ZipFile
 
-import rasterio
 import fiona
 import geojson
 import geopandas as gpd
 import gpxpy
 import gpxpy.gpx
 import pandas as pd
+import rasterio
 import requests
 from bs4 import BeautifulSoup
 from dotenv import load_dotenv
@@ -26,6 +26,7 @@ from fiona.io import ZipMemoryFile
 from geopandas.tools import sjoin
 from haversine import haversine
 from lxml import etree as ET
+from scipy.interpolate import interp2d
 from shapely.geometry import (LineString, MultiLineString, Point, box, mapping,
                               shape)
 from shapely.ops import linemerge
@@ -934,6 +935,43 @@ class Transit(DataSource):
 
 
 class NationalElevationDataset(DataSource):
+    """
+    I compared these interpolated elevations with those contained in the
+    Halfmile data for Sec A and the mean difference in elevation per point. 90%
+    less than 5 meter difference.
+
+    count    1987.000000
+    mean        1.964173
+    std         2.188573
+    min         0.000249
+    25%         0.408596
+    50%         1.192173
+    75%         2.861689
+    max        20.888750
+    dtype: float64
+
+    Linear interpolation:
+    count    1987.000000
+    mean        1.778928
+    std         2.187626
+    min         0.000076
+    25%         0.224535
+    50%         0.834920
+    75%         2.745461
+    max        19.116444
+    Name: diff, dtype: float64
+
+    Cubic interpolation with num_buffer=2
+    count    1987.000000
+    mean        1.776176
+    std         2.227961
+    min         0.000052
+    25%         0.193832
+    50%         0.756697
+    75%         2.795144
+    max        19.576745
+    Name: diff, dtype: float64
+    """
     def __init__(self, trail=None):
         super(NationalElevationDataset, self).__init__()
 
@@ -985,12 +1023,22 @@ class NationalElevationDataset(DataSource):
             cmd = ['unzip', '-o', zip_fname, img_name, '-d', out_dir]
             run(cmd, check=True)
 
-    def query(self, lon: float, lat: float) -> float:
+    def query(self,
+              lon: float,
+              lat: float,
+              num_buffer: int = 1,
+              interp_kind: str = 'linear') -> float:
         """Query elevation data for given point
+
+        NOTE: if you want to interpolate over neighboring squares, you can
+        expand then window when reading, then get the actual xy position as lat
+        lon, then get the neighboring positions as lat lon too
 
         Args:
             lon: longitude
             lat: latitude
+            num_buffer: number of bordering cells around (lon, lat) to use when interpolating
+            interp_kind: kind of interpolation. Passed to scipy.interpolate.interp2d. Can be ['linear’, ‘cubic’, ‘quintic']
 
         Returns elevation for point (in meters)
         """
@@ -1005,10 +1053,50 @@ class NationalElevationDataset(DataSource):
 
         # Find x, y of elevation square inside raster
         x, y = dataset.index(lon, lat)
-        arr = dataset.read(1, window=([x, x + 1], [y, y + 1]))
-        assert arr.shape == (1, 1), 'array has more than one value'
-        value = arr[0, 0]
-        return value
+
+        # Make window include cells around it
+        # The number of additional cells depends on the value of num_buffer
+        # When num_buffer==1, an additional 8 cells will be loaded and
+        # interpolated on;
+        # When num_buffer==2, an additional 24 cells will be loaded and
+        # interpolated on, etc.
+        # When using kind='linear' interpolation, I'm not sure if having the
+        # extra cells makes a difference; ie if it creates the plane based only
+        # on the closest cells or from all. When using kind='cubic', it's
+        # probably more accurate with more cells.
+
+        minx = x - num_buffer if x >= num_buffer else x
+        maxx = x + num_buffer if x + num_buffer <= dataset.width else x
+        miny = y - num_buffer if y >= num_buffer else y
+        maxy = y + num_buffer if y + num_buffer <= dataset.width else y
+
+        # Add +1 to deal with range() not including end
+        maxx += 1
+        maxy += 1
+
+        window = ([minx, maxx], [miny, maxy])
+        val_arr = dataset.read(1, window=window)
+
+        msg = 'array has too few or too many values'
+        max_num = 2 * num_buffer + 1
+        assert (1 <= val_arr.shape[0] <= max_num) and (1 <= val_arr.shape[1] <=
+                                                       max_num), msg
+
+        # Now linearly interpolate
+        # Get actual lat/lons
+        # Note that zipping together means that I get the diagonal, i.e. one of
+        # each of x, y. Since these aren't projected coordinates, but rather the
+        # original lat/lons, this is a regular grid and this is ok.
+        lonlats = [
+            dataset.xy(x, y)
+            for x, y in zip(range(minx, maxx), range(miny, maxy))
+        ]
+        lons = [x[0] for x in lonlats]
+        lats = [x[1] for x in lonlats]
+
+        fun = interp2d(x=lons, y=lats, z=val_arr, kind=interp_kind)
+        value = fun(lon, lat)
+        return value[0]
 
 
 class USGSHydrography(DataSource):
