@@ -981,7 +981,8 @@ class NationalElevationDataset(DataSource):
         zip_fnames = self.files('.zip')
         for zip_fname in zip_fnames:
             img_name = zip_fname.stem + '.img'
-            cmd = ['unzip', '-o', zip_fname, img_name]
+            out_dir = zip_fname.parents[0]
+            cmd = ['unzip', '-o', zip_fname, img_name, '-d', out_dir]
             run(cmd, check=True)
 
     def query(self, lon: float, lat: float) -> float:
