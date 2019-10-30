@@ -5,7 +5,6 @@ import math
 import os
 import re
 from datetime import datetime
-from io import BytesIO
 from pathlib import Path
 from subprocess import run
 from tempfile import NamedTemporaryFile
@@ -27,9 +26,7 @@ from geopandas.tools import sjoin
 from haversine import haversine
 from lxml import etree as ET
 from scipy.interpolate import interp2d
-from shapely.geometry import (LineString, MultiLineString, Point, box, mapping,
-                              shape)
-from shapely.ops import linemerge
+from shapely.geometry import LineString, Point, box, mapping, shape
 
 import geom
 import util
@@ -472,52 +469,37 @@ class USFS(DataSource):
     """docstring for USFS"""
     def __init__(self):
         super(USFS, self).__init__()
+        self.raw_dir = self.data_dir / 'raw' / 'usfs'
+        self.raw_dir.mkdir(parents=True, exist_ok=True)
 
     def downloaded(self) -> bool:
         save_dir = self.data_dir / 'pct' / 'line' / 'usfs'
-        files = ['full.geojson']
+        files = ['trail.geojson']
         return all((save_dir / f).exists() for f in files)
 
-    def download(self):
+    def download(self, overwrite=False):
         url = 'https://www.fs.usda.gov/Internet/FSE_DOCUMENTS/stelprdb5332131.zip'
-        r = requests.get(url)
-        with ZipMemoryFile(BytesIO(r.content)) as z:
-            with z.open('PacificCrestTrail.shp') as collection:
-                fc = list(collection)
+        local_path = self.raw_dir / Path(url).name
+        if overwrite or (not local_path.exists()):
+            urlretrieve(url, local_path)
 
-        multilinestrings = []
-        for feature in fc:
-            multilinestrings.append(shape(feature['geometry']))
+        with open(local_path, 'rb') as f:
+            with ZipMemoryFile(f.read()) as z:
+                with z.open('PacificCrestTrail.shp') as collection:
+                    crs = collection.crs
+                    fc = list(collection)
 
-        # There's at least one multilinestring in the shapefile. This needs to
-        # be converted to linestring before I can use linemerge()
-        linestrings = []
-        for line in multilinestrings:
-            if isinstance(line, LineString):
-                linestrings.append(line)
-            elif isinstance(line, MultiLineString):
-                linestrings.extend(line)
-
-        full = linemerge(linestrings)
-
-        # Reproject from EPSG 3310 to WGS84 (EPSG 4326)
-        full = util.reproject(full, 'epsg:3310', 'epsg:4326')
-        feature = geojson.Feature(geometry=mapping(full))
+        gdf = gpd.GeoDataFrame.from_features(fc, crs=crs)
+        gdf = gdf.to_crs(epsg=4326)
 
         save_dir = self.data_dir / 'pct' / 'line' / 'usfs'
         save_dir.mkdir(parents=True, exist_ok=True)
-        with open(save_dir / 'full.geojson', 'w') as f:
-            geojson.dump(feature, f)
+        gdf.to_file(save_dir / 'trail.geojson', driver='GeoJSON')
 
     def trail(self) -> gpd.GeoDataFrame:
         """Load trail into GeoDataFrame"""
-
-        if self.downloaded():
-            path = self.data_dir / 'pct' / 'line' / 'usfs' / 'full.geojson'
-            trail = gpd.read_file(path)
-            return trail
-
-        raise ValueError('trails not yet downloaded')
+        save_dir = self.data_dir / 'pct' / 'line' / 'usfs'
+        return gpd.read_file(save_dir / 'trail.geojson').to_crs(epsg=4326)
 
     def buffer(self, distance: float = 20) -> gpd.GeoDataFrame:
         """Load cached buffer
@@ -618,7 +600,7 @@ class PolygonSource(DataSource):
         files = [self.filename]
         return all((self.save_dir / f).exists() for f in files)
 
-    def download(self, overwrite=False):
+    def download(self, trail: gpd.GeoDataFrame, overwrite=False):
         """Download polygon shapefile and intersect with PCT track
         """
         assert self.url is not None, 'self.url must be set'
@@ -776,18 +758,17 @@ class LightningCounts(DataSource):
 class Transit(DataSource):
     def __init__(self):
         super(Transit, self).__init__()
-        self.trail = USFS().trail().iloc[0].geometry
 
         self.routes = {}
         self.nearby_stops = {}
         self.all_stops = {}
         self.operators = {}
 
-    def download(self):
+    def download(self, trail: gpd.GeoDataFrame):
         """Create trail-relevant transit dataset from transit.land database
         """
-
         # Find operators that intersect trail
+        trail_line = trail.unary_union
         operators_near_trail = self.get_operators_near_trail()
 
         # For each operator, see if there are actually transit stops within a
@@ -822,7 +803,7 @@ class Transit(DataSource):
         with open(save_dir / 'all_stops.json', 'w') as f:
             json.dump(self.all_stops, f)
 
-    def get_operators_near_trail(self):
+    def get_operators_near_trail(self, trail_line: LineString):
         """Find transit operators with service area crossing the trail
 
         Using the transit.land API, you can find all transit operators within a
@@ -830,7 +811,7 @@ class Transit(DataSource):
         service area polygon of each potential transit operator to see if it
         intersects the trail.
         """
-        trail_bbox = self.trail.bounds
+        trail_bbox = trail_line.bounds
         trail_bbox = [str(x) for x in trail_bbox]
 
         url = 'https://transit.land/api/v1/operators'
@@ -842,13 +823,16 @@ class Transit(DataSource):
         for operator in d['operators']:
             # Check if the service area of the operator intersects trail
             operator_polygon = shape(operator['geometry'])
-            intersects_trail = self.trail.intersects(operator_polygon)
+            intersects_trail = trail_line.intersects(operator_polygon)
             if intersects_trail:
                 operators_on_trail.append(operator)
 
         return operators_on_trail
 
-    def get_stops_near_trail(self, operator_id, distance=1000):
+    def get_stops_near_trail(self,
+                             trail_line: LineString,
+                             operator_id,
+                             distance=1000):
         """Find all stops in Transitland database that are near trail
 
         Args:
@@ -863,8 +847,8 @@ class Transit(DataSource):
         stops_near_trail = []
         for stop in d['stops']:
             point = shape(stop['geometry'])
-            nearest_trail_point = self.trail.interpolate(
-                self.trail.project(point))
+            nearest_trail_point = trail_line.interpolate(
+                trail_line.project(point))
 
             dist = haversine(*point.coords,
                              *nearest_trail_point.coords,
@@ -972,28 +956,25 @@ class NationalElevationDataset(DataSource):
     max        19.576745
     Name: diff, dtype: float64
     """
-    def __init__(self, trail=None):
+    def __init__(self):
         super(NationalElevationDataset, self).__init__()
-
-        if trail is None:
-            self.trail = USFS().trail().geometry.iloc[0]
 
         self.raw_dir = self.data_dir / 'raw' / 'elevation'
         self.raw_dir.mkdir(parents=True, exist_ok=True)
 
-    def download(self, overwrite=False):
+    def download(self, trail, overwrite=False):
         """Download 1/3 arc-second elevation data
         """
-        urls = sorted(self._get_download_urls())
+        urls = sorted(self._get_download_urls(trail=trail))
         for url in urls:
             save_path = self.raw_dir / (Path(url).stem + '.zip')
             if overwrite or (not save_path.exists()):
                 urlretrieve(url, save_path)
 
-    def _get_download_urls(self):
+    def _get_download_urls(self, trail):
         """Create download urls
         """
-        intersecting_bboxes = OneDegree().get_cells(self.trail)
+        intersecting_bboxes = OneDegree().get_cells(trail)
 
         # The elevation datasets are identified by the _UPPER_ latitude and
         # _LOWER_ longitude, i.e. max and min repsectively
@@ -1107,9 +1088,9 @@ class USGSHydrography(DataSource):
         self.hu2_list = [16, 17, 18]
         self.trail = Halfmile().trail(alternates=True)
 
-    def download(self, overwrite=False):
+    def download(self, trail: gpd.GeoDataFrame, overwrite=False):
         self._download_boundaries(overwrite=overwrite)
-        self._download_nhd(overwrite=overwrite)
+        self._download_nhd(trail=trail, overwrite=overwrite)
 
     def load_nhd_iter(self) -> str:
         """Iterator to load NHD data for polygons that intersect the trail
@@ -1146,13 +1127,13 @@ class USGSHydrography(DataSource):
             if overwrite or (not path.exists()):
                 urlretrieve(url, path)
 
-    def _download_nhd(self, overwrite):
+    def _download_nhd(self, trail: LineString, overwrite):
         """Download National Hydrography Dataset for trail
         """
         baseurl = 'https://prd-tnm.s3.amazonaws.com/StagedProducts/Hydrography/'
         baseurl += 'NHD/HU8/HighResolution/GDB/'
 
-        gdfs = self._get_HU8_units_for_trail()
+        gdfs = self._get_HU8_units_for_trail(trail=trail)
         hu8_ids = gdfs['HUC8'].unique()
 
         for hu8_id in hu8_ids:
@@ -1162,7 +1143,7 @@ class USGSHydrography(DataSource):
             if overwrite or (not path.exists()):
                 urlretrieve(url, path)
 
-    def _get_HU8_units_for_trail(self):
+    def _get_HU8_units_for_trail(self, trail):
         """Find HU8 units that trail intersects
 
         This allows to find the names of the NHD datasets that need to be downloaded
@@ -1176,7 +1157,8 @@ class USGSHydrography(DataSource):
             hu8 = hu8.to_crs(epsg=4326)
 
             # Intersect with the trail
-            intersecting_hu8 = sjoin(hu8, self.trail, how='inner')
+            # NOTE: Need to check this works again with trail passing through
+            intersecting_hu8 = sjoin(hu8, trail, how='inner')
 
             # Append
             all_intersecting_hu8.append(intersecting_hu8)

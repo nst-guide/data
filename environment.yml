@@ -19,6 +19,7 @@ dependencies:
   - python=3
   - rasterio
   - requests
+  - scipy
   - shapely
   - xlrd
   - pip:

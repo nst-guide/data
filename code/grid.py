@@ -3,9 +3,10 @@
 from math import ceil, floor
 from typing import Dict, List
 
+import geopandas as gpd
 import numpy as np
 import pint
-from shapely.geometry import LineString, box
+from shapely.geometry import box
 
 ureg = pint.UnitRegistry()
 
@@ -18,7 +19,7 @@ class OneDegree:
     def __init__(self):
         pass
 
-    def get_cells(self, trail_line: LineString) -> Dict[str, List[str]]:
+    def get_cells(self, trail: gpd.GeoDataFrame) -> Dict[str, List[str]]:
         """Find boundaries of 1 degree cells that PCT passes through
 
         The elevation datasets are identified by the _UPPER_ latitude and
@@ -35,6 +36,7 @@ class OneDegree:
             represent quads within 20 miles of trail
         """
         # Create list of polygon bboxes for quads
+        trail_line = trail.unary_union
         bounds = trail_line.bounds
 
         # Get whole-degree bounding box of `bounds`
@@ -77,7 +79,7 @@ class TenthDegree:
     def __init__(self):
         pass
 
-    def get_cells(self, trail_line: LineString) -> Dict[str, List[str]]:
+    def get_cells(self, trail: gpd.GeoDataFrame) -> Dict[str, List[str]]:
         """Find centerpoints of .1 degree cells that PCT passes through
 
         Lightning data has .1 degree _centerpoints_, so the grid lines are at
@@ -94,6 +96,7 @@ class TenthDegree:
             represent quads within 20 miles of trail
         """
         # Create list of polygon bboxes for quads
+        trail_line = trail.unary_union
         bounds = trail_line.bounds
 
         # Get whole-degree bounding box of `bounds`
