@@ -18,6 +18,7 @@ import gpxpy
 import gpxpy.gpx
 import pandas as pd
 import requests
+from bs4 import BeautifulSoup
 from dotenv import load_dotenv
 from fiona.io import ZipMemoryFile
 from geopandas.tools import sjoin
@@ -122,7 +123,47 @@ class OpenStreetMap(DataSource):
         self.raw_dir = self.data_dir / 'raw' / 'osm'
         self.raw_dir.mkdir(parents=True, exist_ok=True)
 
-    def _download_states(self, states, overwrite=False):
+        self.section_ids = {
+            'CA_A': 1246902,
+            'CA_B': 1246901,
+            'CA_C': 1236787,
+            'CA_D': 1238538,
+            'CA_E': 1243366,
+            'CA_F': 1243414,
+            'CA_G': 1243679,
+            'CA_H': 1244686,
+            'CA_I': 1245492,
+            'CA_J': 1246906,
+            'CA_K': 1247934,
+            'CA_L': 1249228,
+            'CA_M': 1249245,
+            'CA_N': 1251009,
+            'CA_O': 1253065,
+            'CA_P': 1253310,
+            'CA_Q': 1255154,
+            'CA_R': 1255155,
+            'OR_B': 1258061,
+            'OR_C': 1260310,
+            'OR_D': 1260388,
+            'OR_E': 1260401,
+            'OR_F': 1268073,
+            'OR_G': 1268116,
+            'WA_H': 1285294,
+            'WA_I': 1285818,
+            'WA_J': 1296807,
+            'WA_K': 1304995,
+            'WA_L': 1322978
+        }
+
+    def _get_ways_for_relation(self, relation_id):
+        url = f'https://www.openstreetmap.org/api/0.6/relation/{relation_id}'
+        r = requests.get(url)
+        soup = BeautifulSoup(r.text)
+        members = soup.find_all('member')
+        way_ids = [int(x['ref']) for x in members if x['type'] == 'way']
+        return way_ids
+
+    def _download_state_extracts(self, states, overwrite=False):
         """Download state-level OSM extracts from geofabrik
         """
         for state in states:
@@ -135,7 +176,7 @@ class OpenStreetMap(DataSource):
         """Creates .o5m file for buffer area around trail
         """
         states = ['california', 'oregon', 'washington']
-        self._download_states(states, overwrite=False)
+        self._download_state_extracts(states, overwrite=False)
 
         # Get town boundaries and buffer from USFS track
         # Then generate the union of the two
