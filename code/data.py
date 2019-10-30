@@ -69,25 +69,27 @@ class Towns(DataSource):
         """Get town boundaries
         """
         files = sorted(self.save_dir.glob('*/*.geojson'))
-        return pd.concat([gpd.read_file(f) for f in files])
+        return pd.concat([gpd.read_file(f) for f in files], sort=False)
 
-    def associate_to_halfmile_section(self):
+    def associate_to_halfmile_section(self, trail_gdf=None):
         """For each town, find halfmile section that's closest to it
         """
-        hm = Halfmile().trail_full(alternates=True)
+        if trail_gdf is None:
+            trail_gdf = Halfmile().trail_full(alternates=True)
         boundary_files = sorted(self.save_dir.glob('*/*.geojson'))
 
         for boundary_file in boundary_files:
             bound = gpd.read_file(boundary_file)
-            tmp = hm.copy(deep=True)
-            tmp['distance'] = hm.distance(bound.geometry[0])
+            tmp = trail_gdf.copy(deep=True)
+            tmp['distance'] = trail_gdf.distance(bound.geometry[0])
             min_dist = tmp[tmp['distance'] == tmp['distance'].min()]
 
             # Deduplicate based on `section`; don't overcount the main trail and
             # a side trail, they have the same section id
             min_dist = min_dist.drop_duplicates('section')
 
-            assert len(min_dist) <= 2, "Boundary has > 2 trails it's closest to"
+            assert len(
+                min_dist) <= 2, "Boundary has > 2 trails it's closest to"
 
             # If a town is touching two trail sections (like Belden), then just
             # pick one of them
