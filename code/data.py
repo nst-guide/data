@@ -301,11 +301,6 @@ class Halfmile(DataSource):
         self.raw_dir = self.data_dir / 'raw' / 'halfmile'
         self.raw_dir.mkdir(parents=True, exist_ok=True)
 
-    def downloaded(self) -> bool:
-        """Check if files are downloaded"""
-        files = ['full.geojson', 'alternates.geojson', 'sections.geojson']
-        return all((self.save_dir / f).exists() for f in files)
-
     def download(self, overwrite=False):
         """Download Halfmile tracks and waypoints
         """
@@ -381,25 +376,11 @@ class Halfmile(DataSource):
 
         return geojson.FeatureCollection(features)
 
-    def create_bbox_for_sections(self):
-        with open(self.save_dir / 'sections.geojson') as f:
-            fc = geojson.load(f)
-
-        features = []
-        for feature in fc['features']:
-            name = feature['properties']['name']
-            bounds = LineString(feature['geometry']['coordinates']).bounds
-            bbox = box(*bounds)
-            features.append(
-                geojson.Feature(geometry=mapping(bbox),
-                                properties={'name': name}))
-
-        fc = geojson.FeatureCollection(features)
-
-        save_dir = self.data_dir / 'pct' / 'polygon' / 'halfmile'
-        save_dir.mkdir(parents=True, exist_ok=True)
-        with open(save_dir / 'bbox.geojson', 'w') as f:
-            geojson.dump(fc, f)
+    def bbox_iter(self):
+        """Get bounding box of each section
+        """
+        for section_name, gdf in self.trail_iter(alternates=True):
+            yield section_name, gdf.unary_union.bounds
 
     @property
     def trk_geojsons(self):
