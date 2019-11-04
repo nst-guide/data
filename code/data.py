@@ -160,11 +160,11 @@ class OpenStreetMap(DataSource):
         """Usually used for buffer of section of trail
         """
         graphml_path = self.raw_dir / (section_name + '.graphml')
-        if (graphml_path.exists()):
+        if not overwrite and (graphml_path.exists()):
             return ox.load_graphml(graphml_path)
 
         g = ox.graph_from_polygon(polygon,
-                                  simplify=True,
+                                  simplify=False,
                                   clean_periphery=True,
                                   retain_all=True,
                                   truncate_by_edge=True,
@@ -172,6 +172,13 @@ class OpenStreetMap(DataSource):
 
         ox.save_graphml(g, graphml_path)
         return g
+
+    def get_way_ids_for_section(self, section_name):
+        section_id = self.section_ids.get(section_name)
+        if section_id is None:
+            raise ValueError(f'invalid section name: {section_name}')
+
+        return self.get_way_ids_for_relation(section_id)
 
     def get_way_ids_for_relation(self, relation_id):
         url = f'https://www.openstreetmap.org/api/0.6/relation/{relation_id}'
@@ -399,6 +406,13 @@ class Halfmile(DataSource):
         """
         for section_name, gdf in self.trail_iter(alternates=True):
             yield section_name, gdf.unary_union.bounds
+
+    def buffer_iter(self, distance, unit='mile'):
+        """Get buffer around each section
+        """
+        for section_name, gdf in self.trail_iter(alternates=True):
+            buf = geom.buffer(gdf, distance=distance, unit=unit).unary_union
+            yield section_name, buf
 
     @property
     def trk_geojsons(self):
