@@ -16,6 +16,7 @@ import geojson
 import geopandas as gpd
 import gpxpy
 import gpxpy.gpx
+import osmnx as ox
 import pandas as pd
 import rasterio
 import requests
@@ -155,7 +156,24 @@ class OpenStreetMap(DataSource):
             'WA_L': 1322978
         }
 
-    def _get_ways_for_relation(self, relation_id):
+    def get_ways_for_section(self, polygon, section_name, overwrite=False):
+        """Usually used for buffer of section of trail
+        """
+        graphml_path = self.raw_dir / (section_name + '.graphml')
+        if (graphml_path.exists()):
+            return ox.load_graphml(graphml_path)
+
+        g = ox.graph_from_polygon(polygon,
+                                  simplify=True,
+                                  clean_periphery=True,
+                                  retain_all=True,
+                                  truncate_by_edge=True,
+                                  name=section_name)
+
+        ox.save_graphml(g, graphml_path)
+        return g
+
+    def get_way_ids_for_relation(self, relation_id):
         url = f'https://www.openstreetmap.org/api/0.6/relation/{relation_id}'
         r = requests.get(url)
         soup = BeautifulSoup(r.text)
