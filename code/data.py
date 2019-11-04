@@ -924,37 +924,16 @@ class NationalElevationDataset(DataSource):
     Halfmile data for Sec A and the mean difference in elevation per point. 90%
     less than 5 meter difference.
 
-    count    1987.000000
-    mean        1.964173
-    std         2.188573
-    min         0.000249
-    25%         0.408596
-    50%         1.192173
-    75%         2.861689
-    max        20.888750
-    dtype: float64
-
-    Linear interpolation:
-    count    1987.000000
-    mean        1.778928
-    std         2.187626
-    min         0.000076
-    25%         0.224535
-    50%         0.834920
-    75%         2.745461
-    max        19.116444
-    Name: diff, dtype: float64
-
-    Cubic interpolation with num_buffer=2
-    count    1987.000000
-    mean        1.776176
-    std         2.227961
-    min         0.000052
-    25%         0.193832
-    50%         0.756697
-    75%         2.795144
-    max        19.576745
-    Name: diff, dtype: float64
+    No interpolation        Linear interpolation:   Cubic with num_buffer=2
+    count    1987.000000    count    1987.000000    count    1987.000000
+    mean        1.964173    mean        1.778928    mean        1.776176
+    std         2.188573    std         2.187626    std         2.227961
+    min         0.000249    min         0.000076    min         0.000052
+    25%         0.408596    25%         0.224535    25%         0.193832
+    50%         1.192173    50%         0.834920    50%         0.756697
+    75%         2.861689    75%         2.745461    75%         2.795144
+    max        20.888750    max        19.116444    max        19.576745
+    dtype: float64          dtype: float64          dtype: float64
     """
     def __init__(self):
         super(NationalElevationDataset, self).__init__()
@@ -962,13 +941,25 @@ class NationalElevationDataset(DataSource):
         self.raw_dir = self.data_dir / 'raw' / 'elevation'
         self.raw_dir.mkdir(parents=True, exist_ok=True)
 
-    def download(self, trail, overwrite=False):
+    def download(self, trail, overwrite: bool = False):
         """Download 1/3 arc-second elevation data
+
+        Args:
+            overwrite: whether to overwrite existing files. If False, only
+                downloads new copy if neither the ZIP file or extracted IMG file
+                already exist.
+
+        NOTE: some urls are different. I.e. for n37w119, the filename is
+        n37w119.zip, not USGS_NED_13_n37w119_IMG.zip. Apparently this data was
+        published in 2013, not 2018, which is why it has a different name. I
+        haven't implemented a way to check this automatically yet.
         """
         urls = sorted(self._get_download_urls(trail=trail))
         for url in urls:
             save_path = self.raw_dir / (Path(url).stem + '.zip')
-            if overwrite or (not save_path.exists()):
+            extracted_path = self.raw_dir / (Path(url).stem + '.img')
+            if overwrite or (not save_path.exists()
+                             and not extracted_path.exists()):
                 urlretrieve(url, save_path)
 
     def _get_download_urls(self, trail):
