@@ -937,6 +937,10 @@ class NationalElevationDataset(DataSource):
         """
         urls = sorted(self._get_download_urls(trail=trail))
         for url in urls:
+            # 50th degree latitudes is outside the US
+            if 'n50w121' in url:
+                continue
+
             save_path = self.raw_dir / (Path(url).stem + '.zip')
             extracted_path = self.raw_dir / (Path(url).stem + '.img')
             if overwrite or (not save_path.exists()
