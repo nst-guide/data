@@ -158,6 +158,26 @@ class OpenStreetMap(DataSource):
             'WA_L': 1322978
         }
 
+    def get_node_info(self, node_id):
+        """Given node id, get location and tags about node
+        """
+        url = f'https://www.openstreetmap.org/api/0.6/node/{node_id}'
+        r = requests.get(url)
+        soup = BeautifulSoup(r.text)
+        node = soup.find('node')
+        d = node.attrs
+        d.update({n.attrs['k']: n.attrs['v'] for n in node.find_all('tag')})
+        return d
+
+    def get_nodes_for_way(self, way_id):
+        """Given way id, get list of nodes that make it up
+        """
+        url = f'https://www.openstreetmap.org/api/0.6/way/{way_id}'
+        r = requests.get(url)
+        soup = BeautifulSoup(r.text)
+        node_ids = [int(x['ref']) for x in soup.find_all('nd')]
+        return node_ids
+
     def get_ways_for_section(self, polygon, section_name, overwrite=False):
         """Usually used for buffer of section of trail
         """
@@ -166,7 +186,7 @@ class OpenStreetMap(DataSource):
             return ox.load_graphml(graphml_path)
 
         g = ox.graph_from_polygon(polygon,
-                                  simplify=False,
+                                  simplify=True,
                                   clean_periphery=True,
                                   retain_all=True,
                                   truncate_by_edge=True,
