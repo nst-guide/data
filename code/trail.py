@@ -1,18 +1,113 @@
 import fiona
 import geopandas as gpd
+import numpy as np
 import pandas as pd
 from geopandas.tools import sjoin
+from shapely.geometry import LineString
 
 import data
-from data import Halfmile, NationalElevationDataset, Towns
+import osmnx as ox
+from data import Halfmile, NationalElevationDataset, OpenStreetMap, Towns
 from geom import buffer
 
 
 class Trail:
-    def __init__(self, route: gpd.GeoDataFrame):
-        super(Trail, self).__init__()
-        self.route = route
+    """
+    Combine multiple data sources to create all necessary data for trail.
 
+    Args:
+        route:
+    """
+    def __init__(self):
+        """
+
+        Args:
+            route_iter: generator that yields general (non-exact) route for trail. The idea is that this non-exact route is used to create a buffer
+        """
+        super(Trail, self).__init__()
+        # self.route = route
+        # self.handle_section(route_iter)
+
+    def handle_sections(self):
+        hm = Halfmile()
+        for (section_name, trk), (_, wpt) in zip(hm.trail_iter(),
+                                                 hm.wpt_iter()):
+            break
+            self.handle_section(section_name, trk, wpt)
+
+    def handle_section(self, section_name, trk, wpt):
+        """
+
+        - First get ordered list of way IDs for each section relation of the
+          trail.
+        - Then for each way, find that edge in osmnx dataset
+        - Then get the two nodes for that edge
+        - One node you should be able to tell was connected to the last edge
+        - For the other node, look in the osmnx nodes dataset
+        - You should be able to see all the edges that connect to that node. One
+          edge is current edge, another should be in the list of ways for the
+          relation. Any other edges should be intersections with non PCT data
+
+        With simplified graph geometry, that gives you a list of LineStrings
+        that make up the pct. That also gives you a list of node intersections
+
+        Args:
+            section_name: name
+            trk: route line
+            wpt: waypoints
+        """
+        osm = OpenStreetMap()
+
+        # Download osm ways for this section
+        buf = buffer(trk, distance=2, unit='mile').unary_union
+        g = osm.get_ways_for_section(polygon=buf, section_name=section_name)
+        nodes, edges = ox.graph_to_gdfs(g)
+
+        # Get ordered list of way ids for this section
+        way_ids = osm.get_way_ids_for_section(section_name=section_name)
+        first_node = osm.get_nodes_for_way(way_id=way_ids[0])[0]
+        last_node = osm.get_nodes_for_way(way_id=way_ids[-1])[-1]
+
+        # Construct ordered list of osmnx edge id's
+        # Note that osmnx edge id's are not the same as OSM way id's, because
+        # sometimes an OSM way is split in the middle, creating two OSMNX edges
+        # despite being a single OSM way
+        osmnx_nodes = [first_node]
+        osmnx_edges = []
+
+        while True:
+            # Keep edges that start from the last node
+            _edges = edges[(edges['u'] == osmnx_nodes[-1])]
+            # Check osm list edges
+            _edges_list_osm = _edges[[
+                isinstance(value, list) for value in _edges['osmid']
+            ]]
+            if len(_edges_list_osm) > 0:
+                msg = 'an edge with multiple osm ids is on the PCT'
+                assert not any(x in way_ids
+                               for x in _edges_list_osm['osmid']), msg
+
+            _edges = _edges[[
+                not isinstance(value, list) for value in _edges['osmid']
+            ]]
+
+            # Keep edges that are in the PCT relation
+            _edges = _edges[_edges['osmid'].isin(way_ids)]
+
+            # Remove the edge that goes from the last node to two nodes ago
+            if len(osmnx_nodes) >= 2:
+                _edges = _edges[_edges['v'] != osmnx_nodes[-2]]
+
+            assert len(_edges) == 1, '>1 PCT edge connected to last node'
+            _edge = _edges.iloc[0]
+            osmnx_edges.append(_edge)
+            osmnx_nodes.append(_edge['v'])
+
+            if _edge['v'] == last_node:
+                break
+
+        osmnx_nodes
+        osmnx_edges = pd.DataFrame(osmnx_edges)
     def add_elevations_to_route(self):
         new_geoms = []
         for row in self.route.itertuples():
