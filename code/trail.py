@@ -72,13 +72,18 @@ class Trail:
         # Note that osmnx edge id's are not the same as OSM way id's, because
         # sometimes an OSM way is split in the middle, creating two OSMNX edges
         # despite being a single OSM way
-        osmnx_nodes = [first_node]
-        osmnx_edges = []
+        pct_nodes = [first_node]
+        pct_edges = []
+        intersect_edges = []
 
         while True:
             # Keep edges that start from the last node
-            _edges = edges[(edges['u'] == osmnx_nodes[-1])]
+            _edges = edges[(edges['u'] == pct_nodes[-1])]
+
             # Check osm list edges
+            # Sometimes in the edges DataFrame, the 'osmid' column will be a
+            # _list_ value, when there are two osm ids that were simplified into
+            # a single edge
             _edges_list_osm = _edges[[
                 isinstance(value, list) for value in _edges['osmid']
             ]]
@@ -91,23 +96,30 @@ class Trail:
                 not isinstance(value, list) for value in _edges['osmid']
             ]]
 
+            # Add non-pct edges to list of edge intersections
+            # NOTE that this is after taking out rows with lists of osm ids
+            non_pct_edges = _edges[~_edges['osmid'].isin(way_ids)]
+            intersect_edges.append(non_pct_edges)
+
             # Keep edges that are in the PCT relation
             _edges = _edges[_edges['osmid'].isin(way_ids)]
 
             # Remove the edge that goes from the last node to two nodes ago
-            if len(osmnx_nodes) >= 2:
-                _edges = _edges[_edges['v'] != osmnx_nodes[-2]]
+            if len(pct_nodes) >= 2:
+                _edges = _edges[_edges['v'] != pct_nodes[-2]]
 
             assert len(_edges) == 1, '>1 PCT edge connected to last node'
             _edge = _edges.iloc[0]
-            osmnx_edges.append(_edge)
-            osmnx_nodes.append(_edge['v'])
+            pct_edges.append(_edge)
+            pct_nodes.append(_edge['v'])
 
             if _edge['v'] == last_node:
                 break
 
-        osmnx_nodes
-        osmnx_edges = pd.DataFrame(osmnx_edges)
+        # NOTE this unsorts pct_nodes!
+        pct_nodes = nodes[nodes.index.isin(pct_nodes)]
+        pct_edges = pd.DataFrame(pct_edges)
+        intersect_edges = pd.concat(intersect_edges, axis=0)
     def add_elevations_to_route(self):
         new_geoms = []
         for row in self.route.itertuples():
