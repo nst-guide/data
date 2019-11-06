@@ -146,6 +146,36 @@ class OpenStreetMap(DataSource):
         sections = [self.get_relation_info(x.attrs['ref']) for x in relations]
         return {d['short_name']: d['id'] for d in sections}
 
+    def get_alternates_within_pct(self, trail_id):
+        """Get list of alternates within PCT
+
+        Args:
+            trail_id: relation for entire trail
+
+        Returns:
+            list: [{'bicycle': 'no',
+                    'highway': 'path',
+                    'horse': 'no',
+                    'lit': 'no',
+                    'name': 'Pacific Crest Trail (alternate)',
+                    'ref': 'PCT alt.',
+                    'surface': 'ground',
+                    'id': 337321382},
+                    ...
+        """
+        url = f'https://www.openstreetmap.org/api/0.6/relation/{trail_id}'
+        r = requests.get(url)
+        soup = BeautifulSoup(r.text)
+        relations = soup.find_all('relation')
+        assert len(relations) == 1, 'more than one top-level relation object'
+
+        # Alternates are `ways`
+        members = relations[0].find_all('member')
+        alternates = [x for x in members if x.attrs['role'] == 'alternate']
+        msg = 'alternate not way type'
+        assert all(x.attrs['type'] == 'way' for x in alternates), msg
+        return [self.get_way_info(x.attrs['ref']) for x in alternates]
+
     def get_relation_info(self, relation_id):
         """Get metadata about relation_id
 
@@ -176,6 +206,31 @@ class OpenStreetMap(DataSource):
         short_name = f'{m.groups()[0][:2].upper()}_{m.groups()[1].upper()}'
         tags['short_name'] = short_name
         tags['id'] = int(soup.find('relation').attrs['id'])
+        return tags
+
+    def get_way_info(self, way_id):
+        """Get metadata about way_id
+
+        Args:
+            way_id: OSM way id
+
+        Returns:
+            dict:
+            {'name': 'PCT - California Section A',
+             'short_name': 'CA_A',
+             'network': 'rwn',
+             'ref': 'PCT',
+             'route': 'foot',
+             'type': 'route',
+             'wikidata': 'Q2003736',
+             'wikipedia': 'en:Pacific Crest Trail',
+             'id': 1246902}
+        """
+        url = f'https://www.openstreetmap.org/api/0.6/way/{way_id}'
+        r = requests.get(url)
+        soup = BeautifulSoup(r.text)
+        tags = {tag.attrs['k']: tag.attrs['v'] for tag in soup.find_all('tag')}
+        tags['id'] = int(soup.find('way').attrs['id'])
         return tags
 
     def get_node_info(self, node_id):
