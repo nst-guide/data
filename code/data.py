@@ -126,37 +126,57 @@ class OpenStreetMap(DataSource):
         self.raw_dir = self.data_dir / 'raw' / 'osm'
         self.raw_dir.mkdir(parents=True, exist_ok=True)
 
-        self.section_ids = {
-            'CA_A': 1246902,
-            'CA_B': 1246901,
-            'CA_C': 1236787,
-            'CA_D': 1238538,
-            'CA_E': 1243366,
-            'CA_F': 1243414,
-            'CA_G': 1243679,
-            'CA_H': 1244686,
-            'CA_I': 1245492,
-            'CA_J': 1246906,
-            'CA_K': 1247934,
-            'CA_L': 1249228,
-            'CA_M': 1249245,
-            'CA_N': 1251009,
-            'CA_O': 1253065,
-            'CA_P': 1253310,
-            'CA_Q': 1255154,
-            'CA_R': 1255155,
-            'OR_B': 1258061,
-            'OR_C': 1260310,
-            'OR_D': 1260388,
-            'OR_E': 1260401,
-            'OR_F': 1268073,
-            'OR_G': 1268116,
-            'WA_H': 1285294,
-            'WA_I': 1285818,
-            'WA_J': 1296807,
-            'WA_K': 1304995,
-            'WA_L': 1322978
-        }
+    def get_relations_within_pct(self, trail_id):
+        """Get list of relations that make up sections within PCT
+
+        Args:
+            trail_id: relation for entire trail
+
+        Returns:
+            dict: {'CA_A': 1234567, ...}
+        """
+        url = f'https://www.openstreetmap.org/api/0.6/relation/{trail_id}'
+        r = requests.get(url)
+        soup = BeautifulSoup(r.text)
+        relations = soup.find_all('relation')
+        assert len(relations) == 1, 'more than one top-level relation object'
+
+        members = relations[0].find_all('member')
+        relations = [x for x in members if x.attrs['type'] == 'relation']
+        sections = [self.get_relation_info(x.attrs['ref']) for x in relations]
+        return {d['short_name']: d['id'] for d in sections}
+
+    def get_relation_info(self, relation_id):
+        """Get metadata about relation_id
+
+        Args:
+            relation_id: OSM relation id
+
+        Returns:
+            dict:
+            {'name': 'PCT - California Section A',
+             'short_name': 'CA_A',
+             'network': 'rwn',
+             'ref': 'PCT',
+             'route': 'foot',
+             'type': 'route',
+             'wikidata': 'Q2003736',
+             'wikipedia': 'en:Pacific Crest Trail',
+             'id': 1246902}
+        """
+        url = f'https://www.openstreetmap.org/api/0.6/relation/{relation_id}'
+        r = requests.get(url)
+        soup = BeautifulSoup(r.text)
+        tags = {tag.attrs['k']: tag.attrs['v'] for tag in soup.find_all('tag')}
+
+        states = ['California', 'Oregon', 'Washington']
+        regex_str = f"({'|'.join(states)})"
+        regex_str += r'\s+Section\s+([A-Z])$'
+        m = re.search(regex_str, tags['name'])
+        short_name = f'{m.groups()[0][:2].upper()}_{m.groups()[1].upper()}'
+        tags['short_name'] = short_name
+        tags['id'] = int(soup.find('relation').attrs['id'])
+        return tags
 
     def get_node_info(self, node_id):
         """Given node id, get location and tags about node
@@ -804,7 +824,7 @@ class Transit(DataSource):
         """
         # Find operators that intersect trail
         trail_line = trail.unary_union
-        operators_near_trail = self.get_operators_near_trail()
+        operators_near_trail = self.get_operators_near_trail(trail_line)
 
         # For each operator, see if there are actually transit stops within a
         # walkable distance from the trail (currently set to 1000m)
