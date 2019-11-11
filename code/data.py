@@ -1302,10 +1302,6 @@ class PCTWaterReport(DataSource):
         self.google_api_key = os.getenv('GOOGLE_SHEETS_API_KEY')
         assert self.google_api_key is not None, 'Google API Key missing'
 
-        hm = Halfmile()
-        self.waypoints = pd.concat([df for section_name, df in hm.wpt_iter()])
-        self.waypoint_names = self.waypoints['name'].unique()
-
         self.raw_dir = self.data_dir / 'raw' / 'pctwater'
 
     def download(self, overwrite=False):
@@ -1468,9 +1464,6 @@ class PCTWaterReport(DataSource):
         return pd.DataFrame.from_records(rows, columns=column_names)
 
     def clean(self):
-        """
-        Attempt to assign latitude and longitude to every row in water report
-        """
         df = pd.read_csv(self.raw_dir / 'single.csv')
 
         # While index exists in saved file
@@ -1518,7 +1511,7 @@ class PCTWaterReport(DataSource):
         df_date.loc[df_date['trail_name'].isna(), 'trail_name'] = df_date.loc[
             df_date['trail_name'].isna(), 'reported by']
         df_date = df_date.drop('reported by', axis=1)
-        df_date = df_date.rename(columns={'trail_name': 'reported_by'})
+        df_date = df_date.rename(columns={'trail_name': 'reported by'})
 
         # Split report on either : or )
         # This removes the date and trail name from the report response
@@ -1531,6 +1524,20 @@ class PCTWaterReport(DataSource):
         # Now concatenate these two halves
         df_nodate = df.loc[~df['contains_date']].copy()
         df = pd.concat([df_date, df_nodate], axis=0, sort=False)
+        df = df.drop(['contains_date', 'posted'], axis=1)
+
+        # Drop rows with missing date value
+        # NOTE: could do this just for df_nodate before concat
+        df['date'] = pd.to_datetime(df['date'], errors='coerce')
+        df = df.loc[df['date'].notna()]
+
+        # Drop duplicate rows
+        # Duplicate rows can come from a few different ways here, but the
+        # simplest is that in recent years a spreadsheet has been saved _weekly_
+        # and some water sources get updates less frequently, so someone's
+        # comments might show up in multiple files
+        # Note that this brings down the row count from 134790 to 13567
+        df = df.drop_duplicates(keep='first')
 
         return df
 
