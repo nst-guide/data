@@ -1302,9 +1302,11 @@ class PCTWaterReport(DataSource):
         self.google_api_key = os.getenv('GOOGLE_SHEETS_API_KEY')
         assert self.google_api_key is not None, 'Google API Key missing'
 
-        self.waypoints = gpd.read_file(self.data_dir / 'pct' / 'point' /
-                                       'halfmile' / 'waypoints.geojson')
+        hm = Halfmile()
+        self.waypoints = pd.concat([df for section_name, df in hm.wpt_iter()])
         self.waypoint_names = self.waypoints['name'].unique()
+
+        self.raw_dir = self.data_dir / 'raw' / 'pctwater'
 
     def download(self, overwrite=False):
         """Download PCT Water report spreadsheets
@@ -1320,13 +1322,12 @@ class PCTWaterReport(DataSource):
     def import_files(self):
         """Import water reports into a single DataFrame
         """
-        raw_dir = self.data_dir / 'raw' / 'pctwater'
-        z = ZipFile(raw_dir / 'pctwater.zip')
+        z = ZipFile(self.raw_dir / 'pctwater.zip')
         names = z.namelist()
+        # Remove snow report files
         names = sorted([x for x in names if 'snow' not in x.lower()])
 
         date_re = r'(20\d{2}-[0-3]\d-[0-3]\d)( [0-2]\d_[0-6]\d_[0-6]\d)?'
-
         dfs = []
         for n in names:
             date_match = re.search(date_re, n)
@@ -1347,7 +1348,7 @@ class PCTWaterReport(DataSource):
                     dfs.append([file_date, df])
 
         single_df = pd.concat([x[1] for x in dfs], sort=False)
-        single_df.to_csv(raw_dir / 'single.csv')
+        single_df.to_csv(self.raw_dir / 'single.csv', index=False)
 
     def _clean_dataframe(self, df):
         # TODO: merge with waypoint data to get stable lat/lon positions
@@ -1465,6 +1466,73 @@ class PCTWaterReport(DataSource):
             raise ValueError('column names not found')
 
         return pd.DataFrame.from_records(rows, columns=column_names)
+
+    def clean(self):
+        """
+        Attempt to assign latitude and longitude to every row in water report
+        """
+        df = pd.read_csv(self.raw_dir / 'single.csv')
+
+        # While index exists in saved file
+        if df.columns[0] == 'Unnamed: 0':
+            df = df.drop('Unnamed: 0', axis=1)
+
+        df = self._clean_report_column(df)
+
+    def _clean_report_column(self, df):
+        """
+        Clean report string: extract the date and trail name, and remove invalid
+        rows.
+        """
+        # Remove rows where there's no report
+        df = df[~df['report'].isna()]
+        df = df[~df['report'].str.match(r'^\s*-+\s*$')]
+
+        # For many rows, `report` has its own date from being reshaped. However
+        # there are also many rows (~70,000) where there's no date in the report
+        # column. For those I'll just use the date from the `date` column.
+        report_date_re = r'^\s*(\d{,2}[/-]\d{,2}[/-]\d{,2})'
+        df['contains_date'] = df['report'].str.match(report_date_re)
+
+        # Split into two dfs, then later join them. For the rows where report
+        # contains a date, it generally also contains a trail name, and those
+        # should be removed to create "clean" report data
+        df_date = df.loc[df['contains_date']].copy()
+
+        # Create date from report string
+        df_date.loc[:, 'new_date'] = pd.to_datetime(
+            df_date['report'].str.extract(report_date_re).iloc[:, 0],
+            errors='coerce')
+        # Fill in date for missing values from `date` column
+        s = df_date.loc[df_date['new_date'].isna(), 'date']
+        df_date.loc[df_date['new_date'].isna(), 'new_date'] = s
+        # Drop `date` column and rename `new_date` to `date`
+        df_date = df_date.drop('date', axis=1)
+        df_date = df_date.rename(columns={'new_date': 'date'})
+
+        # Extract trail name from report string
+        trail_name_re = r'^[^\(]*\(([^\)]*)\)'
+        df_date.loc[:, 'trail_name'] = df_date['report'].str.extract(
+            trail_name_re).iloc[:, 0]
+        # Fill in `trail_name` for missing values from `reported_by` column
+        df_date.loc[df_date['trail_name'].isna(), 'trail_name'] = df_date.loc[
+            df_date['trail_name'].isna(), 'reported by']
+        df_date = df_date.drop('reported by', axis=1)
+        df_date = df_date.rename(columns={'trail_name': 'reported_by'})
+
+        # Split report on either : or )
+        # This removes the date and trail name from the report response
+        # Note that if neither : nor ) are found, this returns the original str
+        split_re = r'[:\)]'
+        s = df_date['report'].str.split(split_re)
+        df_date.loc[:, 'report'] = s.apply(
+            lambda row: ' '.join(row[1:]).strip())
+
+        # Now concatenate these two halves
+        df_nodate = df.loc[~df['contains_date']].copy()
+        df = pd.concat([df_date, df_nodate], axis=0, sort=False)
+
+        return df
 
     # def _list_google_sheets_files(self):
     #     """
