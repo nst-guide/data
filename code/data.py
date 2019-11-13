@@ -1531,6 +1531,14 @@ class PCTWaterReport(DataSource):
         df['date'] = pd.to_datetime(df['date'], errors='coerce')
         df = df.loc[df['date'].notna()]
 
+        # Take only first line of location string
+        df = df.loc[df['location'].notna()]
+        s = df['location'].str.split('\n')
+        df['location'] = s.apply(lambda row: row[0])
+
+        # Only keep water waypoints
+        df = df.loc[df['waypoint'].str[0] == 'W']
+
         # Drop duplicate rows
         # Duplicate rows can come from a few different ways here, but the
         # simplest is that in recent years a spreadsheet has been saved _weekly_
@@ -1541,6 +1549,127 @@ class PCTWaterReport(DataSource):
 
         return df
 
+    # def _assign_geometry(self, df):
+    #     """
+    #     Attempt to assign latitude and longitude to every row in water report
+    #
+    #     For now, only keep PCT water rows with a non-missing waypoint identifier
+    #     """
+    #
+    #     from fuzzywuzzy import fuzz
+    #     from fuzzywuzzy import process
+    #
+    #
+    #     hm = Halfmile()
+    #     waypoints = pd.concat([df for section_name, df in hm.wpt_iter()])
+    #     waypoint_names = waypoints['name'].unique()
+    #
+    #     # For now require waypoint to be nonmissing
+    #     df = df.loc[df['waypoint'].notna()]
+    #
+    #     # Split into calendar years from 2015-2019
+    #     df_dict = {}
+    #     years = range(2015, 2020)
+    #     for year in years:
+    #         df_dict[year] = df.loc[df['date'].dt.year == year]
+    #
+    #     # Within each year, get unique waypoints
+    #     wpts_year = {}
+    #     wpt_cols = ['location', 'map', 'mile', 'waypoint']
+    #     for year, dfi in df_dict.items():
+    #         wpts_year[year] = dfi.drop_duplicates(subset=['waypoint'])[wpt_cols]
+    #
+    #     # Now try to match those unique waypoints across years
+    #     # For now, just do an inner merge from 2015 to 2019
+    #     # First, get all waypoint ids that exist in all years
+    #     all_wpt_ids = [set(df['waypoint'].values) for df in wpts_year.values()]
+    #     wpt_int = set.intersection(*all_wpt_ids)
+    #
+    #     for this_year, next_year in zip(years, years[1:]):
+    #         wpt_this = wpts_year[this_year]
+    #         wpt_next = wpts_year[next_year]
+    #
+    #     dfs = [v for k, v in wpts_year.items() if k in range(2016, 2020)]
+    #     wpts_year[2015].join(dfs, on='waypoint')
+    #     this_year = 2016
+    #     next_year = 2017
+    #     for this_year, next_year in zip(years, years[1:]):
+    #         wpt_this = wpts_year[this_year]
+    #         wpt_next = wpts_year[next_year]
+    #
+    #         self._merge_waypoints_across_years(earlier=wpt_this, later=wpt_next)
+    #
+    #
+    #     def _merge_waypoints_across_years(self, earlier, later):
+    #         """Merge waypoints across years
+    #
+    #         Waypoints identifiers can shift across years. Try to deal with this.
+    #         For now, it just does an inner merge, but could/should be improved
+    #         using fuzzy matching in the future.
+    #         """
+    #
+    #         later.sort_values('waypoint')
+    #         earlier.sort_values('waypoint')
+    #         len(later)
+    #         len(earlier)
+    #         len(merged)
+    #         merged = pd.merge(earlier, later, on='waypoint', how='outer', suffixes=('', '_y'), indicator=True)
+    #         merged[merged['_merge'] != 'both'].sort_values('waypoint')
+    #         merged.sort_values(['waypoint'])
+    #         merged = pd.merge(earlier, later, on='waypoint', how='inner', suffixes=('', '_y'))
+    #         (merged['mile'] == merged['mile_y']).mean()
+    #         return merged[['location', 'map','mile', 'waypoint']]
+    #
+    #         wpt_this = wpt_this.sort_values(['map', 'mile'])
+    #         wpt_next = wpt_next.sort_values(['map', 'mile'])
+    #
+    #         # Find which of this year's waypoints is not in next years
+    #         changed = set(wpt_this['waypoint']).difference(wpt_next['waypoint'])
+    #         it = iter(changed)
+    #         wpt_id = next(it)
+    #         RATIO_THRESHOLD = 90
+    #         changed_df = wpt_this[wpt_this['waypoint'].isin(changed)]
+    #
+    #         for wpt_id in changed:
+    #             row = wpt_this[wpt_this['waypoint'] == wpt_id]
+    #
+    #             s1 = row['location'].values[0]
+    #             ratios = [fuzz.partial_ratio(s1, s2) for s2 in wpt_next['location']]
+    #             ratios = [fuzz.ratio(s1, s2) for s2 in wpt_next['location']]
+    #             max_ratio = max(ratios)
+    #             [s2 for s2 in wpt_next['location'] if fuzz.partial_ratio(s1, s2) == max_ratio]
+    #             [x for x in ]
+    #
+    #             wpt_next[wpt_next['mile'].str[0] == '1']
+    #             # Do fuzzy match on location name and waypoint id?
+    #
+    #
+    #         pass
+    #         wpt_next[wpt_next['map'] == 'A13']
+    #         wpt_this[wpt_this['waypoint'].isin(changed)]
+    #         wpt_next['waypoint'].c
+    #
+    #         wpt_this
+    #         break
+    #     wpts_year
+    #
+    #     year = 2019
+    #     dfi = df_dict[year]
+    #     len(dfi)
+    #     x = dfi.drop_duplicates(subset=['waypoint'])[wpt_cols]
+    #     y = dfi.drop_duplicates(subset=wpt_cols)[wpt_cols]
+    #     y.loc[y.duplicated(subset='waypoint', keep=False)].sort_values('waypoint')
+    #     x
+    #     df
+    #     df_dict
+    #
+    #     #
+    #     df[df['date'].dt.year > 2019]
+    #     df['date'].dt.year.value_counts()
+    #     df[df['date'].dt.year == 2011]
+    #     sorted(df['date'].dt.year.unique())
+    #     df
+    #
     # def _list_google_sheets_files(self):
     #     """
     #     NOTE: was unable to get this to work. Each time I tried to list files, I got
