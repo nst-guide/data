@@ -3,7 +3,7 @@
 import json
 import os
 from datetime import datetime
-from typing import List, Optional
+from typing import List, Optional, Union
 
 import geopandas as gpd
 import requests
@@ -136,7 +136,43 @@ class Parse(object):
         for group in chunker(json_data, 50):
             self.upload_batch(data=group, class_name=class_name)
 
-    def upload_batch(self, data: List[dict], class_name: str):
+    def upload_batch(self, data: List[dict], class_name: str) -> List[dict]:
+        """Upload batch of objects to Parse
+
+        Can upload up to 50 items at a time.
+
+        Args:
+            data: list of individual requests to make, i.e.:
+                ```json
+                "requests": [
+                  {
+                    "method": "POST",
+                    "path": "/parse/classes/GameScore",
+                    "body": {
+                      "score": 1337,
+                      "playerName": "Sean Plott"
+                    }
+                  },
+                  {
+                    "method": "POST",
+                    "path": "/parse/classes/GameScore",
+                    "body": {
+                      "score": 1338,
+                      "playerName": "ZeroCool"
+                    }
+                  }
+                ]
+                ```
+            class_name: name of Parse class to upload to
+
+        Returns:
+            List[Dict[
+              "success": {
+                "createdAt": "2012-06-15T16:59:11.276Z",
+                "objectId": "YAfSAWwXbL"
+              }
+            ]]
+        """
         headers = self.headers.copy()
         headers['Content-Type'] = 'application/json'
 
@@ -151,12 +187,30 @@ class Parse(object):
         r = requests.post(url, data=json.dumps(body), headers=headers)
         return r.json()
 
-    def upload_file(self, data: str, fname: str, content_type: str) -> dict:
+    def upload_object(self, data: dict, class_name: str) -> dict:
+        """Upload single object to Parse
+
+        Args:
+            data: JSON representation of data to upload
+            class_name: name of Parse class to upload to
+
+        Returns:
+            Dict[
+                "createdAt": "2011-08-20T02:06:57.931Z",
+                "objectId": "Ed1nuqPvcm"
+            ]
+        """
+        headers = self.headers.copy()
+        headers['Content-Type'] = 'application/json'
+        url = f'{self.server_url}/classes/{class_name}'
+        r = requests.post(url, data=json.dumps(data), headers=headers)
+        return r.json()
+
+    def upload_file(self, data: Union[str, bytes], fname: str,
+                    content_type: str) -> dict:
         """Upload file
 
-        data: Text to upload. This does no encoding other than URL encoding. If
-            you want to upload a binary object, you should probably base64
-            encode before passing to upload_file
+        data: Text or binary data to upload. Requests apparently automatically sends bytes as base64.
         fname: filename to save as in Parse. Note that Parse prefixes the given
             name by a unique identifier, so there can be mulitple uploads with
             the same name without clobbering each other.
