@@ -5,7 +5,7 @@ import pandas as pd
 from geopandas.tools import sjoin
 from shapely.geometry import LineString
 
-import data
+import data as Data
 import osmnx as ox
 from data import Halfmile, NationalElevationDataset, OpenStreetMap, Towns
 from geom import buffer
@@ -35,7 +35,41 @@ class Trail:
             break
             self.handle_section(section_name, trk, wpt)
 
-    def generate_osm_trail_data_for_section(self, section_name, trk):
+        osm = OpenStreetMap()
+        for section_name, trk in hm.trail_iter():
+            if section_name in ['CA_A', 'CA_B', 'CA_C', 'CA_D']:
+                continue
+            buf = buffer(trk, distance=2, unit='mile').unary_union
+            g = osm.get_ways_for_section(polygon=buf,
+                                         section_name=section_name)
+
+    def handle_section(self, section_name, trk, wpt, use_cache=True):
+        # Check cache
+        data_dir = Data.find_data_dir()
+        raw_dir = data_dir / 'raw' / 'osm' / 'clean'
+        raw_dir.mkdir(parents=True, exist_ok=True)
+        paths = [
+            raw_dir / f'{section_name}_nodes.geojson',
+            raw_dir / f'{section_name}_edges.geojson',
+            raw_dir / f'{section_name}_intersections.geojson'
+        ]
+
+        if use_cache and all(path.exists() for path in paths):
+            res = [gpd.read_file(path) for path in paths]
+        else:
+            # Generate OSM data
+            res = self.generate_osm_trail_data_for_section(section_name, trk)
+            for gdf, path in zip(res, paths):
+                gdf.to_file(path, driver='GeoJSON')
+
+        nodes, edges, intersections = res
+
+        # Parse OSM data
+        self.parse_generated_osm_trail_data(nodes, edges, intersections)
+
+    def generate_osm_trail_data_for_section(
+            self, section_name,
+            trk) -> (gpd.GeoDataFrame, gpd.GeoDataFrame, gpd.GeoDataFrame):
         """Generate OSM trail data for section
 
         This downloads OSM way data for the section, then generates the
@@ -136,10 +170,13 @@ class Trail:
         # unsorts pct_nodes, so instead, I generate the ordering of nodes, then
         # join them and sort on the order
         node_ordering = [(ind, x) for ind, x in enumerate(pct_nodes)]
-        node_ordering = pd.DataFrame(node_ordering, columns=['node_order', 'node_id']).set_index('node_id')
+        node_ordering = pd.DataFrame(node_ordering,
+                                     columns=['node_order',
+                                              'node_id']).set_index('node_id')
 
         pct_nodes_unsorted = nodes[nodes.index.isin(pct_nodes)]
-        pct_nodes_sorted = pct_nodes_unsorted.join(node_ordering).sort_values('node_order')
+        pct_nodes_sorted = pct_nodes_unsorted.join(node_ordering).sort_values(
+            'node_order')
 
         pct_edges = pd.DataFrame(pct_edges)
         pct_edges = gpd.GeoDataFrame(pct_edges)
