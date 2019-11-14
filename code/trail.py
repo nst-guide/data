@@ -57,6 +57,19 @@ class Trail:
         Args:
             section_name: name of section, i.e. 'CA_A' or 'OR_C'. This is used to get the OSM way id's that represent that section.
             trk: _Rough_ route line to generate bounding polygon for OSM export. Generally for now this should be a Halfmile section.
+
+        Returns:
+            - pct_nodes_sorted: GeoDataFrame with OSMNX nodes that make up the
+              trail, in sorted order for that section (from south to north)
+            - pct_edges: GeoDataFrame with ordered OSMNX edges that make up the
+              PCT. Each row also contains metadata about that OSM way.
+            - intersect_edges: GeoDataFrame with OSMNX edges of OSM ways that
+              cross the PCT (and are not the PCT). Note that these intersections
+              can be of any way type, and include paved roads, unpaved roads,
+              and other foot trails. Also note that this does not include
+              intersections where there is not a level crossing! So interstate
+              highway crossings are not included because the trail does not
+              cross the road at the same level.
         """
         osm = OpenStreetMap()
 
