@@ -35,8 +35,14 @@ class Trail:
             break
             self.handle_section(section_name, trk, wpt)
 
-    def handle_section(self, section_name, trk, wpt):
-        """
+    def generate_osm_trail_data_for_section(self, section_name, trk):
+        """Generate OSM trail data for section
+
+        This downloads OSM way data for the section, then generates the
+        section's LineString, and finds intersecting tracks.
+
+
+        Rough overview:
 
         - First get ordered list of way IDs for each section relation of the
           trail.
@@ -48,13 +54,9 @@ class Trail:
           edge is current edge, another should be in the list of ways for the
           relation. Any other edges should be intersections with non PCT data
 
-        With simplified graph geometry, that gives you a list of LineStrings
-        that make up the pct. That also gives you a list of node intersections
-
         Args:
-            section_name: name
-            trk: route line
-            wpt: waypoints
+            section_name: name of section, i.e. 'CA_A' or 'OR_C'. This is used to get the OSM way id's that represent that section.
+            trk: _Rough_ route line to generate bounding polygon for OSM export. Generally for now this should be a Halfmile section.
         """
         osm = OpenStreetMap()
 
@@ -116,10 +118,23 @@ class Trail:
             if _edge['v'] == last_node:
                 break
 
-        # NOTE this unsorts pct_nodes!
-        pct_nodes = nodes[nodes.index.isin(pct_nodes)]
+        # A simple:
+        # `nodes[nodes.index.isin(pct_nodes)]`
+        # unsorts pct_nodes, so instead, I generate the ordering of nodes, then
+        # join them and sort on the order
+        node_ordering = [(ind, x) for ind, x in enumerate(pct_nodes)]
+        node_ordering = pd.DataFrame(node_ordering, columns=['node_order', 'node_id']).set_index('node_id')
+
+        pct_nodes_unsorted = nodes[nodes.index.isin(pct_nodes)]
+        pct_nodes_sorted = pct_nodes_unsorted.join(node_ordering).sort_values('node_order')
+
         pct_edges = pd.DataFrame(pct_edges)
+        pct_edges = gpd.GeoDataFrame(pct_edges)
         intersect_edges = pd.concat(intersect_edges, axis=0)
+
+        return pct_nodes_sorted, pct_edges, intersect_edges
+
+
     def add_elevations_to_route(self):
         new_geoms = []
         for row in self.route.itertuples():
