@@ -3,7 +3,7 @@ import geopandas as gpd
 import numpy as np
 import pandas as pd
 from geopandas.tools import sjoin
-from shapely.geometry import LineString
+from shapely.geometry import LineString, Point
 
 import data as Data
 import osmnx as ox
@@ -25,8 +25,34 @@ class Trail:
             route_iter: generator that yields general (non-exact) route for trail. The idea is that this non-exact route is used to create a buffer
         """
         super(Trail, self).__init__()
-        # self.route = route
-        # self.handle_section(route_iter)
+        self.osm = OpenStreetMap()
+        self.hm = Halfmile()
+
+    def _create_route_no_elevation(self):
+        """Create route from OSM data using API
+
+        Using the OSM.org API is so so slow because it has to make so many
+        individual requests. This function is kept for now, but it's so slow
+        that it may be deleted in the future.
+        """
+
+        pct_relation_id = self.osm.trail_ids['pct']
+        section_relations = self.osm.get_relations_within_pct(pct_relation_id)
+
+        full_data = []
+
+        for section_name, relation_id in section_relations.items():
+            way_ids = self.osm.get_way_ids_for_relation(relation_id)
+            all_points_in_section = []
+            for way_id in way_ids:
+                nodes = self.osm.get_nodes_for_way(way_id)
+                node_infos = [self.osm.get_node_info(n) for n in nodes]
+                all_points_in_section.extend([
+                    Point(float(n['lon']), float(n['lat'])) for n in node_infos
+                ])
+
+            section_line = LineString(all_points_in_section)
+            full_data.append(section_line)
 
     def handle_sections(self):
         hm = Halfmile()
