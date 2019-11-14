@@ -28,7 +28,19 @@ def chunker(seq, size):
 
 class Parse(object):
     """docstring for Parse"""
-    def __init__(self, app_id, server_url, master_key=None, rest_key=None):
+    def __init__(self,
+                 app_id: str,
+                 server_url: str,
+                 master_key: str = None,
+                 rest_key: str = None):
+        """Wrapper for Parse HTTP API
+
+        Args:
+            app_id: Parse server Application Id
+            server_url: Parse server URL
+            master_key: Parse server master key
+            rest_key: Parse server REST key
+        """
         super(Parse, self).__init__()
 
         self.app_id = app_id
