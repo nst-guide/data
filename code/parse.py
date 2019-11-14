@@ -151,13 +151,23 @@ class Parse(object):
         r = requests.post(url, data=json.dumps(body), headers=headers)
         return r.json()
 
-    def upload_file(self, data, fname: str, content_type: str):
+    def upload_file(self, data: str, fname: str, content_type: str) -> dict:
         """Upload file
 
-        TODO: urlencode/base64 encode data?
-        """
-        raise NotImplementedError('figure out data encoding')
+        data: Text to upload. This does no encoding other than URL encoding. If
+            you want to upload a binary object, you should probably base64
+            encode before passing to upload_file
+        fname: filename to save as in Parse. Note that Parse prefixes the given
+            name by a unique identifier, so there can be mulitple uploads with
+            the same name without clobbering each other.
+        content_type: content type of data upload
 
+        Returns:
+            Dict[
+                'url': direct url of uploaded file on S3
+                'name': name of uploaded file on Parse
+            ]
+        """
         headers = self.headers.copy()
         headers['Content-Type'] = content_type
         url = f'{self.server_url}/files/{fname}'
