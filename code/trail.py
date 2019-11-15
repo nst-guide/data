@@ -160,7 +160,6 @@ class Trail:
             # Add non-pct edges to list of edge intersections
             # NOTE that this is after taking out rows with lists of osm ids
             non_pct_edges = _edges[~_edges['osmid'].isin(way_ids)]
-            intersect_edges.append(non_pct_edges)
 
             # Keep edges that are in the PCT relation
             _edges = _edges[_edges['osmid'].isin(way_ids)]
@@ -173,6 +172,7 @@ class Trail:
             _edge = _edges.iloc[0]
             pct_edges.append(_edge)
             pct_nodes.append(_edge['v'])
+            intersect_edges.append(non_pct_edges)
 
             if _edge['v'] == last_node:
                 break
