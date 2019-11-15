@@ -127,6 +127,14 @@ class OpenStreetMap(DataSource):
         self.raw_dir.mkdir(parents=True, exist_ok=True)
         self.session = requests.Session()
 
+        # Set osmnx configuration to download desired attributes of nodes and
+        # ways
+        useful_tags_node = ox.settings.useful_tags_node
+        useful_tags_node.extend(['historic'])
+        useful_tags_path = ox.settings.useful_tags_path
+        useful_tags_path.extend(['surface'])
+        ox.config(useful_tags_node=useful_tags_node, useful_tags_path=useful_tags_path)
+
     def get_relations_within_pct(self, trail_id):
         """Get list of relations that make up sections within PCT
 
@@ -254,7 +262,11 @@ class OpenStreetMap(DataSource):
         node_ids = [int(x['ref']) for x in soup.find_all('nd')]
         return node_ids
 
-    def get_ways_for_section(self, polygon, section_name, overwrite=False):
+    def get_ways_for_section(self,
+                             polygon,
+                             section_name,
+                             overwrite=False,
+                             simplify=False):
         """Usually used for buffer of section of trail
         """
         graphml_path = self.raw_dir / (section_name + '.graphml')
@@ -262,7 +274,7 @@ class OpenStreetMap(DataSource):
             return ox.load_graphml(graphml_path)
 
         g = ox.graph_from_polygon(polygon,
-                                  simplify=True,
+                                  simplify=simplify,
                                   clean_periphery=True,
                                   retain_all=True,
                                   truncate_by_edge=True,
