@@ -284,7 +284,8 @@ class OpenStreetMap(DataSource):
         return g
 
     def get_way_ids_for_section(self, section_name):
-        section_id = self.section_ids.get(section_name)
+        section_ids = self.get_relations_within_pct(self.trail_ids['pct'])
+        section_id = section_ids.get(section_name)
         if section_id is None:
             raise ValueError(f'invalid section name: {section_name}')
 
