@@ -299,19 +299,24 @@ class OpenStreetMap(DataSource):
         ox.save_graphml(g, graphml_path)
         return g
 
-    def get_way_ids_for_section(self, section_name):
+    def get_way_ids_for_section(self, section_name, alternates=False) -> List[int]:
         section_ids = self.get_relations_within_pct(self.trail_ids['pct'])
         section_id = section_ids.get(section_name)
         if section_id is None:
             raise ValueError(f'invalid section name: {section_name}')
 
-        return self.get_way_ids_for_relation(section_id)
+        return self.get_way_ids_for_relation(section_id, alternates=alternates)
 
-    def get_way_ids_for_relation(self, relation_id):
+    def get_way_ids_for_relation(self, relation_id, alternates=False) -> List[int]:
         url = f'https://www.openstreetmap.org/api/0.6/relation/{relation_id}'
         r = self.session.get(url)
         soup = BeautifulSoup(r.text, 'lxml')
         members = soup.find_all('member')
+
+        # Restrict members based on alternates setting
+        if not alternates:
+            members = [x for x in members if x['role'] != 'alternate']
+
         way_ids = [int(x['ref']) for x in members if x['type'] == 'way']
         return way_ids
 
