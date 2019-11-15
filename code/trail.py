@@ -28,32 +28,6 @@ class Trail:
         self.osm = OpenStreetMap()
         self.hm = Halfmile()
 
-    def _create_route_no_elevation(self):
-        """Create route from OSM data using API
-
-        Using the OSM.org API is so so slow because it has to make so many
-        individual requests. This function is kept for now, but it's so slow
-        that it may be deleted in the future.
-        """
-
-        pct_relation_id = self.osm.trail_ids['pct']
-        section_relations = self.osm.get_relations_within_pct(pct_relation_id)
-
-        full_data = []
-
-        for section_name, relation_id in section_relations.items():
-            way_ids = self.osm.get_way_ids_for_relation(relation_id)
-            all_points_in_section = []
-            for way_id in way_ids:
-                nodes = self.osm.get_nodes_for_way(way_id)
-                node_infos = [self.osm.get_node_info(n) for n in nodes]
-                all_points_in_section.extend([
-                    Point(float(n['lon']), float(n['lat'])) for n in node_infos
-                ])
-
-            section_line = LineString(all_points_in_section)
-            full_data.append(section_line)
-
     def handle_sections(self, use_cache: bool = True):
         hm = Halfmile()
         for (section_name, trk), (_, wpt) in zip(hm.trail_iter(),
@@ -250,6 +224,34 @@ class Trail:
 
         all_coords_z = [(x[0][0], x[0][1], x[1]) for x in zip(coords, elevs)]
         return LineString(all_coords_z)
+
+
+    def _create_route_no_elevation(self):
+        """Create route from OSM data using API
+
+        Using the OSM.org API is so so slow because it has to make so many
+        individual requests. This function is kept for now, but it's so slow
+        that it may be deleted in the future.
+        """
+
+        pct_relation_id = self.osm.trail_ids['pct']
+        section_relations = self.osm.get_relations_within_pct(pct_relation_id)
+
+        full_data = []
+
+        for section_name, relation_id in section_relations.items():
+            way_ids = self.osm.get_way_ids_for_relation(relation_id)
+            all_points_in_section = []
+            for way_id in way_ids:
+                nodes = self.osm.get_nodes_for_way(way_id)
+                node_infos = [self.osm.get_node_info(n) for n in nodes]
+                all_points_in_section.extend([
+                    Point(float(n['lon']), float(n['lat'])) for n in node_infos
+                ])
+
+            section_line = LineString(all_points_in_section)
+            full_data.append(section_line)
+
 
 
 class PacificCrestTrail(Trail):
