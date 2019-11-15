@@ -54,22 +54,29 @@ class Trail:
             section_line = LineString(all_points_in_section)
             full_data.append(section_line)
 
-    def handle_sections(self):
+    def handle_sections(self, use_cache: bool = True):
         hm = Halfmile()
         for (section_name, trk), (_, wpt) in zip(hm.trail_iter(),
                                                  hm.wpt_iter()):
-            break
-            self.handle_section(section_name, trk, wpt)
-
-        osm = OpenStreetMap()
-        for section_name, trk in hm.trail_iter():
-            if section_name in ['CA_A', 'CA_B', 'CA_C', 'CA_D']:
-                continue
             buf = buffer(trk, distance=2, unit='mile').unary_union
-            g = osm.get_ways_for_section(polygon=buf,
-                                         section_name=section_name)
+            self.handle_section(section_name=section_name,
+                                polygon=buf,
+                                wpt=wpt,
+                                use_cache=use_cache)
 
-    def handle_section(self, section_name, trk, wpt, use_cache=True):
+    def handle_section(self,
+                       section_name,
+                       polygon,
+                       wpt,
+                       use_cache: bool = True):
+        """Do everything for a given section of trail
+
+        Args:
+            section_name: Name of section, i.e. 'CA_A' or 'OR_C'
+            polygon: buffer or bbox around trail, used to filter OSM data
+            wpt: Halfmile waypoints for given section of trail
+            use_cache: Whether to use existing extracts
+        """
         # Check cache
         data_dir = Data.find_data_dir()
         raw_dir = data_dir / 'raw' / 'osm' / 'clean'
@@ -84,7 +91,10 @@ class Trail:
             res = [gpd.read_file(path) for path in paths]
         else:
             # Generate OSM data
-            res = self.generate_osm_trail_data_for_section(section_name, trk)
+            res = self.generate_osm_trail_data_for_section(
+                section_name=section_name,
+                polygon=polygon,
+                use_cache=use_cache)
             for gdf, path in zip(res, paths):
                 gdf.to_file(path, driver='GeoJSON')
 
@@ -94,8 +104,8 @@ class Trail:
         self.parse_generated_osm_trail_data(nodes, edges, intersections)
 
     def generate_osm_trail_data_for_section(
-            self, section_name,
-            trk) -> (gpd.GeoDataFrame, gpd.GeoDataFrame, gpd.GeoDataFrame):
+            self, section_name, polygon, use_cache=True
+    ) -> (gpd.GeoDataFrame, gpd.GeoDataFrame, gpd.GeoDataFrame):
         """Generate OSM trail data for section
 
         This downloads OSM way data for the section, then generates the
@@ -116,7 +126,8 @@ class Trail:
 
         Args:
             section_name: name of section, i.e. 'CA_A' or 'OR_C'. This is used to get the OSM way id's that represent that section.
-            trk: _Rough_ route line to generate bounding polygon for OSM export. Generally for now this should be a Halfmile section.
+            polygon: buffer or bbox around trail, used to filter OSM data
+            use_cache: Whether to use existing extracts
 
         Returns:
             - pct_nodes_sorted: GeoDataFrame with OSMNX nodes that make up the
@@ -134,8 +145,9 @@ class Trail:
         osm = OpenStreetMap()
 
         # Download osm ways for this section
-        buf = buffer(trk, distance=2, unit='mile').unary_union
-        g = osm.get_ways_for_section(polygon=buf, section_name=section_name)
+        g = osm.get_ways_for_section(polygon=polygon,
+                                     section_name=section_name,
+                                     overwrite=(not use_cache))
         nodes, edges = ox.graph_to_gdfs(g)
 
         # Get ordered list of way ids for this section
