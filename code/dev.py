@@ -74,7 +74,7 @@ class Visualize:
                     f'access_token={self.MAPBOX_API_KEY}')
 
         # Remove map state in the hope that it'll auto-center based on data
-        keplergl_config['config']['config'].pop('mapState')
+        # keplergl_config['config']['config'].pop('mapState')
         return keplergl_config['config']
 
     def add_data(self, data, names=None):
