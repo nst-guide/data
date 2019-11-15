@@ -133,7 +133,23 @@ class OpenStreetMap(DataSource):
         useful_tags_node.extend(['historic'])
         useful_tags_path = ox.settings.useful_tags_path
         useful_tags_path.extend(['surface'])
-        ox.config(useful_tags_node=useful_tags_node, useful_tags_path=useful_tags_path)
+        ox.config(useful_tags_node=useful_tags_node,
+                  useful_tags_path=useful_tags_path)
+
+    def cache_section_graphs(self, overwrite=False, simplify=False):
+        """Wrapper to download graphs for each section of trail
+
+        This just calls self.get_ways_for_section for each section.
+        """
+
+        hm = Halfmile()
+        for section_name, buf in hm.buffer_iter(distance=2, unit='mile'):
+            print(f'Getting graph for section: {section_name}')
+            self.get_ways_for_section(polygon=buf,
+                                      section_name=section_name,
+                                      overwrite=overwrite,
+                                      simplify=simplify)
+            print(f'Finished getting graph for section: {section_name}')
 
     def get_relations_within_pct(self, trail_id):
         """Get list of relations that make up sections within PCT
