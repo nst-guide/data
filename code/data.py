@@ -339,6 +339,14 @@ class OpenStreetMap(DataSource):
                                   name=section_name,
                                   infrastructure='way')
 
+        # strict=False is very important so that `osmid` in the resulting edges
+        # DataFrame is never a List
+        # Note: simplify_graph should come immediately after first creating the
+        # graph. This is because once you start deleting some ways, there can be
+        # empty nodes, and you get a KeyError when simplifying later. See:
+        # https://github.com/gboeing/osmnx/issues/323
+        g = ox.simplify_graph(g, strict=False)
+
         # Currently the graph g has every line ("way") in OSM in the area of
         # polygon. I only want the ways of type `way_types` that were provided
         # as an argument, so find all the other-typed ways and drop them
@@ -347,10 +355,6 @@ class OpenStreetMap(DataSource):
                         if all(key not in d for key in way_types)]
         g.remove_edges_from(ways_to_drop)
         g = ox.remove_isolated_nodes(g)
-
-        # strict=False is very important so that `osmid` in the resulting edges
-        # DataFrame is never a List
-        g = ox.simplify_graph(g, strict=False)
 
         ox.save_graphml(g, graphml_path)
         return g
