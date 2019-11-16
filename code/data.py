@@ -258,8 +258,12 @@ class OpenStreetMap(DataSource):
         tags['id'] = int(soup.find('way').attrs['id'])
         return tags
 
-    def get_node_info(self, node_id):
-        """Given node id, get location and tags about node
+    def get_node_info(self, node_id) -> dict:
+        """Get OSM node information given node id
+
+        Args:
+            - node_id: OSM node id
+        Given node id, get location and tags about node
         """
         url = f'https://www.openstreetmap.org/api/0.6/node/{node_id}'
         r = self.session.get(url)
@@ -269,8 +273,14 @@ class OpenStreetMap(DataSource):
         d.update({n.attrs['k']: n.attrs['v'] for n in node.find_all('tag')})
         return d
 
-    def get_nodes_for_way(self, way_id):
-        """Given way id, get list of nodes that make it up
+    def get_nodes_for_way(self, way_id) -> List[int]:
+        """Get OSM node ids given way id
+
+        Args:
+            - way_id: OSM way id
+
+        Returns:
+            - list of integers representing node ids
         """
         url = f'https://www.openstreetmap.org/api/0.6/way/{way_id}'
         r = self.session.get(url)
@@ -278,12 +288,31 @@ class OpenStreetMap(DataSource):
         node_ids = [int(x['ref']) for x in soup.find_all('nd')]
         return node_ids
 
-    def get_ways_for_section(self,
+    def get_ways_for_polygon(self,
                              polygon,
                              section_name,
                              overwrite=False,
                              simplify=False):
-        """Usually used for buffer of section of trail
+        """Retrieve graph of OSM nodes and ways for given polygon
+
+        Args:
+            - polygon: buffer or bbox around trail, used to filter OSM data.
+              Generally is a buffer of a section of trail, but a town boundary
+              could also be passed.
+            - section_name: Name of section, i.e. 'CA_A' or 'OR_C'
+            - overwrite: if True, re-downloads data instead of using cached data
+            - simplify: if True, tells osmnx to topologically simplify graph
+              network. Note that when this is true, sometimes the `osmid` column
+              in the generated `GeoDataFrame` is a _list_ instead of a single
+              integer, because two ways sometimes meet at a point with no other
+              touching ways, and are simplified into a single osmnx edge.
+
+              For that reason, I think it's generally better to leave
+              `simplify=False`, so that you don't have to deal with nested lists
+              in the DataFrame.
+
+        Returns:
+            - osmnx graph
         """
         graphml_path = self.raw_dir / (section_name + '.graphml')
         if not overwrite and (graphml_path.exists()):
@@ -300,6 +329,15 @@ class OpenStreetMap(DataSource):
         return g
 
     def get_way_ids_for_section(self, section_name, alternates=False) -> List[int]:
+        """Get OSM way ids given section name
+
+        Args:
+            section_name: canonical PCT section name, i.e. 'CA_A' or 'OR_C'
+            alternates: whether to include ways designated role=alternate
+
+        Returns:
+            - list of integers representing way ids
+        """
         section_ids = self.get_relations_within_pct(self.trail_ids['pct'])
         section_id = section_ids.get(section_name)
         if section_id is None:
@@ -308,6 +346,15 @@ class OpenStreetMap(DataSource):
         return self.get_way_ids_for_relation(section_id, alternates=alternates)
 
     def get_way_ids_for_relation(self, relation_id, alternates=False) -> List[int]:
+        """Get OSM way ids given relation id
+
+        Args:
+            relation_id: OSM relation id
+            alternates: whether to include ways designated role=alternate
+
+        Returns:
+            - list of integers representing way ids
+        """
         url = f'https://www.openstreetmap.org/api/0.6/relation/{relation_id}'
         r = self.session.get(url)
         soup = BeautifulSoup(r.text, 'lxml')
