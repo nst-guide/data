@@ -7,7 +7,24 @@ This repository contains code for data pipelines to generate map waypoints and l
 ### Data Sources
 
 - Town Boundaries: for now, these are drawn by hand using local trail knowledge and <https://geojson.io> and saved to `data/pct/polygon/bound/town/{ca,or,wa}/*.geojson`.
-- [OpenStreetMap](openstreetmap.org): I use OSM for trail information and town waypoints.
+- [OpenStreetMap](openstreetmap.org): I use OSM for trail information and town
+  waypoints. Initially, I planned to download whole-state extracts from
+  [Geofabrik](https://www.geofabrik.de/data/download.html). After discovering
+  the [osmnx](https://github.com/gboeing/osmnx) package for Python, I decided to
+  use that instead. That calls OSM's [Overpass
+  API](https://wiki.openstreetmap.org/wiki/Overpass_API), and then helpfully
+  manages the result in a graph. This has a few benefits:
+
+    - No need to download any large files. Using the Geofabrik extracts,
+      California is nearly 1GB of compressed data, and most of that is far from
+      the trail, and really not necessary for this project.
+    - Speed. Unsurprisingly, when you're working with 1GB of compressed data
+      just for california, computations aren't going to be super fast.
+    - Faster updates. Geofabrik extracts are updated around once a week I think,
+      while the Overpass API has near-instant updating. That means that if I fix
+      an issue with the data in OSM's editor, then I can get working with the
+      new data immediately.
+
 - [Halfmile](pctmap.net): Halfmile has accurate route information and a few
   thousand waypoints for the trail. I have yet to hear final confirmation that
   this is openly licensed, but I've seen other projects using this data, and am
@@ -56,29 +73,3 @@ This repository contains code for data pipelines to generate map waypoints and l
 - `tiles.py`
 - `trail.py`
 - `util.py`
-
-
-
-
-### OpenStreetMap
-
-1. Download extracts from Geofabrik. PBF is fine. E.g.
-
-    - Southern California: http://download.geofabrik.de/north-america/us/california/socal.html
-    - Northern California: http://download.geofabrik.de/north-america/us/california/norcal.html
-    - Oregon: http://download.geofabrik.de/north-america/us/oregon.html
-    - Washington: http://download.geofabrik.de/north-america/us/washington.html
-2. Use `osmconvert` to get an extract. Use `--out-o5m` because `osmfilter` in the next step can only read `.o5m` or `.osm` and the former has much smaller file sizes and is faster to read. Use `-b` to use a bounding box, or `-B` to supply a polygon. I.e.:
-
-    ```
-    osmconvert washington-latest.pbf --out-o5m -b=-122.231441,45.455465,-119.792476,49.040709 > washington.o5m
-    osmconvert socal-latest.osm.pbf --out-o5m -b=-116.951373,32.524291,-115.858233,33.998650 > socal.o5m
-    ```
-
-3. Use `osmfilter` to get areas of interest.
-
-    ```
-    osmfilter socal.o5m  --keep-relations="@id=1225378" --keep-ways= --keep-nodes= -o=pct-socal.osm
-    ```
-
-osmconvert washington-latest.osm --out-o5m -b=-122.231441,45.455465,-119.792476,49.040709 > washington.o5m
