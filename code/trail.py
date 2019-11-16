@@ -202,9 +202,6 @@ class Trail:
                                         edges: gpd.GeoDataFrame) -> LineString:
         """Given OSM edges that make up a section, return its LineString
 
-        NOTE: if there
-        TODO: Compare this against shapely.ops.linemerge. I don't use linemerge because I want t
-
         Args:
             - edges: GeoDataFrame of edges to form into a line
 
