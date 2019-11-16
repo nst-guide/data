@@ -16,7 +16,6 @@ from zipfile import ZipFile
 import fiona
 import geojson
 import geopandas as gpd
-from geopandas import GeoDataFrame as GDF
 import gpxpy
 import gpxpy.gpx
 import osmnx as ox
@@ -27,6 +26,7 @@ from bs4 import BeautifulSoup
 from dotenv import load_dotenv
 from fastkml import kml
 from fiona.io import ZipMemoryFile
+from geopandas import GeoDataFrame as GDF
 from geopandas.tools import sjoin
 from haversine import haversine
 from lxml import etree as ET
@@ -1263,7 +1263,7 @@ class USGSHydrography(DataSource):
 
     def download(self, trail: gpd.GeoDataFrame, overwrite=False):
         self._download_boundaries(overwrite=overwrite)
-        self._download_nhd(trail=trail, overwrite=overwrite)
+        self._download_nhd_for_line(line=line, overwrite=overwrite)
 
     def load_nhd_iter(self) -> str:
         """Iterator to load NHD data for polygons that intersect the trail
@@ -1304,6 +1304,39 @@ class USGSHydrography(DataSource):
         assert all(f.exists() for f in files), msg
 
         return files
+
+    def read_files(self, files: List[Path], layer: str) -> GDF:
+        """
+
+        Args:
+            - layer: Probably one of these first three:
+
+                - NHDPoint
+                - NHDFlowline
+                - NHDArea
+
+                These are more layers in the file, but probably lesser-used:
+
+                - NHDLine
+                - NHDStatus
+                - NHDReachCrossReference
+                - NHDReachCodeMaintenance
+                - NHDFlowlineVAA
+                - NHDFlow
+                - NHDFCode
+                - ExternalCrosswalk
+                - NHDFeatureToMetadata
+                - NHDMetadata
+                - NHDSourceCitation
+                - NHDLineEventFC
+                - NHDPointEventFC
+                - NHDAreaEventFC
+                - NHDWaterbody
+                - NHDVerticalRelationship
+
+        """
+        gdfs = [gpd.read_file(f, layer=layer).to_crs(epsg=4326) for f in files]
+        return gpd.GeoDataFrame(pd.concat(gdfs))
 
     def _download_boundaries(self, overwrite):
         """
