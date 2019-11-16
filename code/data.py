@@ -127,15 +127,6 @@ class OpenStreetMap(DataSource):
         self.raw_dir.mkdir(parents=True, exist_ok=True)
         self.session = requests.Session()
 
-        # Set osmnx configuration to download desired attributes of nodes and
-        # ways
-        useful_tags_node = ox.settings.useful_tags_node
-        useful_tags_node.extend(['historic'])
-        useful_tags_path = ox.settings.useful_tags_path
-        useful_tags_path.extend(['surface'])
-        ox.config(useful_tags_node=useful_tags_node,
-                  useful_tags_path=useful_tags_path)
-
     def cache_section_graphs(self, overwrite=False, simplify=False):
         """Wrapper to download graphs for each section of trail
 
@@ -291,21 +282,28 @@ class OpenStreetMap(DataSource):
     def get_ways_for_polygon(self,
                              polygon,
                              section_name,
-                             overwrite=False,
-                             simplify=False):
+                             way_types=['highway', 'railway'],
+                             overwrite=False):
         """Retrieve graph of OSM nodes and ways for given polygon
+
+        I tested out downloading more than just ways tagged "highway"; to also
+        include railroads, power lines, and waterways. However osmnx only gives
+        you intersections where there's an intersection in the original OSM
+        data, so power lines don't have intersections because they don't cross
+        at trail-height, and many water intersections are just missing.
+
+        Because of this, I think the best way forward is to download "highway"
+        and "railway" at first, then separately download power lines and use the
+        NHD directly for streams.
 
         Args:
             - polygon: buffer or bbox around trail, used to filter OSM data.
               Generally is a buffer of a section of trail, but a town boundary
               could also be passed.
             - section_name: Name of section, i.e. 'CA_A' or 'OR_C'
+            - way_types: names of OSM keys that are applied to ways that should
+              be kept
             - overwrite: if True, re-downloads data instead of using cached data
-            - simplify: if True, tells osmnx to topologically simplify graph
-              network. Note that when this is true, sometimes the `osmid` column
-              in the generated `GeoDataFrame` is a _list_ instead of a single
-              integer, because two ways sometimes meet at a point with no other
-              touching ways, and are simplified into a single osmnx edge.
 
               For that reason, I think it's generally better to leave
               `simplify=False`, so that you don't have to deal with nested lists
@@ -314,16 +312,44 @@ class OpenStreetMap(DataSource):
         Returns:
             - osmnx graph
         """
-        graphml_path = self.raw_dir / (section_name + '.graphml')
+        fname = f"{section_name}_way_types={','.join(way_types)}.graphml"
+        graphml_path = self.raw_dir / fname
         if not overwrite and (graphml_path.exists()):
             return ox.load_graphml(graphml_path)
 
+        # Set osmnx configuration to download desired attributes of nodes and
+        # ways
+        useful_tags_node = ox.settings.useful_tags_node
+        useful_tags_node.extend(['historic', 'wikipedia'])
+        useful_tags_path = ox.settings.useful_tags_path
+        useful_tags_path.extend(['surface', 'wikipedia'])
+        useful_tags_path.extend(way_types)
+        ox.config(useful_tags_node=useful_tags_node,
+                  useful_tags_path=useful_tags_path)
+
+        # Get all ways, then restrict to ways of type `way_types`
+        # https://github.com/gboeing/osmnx/issues/151#issuecomment-379491607
         g = ox.graph_from_polygon(polygon,
-                                  simplify=simplify,
+                                  simplify=False,
                                   clean_periphery=True,
                                   retain_all=True,
+                                  network_type='all_private',
                                   truncate_by_edge=True,
-                                  name=section_name)
+                                  name=section_name,
+                                  infrastructure='way')
+
+        # Currently the graph g has every line ("way") in OSM in the area of
+        # polygon. I only want the ways of type `way_types` that were provided
+        # as an argument, so find all the other-typed ways and drop them
+        ways_to_drop = [(u, v, k)
+                        for u, v, k, d in g.edges(keys=True, data=True)
+                        if all(key not in d for key in way_types)]
+        g.remove_edges_from(ways_to_drop)
+        g = ox.remove_isolated_nodes(g)
+
+        # strict=False is very important so that `osmid` in the resulting edges
+        # DataFrame is never a List
+        g = ox.simplify_graph(g, strict=False)
 
         ox.save_graphml(g, graphml_path)
         return g
