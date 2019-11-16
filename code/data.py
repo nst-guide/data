@@ -9,6 +9,7 @@ from io import BytesIO
 from pathlib import Path
 from subprocess import run
 from tempfile import NamedTemporaryFile
+from typing import List
 from urllib.request import urlretrieve
 from zipfile import ZipFile
 
