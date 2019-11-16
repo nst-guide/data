@@ -9,13 +9,14 @@ from io import BytesIO
 from pathlib import Path
 from subprocess import run
 from tempfile import NamedTemporaryFile
-from typing import List
+from typing import List, Union
 from urllib.request import urlretrieve
 from zipfile import ZipFile
 
 import fiona
 import geojson
 import geopandas as gpd
+from geopandas import GeoDataFrame as GDF
 import gpxpy
 import gpxpy.gpx
 import osmnx as ox
@@ -70,7 +71,7 @@ class Towns(DataSource):
         super(Towns, self).__init__()
         self.save_dir = self.data_dir / 'pct' / 'polygon' / 'bound' / 'town'
 
-    def boundaries(self) -> gpd.GeoDataFrame:
+    def boundaries(self) -> GDF:
         """Get town boundaries
         """
         files = sorted(self.save_dir.glob('*/*.geojson'))
@@ -1259,7 +1260,6 @@ class USGSHydrography(DataSource):
         self.raw_dir = self.data_dir / 'raw' / 'hydrology'
         self.raw_dir.mkdir(parents=True, exist_ok=True)
         self.hu2_list = [16, 17, 18]
-        self.trail = Halfmile().trail(alternates=True)
 
     def download(self, trail: gpd.GeoDataFrame, overwrite=False):
         self._download_boundaries(overwrite=overwrite)
@@ -1285,6 +1285,26 @@ class USGSHydrography(DataSource):
         for f in nhd_files:
             yield f
 
+    def nhd_files_for_geometry(self, geometry=None, gdf=None):
+        if (geometry is None) and (gdf is None):
+            raise ValueError('Either geometry or gdf must not be None')
+        if (geometry is not None) and (gdf is not None):
+            raise ValueError('Both geometry and gdf cannot not be provided')
+
+        if geometry is not None:
+            hu8_units = self._get_HU8_units_for_geometry(geometry)
+        elif gdf is not None:
+            hu8_units = self._get_HU8_units_for_gdf(geometry)
+
+        hu8_ids = hu8_units['HUC8'].unique()
+        files = [
+            self.raw_dir / f'NHD_H_{hu8_id}_HU8_GDB.zip' for hu8_id in hu8_ids
+        ]
+        msg = 'Not all NHD files exist'
+        assert all(f.exists() for f in files), msg
+
+        return files
+
     def _download_boundaries(self, overwrite):
         """
         Hydrologic Units range from 1-18. The PCT only covers parts of 16, 17,
@@ -1300,15 +1320,21 @@ class USGSHydrography(DataSource):
             if overwrite or (not path.exists()):
                 urlretrieve(url, path)
 
-    def _download_nhd(self, trail: LineString, overwrite):
+    def _download_nhd_for_line(self, line: Union[LineString, GDF], overwrite):
         """Download National Hydrography Dataset for trail
-        """
-        baseurl = 'https://prd-tnm.s3.amazonaws.com/StagedProducts/Hydrography/'
-        baseurl += 'NHD/HU8/HighResolution/GDB/'
 
-        gdfs = self._get_HU8_units_for_trail(trail=trail)
+        Downloads NHD files within 2 miles of trail
+        """
+        if not isinstance(line, gpd.GeoDataFrame):
+            line = gpd.GeoDataFrame([], lineetry=[line])
+            line.crs = {'init': 'epsg:4326'}
+
+        buf = geom.buffer(line, distance=2, unit='mile').unary_union
+        gdfs = self._get_HU8_units_for_geometry(buf)
         hu8_ids = gdfs['HUC8'].unique()
 
+        baseurl = 'https://prd-tnm.s3.amazonaws.com/StagedProducts/Hydrography/'
+        baseurl += 'NHD/HU8/HighResolution/GDB/'
         for hu8_id in hu8_ids:
             name = f'NHD_H_{hu8_id}_HU8_GDB.zip'
             url = baseurl + name
@@ -1316,29 +1342,46 @@ class USGSHydrography(DataSource):
             if overwrite or (not path.exists()):
                 urlretrieve(url, path)
 
-    def _get_HU8_units_for_trail(self, trail):
-        """Find HU8 units that trail intersects
+    def _get_HU8_units_for_geometry(self, geometry):
+        """Find HU8 units that geometry intersects"""
+        # Convert geometry to gdf
+        if not isinstance(geometry, gpd.GeoDataFrame):
+            geometry = gpd.GeoDataFrame([], geometry=[geometry])
+            geometry.crs = {'init': 'epsg:4326'}
 
-        This allows to find the names of the NHD datasets that need to be downloaded
+        return self._get_HU8_units_for_gdf(geometry)
+
+    def _get_HU8_units_for_gdf(self, gdf: GDF) -> GDF:
+        """Get HU8 units that intersect gdf
+
+        Args:
+            - gdf: GeoDataFrame to intersect with
+
+        Returns:
+            GeoDataFrame of HU8 boundaries that intersect gdf
         """
-        all_intersecting_hu8 = []
+        gdf = gdf.to_crs(epsg=4326)
+
+        # First find HU2 units that intersect gdf
+        intersecting_hu2 = []
         for hu2_id in self.hu2_list:
-            # Get subbasin/hu8 boundaries for this region
-            hu8 = self._load_HU8_boundaries(hu2_id)
+            hu2 = self._load_HU8_boundaries(hu2_id=hu2_id, region_size='HU2')
+            hu2 = hu2.to_crs(epsg=4326)
+            intersecting_hu2.append(sjoin(hu2, gdf, how='inner'))
 
-            # Reproject to WGS84
+        int_hu2_gdf = gpd.GeoDataFrame(pd.concat(intersecting_hu2))
+        hu2_ids = int_hu2_gdf['HUC2'].values
+
+        # Npw just look within the large regions that I know gdf is in
+        intersecting_hu8 = []
+        for hu2_id in hu2_ids:
+            hu8 = self._load_HU8_boundaries(hu2_id=hu2_id, region_size='HU8')
             hu8 = hu8.to_crs(epsg=4326)
+            intersecting_hu8.append(sjoin(hu8, gdf, how='inner'))
 
-            # Intersect with the trail
-            # NOTE: Need to check this works again with trail passing through
-            intersecting_hu8 = sjoin(hu8, trail, how='inner')
+        return gpd.GeoDataFrame(pd.concat(all_intersecting_hu8))
 
-            # Append
-            all_intersecting_hu8.append(intersecting_hu8)
-
-        return pd.concat(all_intersecting_hu8)
-
-    def _load_HU8_boundaries(self, hu2_id):
+    def _load_HU8_boundaries(self, hu2_id, region_size: str) -> GDF:
         """Load Subregion Watershed boundaries
 
         Watershed boundaries are split up by USGS into a hierarchy of smaller
@@ -1352,14 +1395,24 @@ class USGSHydrography(DataSource):
         the trail. (`HU8` is the smallest area files that exist for NHD.) So
         here, I'm just extracting the `HU8` boundaries from the larger `HU2`
         watershed boundary datasets.
-        """
 
+        This function allows for getting different region sizes, i.e. HU2, HU4,
+        HU8, etc. HU2 is useful in order to quickly see if the section of trail
+        is anywhere near this region.
+
+        Args:
+            hu2_id: two-digit ID for large HU2 region
+            region_size: boundary region size. I.e. "HU2" for large region, or
+              "HU8" for smaller subbasins
+
+        """
         name = f'WBD_{hu2_id}_HU2_GDB.zip'
         path = self.raw_dir / name
         layers = fiona.listlayers(str(path))
-        assert 'WBDHU8' in layers, 'HU8 boundaries not in WBD dataset'
+        msg = f'{region_size} boundaries not in WBD dataset'
+        assert f'WBD{region_size}' in layers, msg
 
-        return gpd.read_file(path, layer='WBDHU8')
+        return gpd.read_file(path, layer=f'WBD{region_size}')
 
 
 class PCTWaterReport(DataSource):
