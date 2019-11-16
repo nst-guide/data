@@ -131,13 +131,13 @@ class OpenStreetMap(DataSource):
     def cache_section_graphs(self, overwrite=False, simplify=False):
         """Wrapper to download graphs for each section of trail
 
-        This just calls self.get_ways_for_section for each section.
+        This just calls self.get_ways_for_polygon for each section.
         """
 
         hm = Halfmile()
         for section_name, buf in hm.buffer_iter(distance=2, unit='mile'):
             print(f'Getting graph for section: {section_name}')
-            self.get_ways_for_section(polygon=buf,
+            self.get_ways_for_polygon(polygon=buf,
                                       section_name=section_name,
                                       overwrite=overwrite,
                                       simplify=simplify)

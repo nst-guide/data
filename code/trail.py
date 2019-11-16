@@ -24,7 +24,9 @@ class Trail:
         """
 
         Args:
-            route_iter: generator that yields general (non-exact) route for trail. The idea is that this non-exact route is used to create a buffer
+            route_iter: generator that yields general (non-exact) route for
+            trail. The idea is that this non-exact route is used to create a
+            buffer
         """
         super(Trail, self).__init__()
         self.osm = OpenStreetMap()
@@ -40,16 +42,35 @@ class Trail:
                                 wpt=wpt,
                                 use_cache=use_cache)
 
-    def handle_section(self,
-                       section_name,
-                       polygon,
-                       wpt,
-                       use_cache: bool = True):
-        """Do everything for a given section of trail
+            self.handle_section(wpt=wpt, use_cache=use_cache)
+
+
+class TrailSection:
+    """docstring for TrailSection"""
+    def __init__(self, buffer, section_name, use_cache):
+        """
 
         Args:
+            buffer: buffer or bbox around trail, used to filter OSM data
             section_name: Name of section, i.e. 'CA_A' or 'OR_C'
-            polygon: buffer or bbox around trail, used to filter OSM data
+            use_cache: Whether to use existing extracts
+        """
+        super(TrailSection, self).__init__()
+        self.buffer = buffer
+        self.section_name = section_name
+        self.use_cache = use_cache
+
+    def main(self, wpt):
+        """Do everything for a given section of trail
+
+        1. Download ways of type "highway" and "railway" for a buffer around the
+          trail. Using this graph, find the edges and nodes that make up the
+          PCT, and all roads, trails, and railways that intersect the PCT.
+        2. Using the edges that make up the PCT, create the PCT line
+        3. Using the trail buffer and trail line, find nearby water sources from
+          NHD dataset.
+
+        Args:
             wpt: Halfmile waypoints for given section of trail
             use_cache: Whether to use existing extracts
         """
@@ -67,21 +88,21 @@ class Trail:
             res = [gpd.read_file(path) for path in paths]
         else:
             # Generate OSM data
-            res = self.generate_osm_trail_data_for_section(
-                section_name=section_name,
-                polygon=polygon,
-                use_cache=use_cache)
+            res = self.generate_osm_trail_data()
             for gdf, path in zip(res, paths):
                 gdf.to_file(path, driver='GeoJSON')
 
         nodes, edges, intersections = res
 
+        # Get linestring from edges
+        trail_line = self.construct_linestring_from_edges(edges)
+
         # Parse OSM data
         self.parse_generated_osm_trail_data(nodes, edges, intersections)
 
-    def generate_osm_trail_data_for_section(
-            self, section_name, polygon, use_cache=True
-    ) -> (gpd.GeoDataFrame, gpd.GeoDataFrame, gpd.GeoDataFrame):
+
+    def generate_osm_trail_data(
+            self) -> (gpd.GeoDataFrame, gpd.GeoDataFrame, gpd.GeoDataFrame):
         """Generate OSM trail data for section
 
         This downloads OSM way data for the section, then generates the
@@ -100,11 +121,6 @@ class Trail:
           edge is current edge, another should be in the list of ways for the
           relation. Any other edges should be intersections with non PCT data
 
-        Args:
-            section_name: name of section, i.e. 'CA_A' or 'OR_C'. This is used to get the OSM way id's that represent that section.
-            polygon: buffer or bbox around trail, used to filter OSM data
-            use_cache: Whether to use existing extracts
-
         Returns:
             - pct_nodes_sorted: GeoDataFrame with OSMNX nodes that make up the
               trail, in sorted order for that section (from south to north)
@@ -121,13 +137,13 @@ class Trail:
         osm = OpenStreetMap()
 
         # Download osm ways for this section
-        g = osm.get_ways_for_section(polygon=polygon,
-                                     section_name=section_name,
-                                     overwrite=(not use_cache))
+        g = osm.get_ways_for_polygon(polygon=self.buffer,
+                                     section_name=self.section_name,
+                                     overwrite=(not self.use_cache))
         nodes, edges = ox.graph_to_gdfs(g)
 
         # Get ordered list of way ids for this section
-        way_ids = osm.get_way_ids_for_section(section_name=section_name)
+        way_ids = osm.get_way_ids_for_section(section_name=self.section_name)
         first_node = osm.get_nodes_for_way(way_id=way_ids[0])[0]
         last_node = osm.get_nodes_for_way(way_id=way_ids[-1])[-1]
 
