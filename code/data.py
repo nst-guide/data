@@ -1285,16 +1285,11 @@ class USGSHydrography(DataSource):
         for f in nhd_files:
             yield f
 
-    def nhd_files_for_geometry(self, geometry=None, gdf=None):
-        if (geometry is None) and (gdf is None):
-            raise ValueError('Either geometry or gdf must not be None')
-        if (geometry is not None) and (gdf is not None):
-            raise ValueError('Both geometry and gdf cannot not be provided')
-
-        if geometry is not None:
-            hu8_units = self._get_HU8_units_for_geometry(geometry)
-        elif gdf is not None:
+    def nhd_files_for_geometry(self, geometry):
+        if isinstance(geometry, gpd.GeoDataFrame):
             hu8_units = self._get_HU8_units_for_gdf(geometry)
+        else:
+            hu8_units = self._get_HU8_units_for_geometry(geometry)
 
         hu8_ids = hu8_units['HUC8'].unique()
         files = [
