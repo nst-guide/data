@@ -13,6 +13,7 @@ UTM10 = 'epsg:6339'
 UTM11 = 'epsg:6340'
 CA_ALBERS = 'epsg:3488'
 
+
 def buffer(gdf: gpd.GeoDataFrame, distance: float, unit: str) -> gpd.GeoSeries:
     """Create buffer around GeoDataFrame
 
@@ -46,6 +47,38 @@ def buffer(gdf: gpd.GeoDataFrame, distance: float, unit: str) -> gpd.GeoSeries:
     buffer = buffer.to_crs(epsg=4326)
 
     return buffer
+
+
+def to_2d(obj):
+    """Convert geometric object from 3D to 2D"""
+    if isinstance(obj, gpd.GeoDataFrame):
+        return _to_2d_gdf(obj)
+
+    try:
+        return transform(_to_2d_transform, obj)
+    except TypeError:
+        # Means already 2D
+        return obj
+
+
+def _to_2d_gdf(obj):
+    # Get geometry column
+    geometry = obj.geometry
+
+    # Replace geometry column with 2D coords
+    geometry_name = obj.geometry.name
+    try:
+        obj[geometry_name] = geometry.apply(
+            lambda g: transform(_to_2d_transform, g))
+    except TypeError:
+        # Means geometry is already 2D
+        pass
+
+    return obj
+
+
+def _to_2d_transform(x, y, z):
+    return tuple(filter(None, [x, y]))
 
 
 def reproject(obj, from_epsg, to_epsg):
