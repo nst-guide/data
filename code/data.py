@@ -354,7 +354,8 @@ class OpenStreetMap(DataSource):
         ox.save_graphml(g, graphml_path)
         return g
 
-    def get_way_ids_for_section(self, section_name, alternates=False) -> List[int]:
+    def get_way_ids_for_section(self, section_name,
+                                alternates=False) -> List[int]:
         """Get OSM way ids given section name
 
         Args:
@@ -371,7 +372,8 @@ class OpenStreetMap(DataSource):
 
         return self.get_way_ids_for_relation(section_id, alternates=alternates)
 
-    def get_way_ids_for_relation(self, relation_id, alternates=False) -> List[int]:
+    def get_way_ids_for_relation(self, relation_id,
+                                 alternates=False) -> List[int]:
         """Get OSM way ids given relation id
 
         Args:
