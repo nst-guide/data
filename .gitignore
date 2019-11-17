@@ -1,4 +1,5 @@
 # In the future, I'll include the data/ folder in Git, but for now, data's changing too often
+meta/
 /data/*
 !data/proj/state_planes.csv
 demo.html
