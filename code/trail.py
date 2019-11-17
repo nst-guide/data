@@ -310,7 +310,7 @@ class TrailSection:
         hydro = USGSHydrography()
         files = hydro.nhd_files_for_geometry(trail_line)
 
-    def _hydro_line(self, hydro, files, trail, buffer)
+    def _hydro_line(self, hydro, files, trail, buffer):
         INTERMITTENT = 46003
         PERENNIAL = 46006
         flowline = hydro.read_files(files=files, layer='NHDFlowline')
@@ -330,20 +330,26 @@ class TrailSection:
 
                 # Apparently, when two lines don't cross, the result is a
                 # GeometryCollection with `.geoms == []`
-                if isinstance(intersect, GeometryCollection) and (intersect.geoms == []):
+                if isinstance(intersect,
+                              GeometryCollection) and (intersect.geoms == []):
                     continue
 
                 # Generate row as the attributes of each gdf, then separately
                 # add geometry as the intersection point
-                row = [v for k, v in zip(flow_cols, flow) if k != flowline.geometry.name]
-                row.extend([v for k, v in zip(trail_cols, trail) if k != trail.geometry.name])
+                row = [
+                    v for k, v in zip(flow_cols, flow)
+                    if k != flowline.geometry.name
+                ]
+                row.extend([
+                    v for k, v in zip(trail_cols, trail)
+                    if k != trail.geometry.name
+                ])
                 row.append(intersect)
                 data.append(row)
 
         cols = [
             *[x for x in flow_cols if x != 'geometry'],
-            *[x for x in trail_cols if x != 'geometry'],
-            'geometry'
+            *[x for x in trail_cols if x != 'geometry'], 'geometry'
         ]
         gdf = gpd.GeoDataFrame(data, columns=cols)
 
