@@ -31,7 +31,7 @@ from geopandas.tools import sjoin
 from haversine import haversine
 from lxml import etree as ET
 from scipy.interpolate import interp2d
-from shapely.geometry import LineString, Point, box, mapping, shape
+from shapely.geometry import LineString, Point, Polygon, box, mapping, shape
 
 import geom
 import scrape
@@ -402,60 +402,125 @@ class OpenStreetMap(DataSource):
         way_ids = [int(x['ref']) for x in members if x['type'] == 'way']
         return way_ids
 
-    def _download_state_extracts(self, states, overwrite=False):
-        """Download state-level OSM extracts from geofabrik
+    def get_town_pois_for_polygon(self, polygon: Polygon):
+        """Get Point of Interests from OSM for polygon
+
+        Note: this function requires https://github.com/gboeing/osmnx/pull/342
+        to be merged. For now, I use my own fork.
+
+        Args:
+            - polygon: polygon to search within
+            - poi_type: either 'town', 'trail', or None.
         """
-        for state in states:
-            osm_path = self.raw_dir / f'{state}-latest.osm.pbf'
-            url = f'http://download.geofabrik.de/north-america/us/{state}-latest.osm.pbf'
-            if overwrite or (not osm_path.exists()):
-                urlretrieve(url, osm_path)
+        useful_tags_node = ox.settings.useful_tags_node
+        useful_tags_node.extend([
+            'historic', 'wikipedia', 'tourism', 'internet_access',
+            'washing_machine', 'phone', 'website'
+        ])
+        ox.config(useful_tags_node=useful_tags_node)
 
-    def create_extracts(self):
-        """Creates .o5m file for buffer area around trail
-        """
-        states = ['california', 'oregon', 'washington']
-        self._download_state_extracts(states, overwrite=False)
+        tags = {
+            'amenity': [
+                # Sustenance
+                'bar',
+                'biergarten',
+                'cafe',
+                'drinking_water',
+                'fast_food',
+                'food_court',
+                'ice_cream',
+                'pub',
+                'restaurant',
+                # Education
+                'library',
+                # Financial
+                'atm',
+                'bank',
+                # Healthcare
+                'clinic',
+                'hospital',
+                'pharmacy',
+                # Others
+                'post_office',
+                'public_bath',
+                'ranger_station',
+                'shower',
+                'toilets',
+            ],
+            'shop': [
+                # Food, beverages
+                'bakery',
+                'convenience',
+                # General store, department store, mall
+                'general',
+                'supermarket',
+                'wholesale',
+                # Outdoors and sport, vehicles                '',
+                'outdoor',
+                'sports',
+                # Others
+                'laundry',
+            ],
+            'tourism': [
+                'camp_site',
+                'hostel',
+                'hotel',
+                'motel',
+                'picnic_site',
+            ],
+        }  # yapf: ignore
 
-        # Get town boundaries and buffer from USFS track
-        # Then generate the union of the two
-        # The length of the multipolygon created from `.unary_union` is 3, which
-        # I believe means that all towns that currently have a hand-drawn
-        # geometry (except Winthrop, WA and Bend, OR) are within 20 miles of the
-        # trail and are included in the trail buffer.
-        trail_buffer = USFS().buffer(distance=20)
-        towns = Towns().boundaries()
-        union = pd.concat([trail_buffer, towns],
-                          sort=False).geometry.unary_union
+        gdf = ox.create_poi_gdf(polygon=polygon, tags=tags)
 
-        # Create OSM extract around trail
-        poly_text = util.multipolygon_to_osm_poly(union)
-        with NamedTemporaryFile('w+', suffix='.poly') as tmp:
-            # Write the .poly file
-            tmp.write(poly_text)
-            tmp.seek(0)
+        # Some geometries are polygons, so replace geometry with its centroid.
+        # For Points this makes no difference; for Polygons, this takes the
+        # centroid.
+        gdf.geometry = gdf.geometry.centroid
 
-            # TODO: put intermediate extracts into a tmp directory
-            for state in states:
-                osm_path = self.raw_dir / f'{state}-latest.osm.pbf'
-                new_path = self.raw_dir / f'{state}-pct.o5m'
-                cmd = [
-                    'osmconvert', osm_path, '--out-o5m', f'-B={tmp.name}', '>',
-                    new_path
-                ]
-                cmd = ' '.join([str(x) for x in cmd])
-                run(cmd, shell=True, check=True)
+        # Drop a couple columns
+        keep_cols = [
+            'osmid', 'geometry', 'name', 'amenity', 'tourism', 'shop',
+            'website', 'cuisine', 'opening_hours', 'brand:wikidata',
+            'internet_access', 'internet_access:fee', 'addr:housenumber',
+            'addr:street', 'addr:unit', 'addr:city', 'addr:state',
+            'addr:postcode'
+        ]
+        gdf = gdf.filter(items=keep_cols, axis=1)
 
-            cmd = 'osmconvert '
-            for state in states:
-                new_path = self.raw_dir / f'{state}-pct.o5m'
-                cmd += f'{new_path} '
-            new_path = self.raw_dir / f'pct.o5m'
-            cmd += f'-o={new_path}'
-            run(cmd, shell=True, check=True)
+        return gdf
 
-            # Now pct.o5m exists on disk and includes everything within a 20
-            # mile buffer and all towns
+    def get_trail_pois_for_polygon(self, polygon: Polygon):
+        useful_tags_node = ox.settings.useful_tags_node
+        useful_tags_node.extend(
+            ['historic', 'wikipedia', 'tourism', 'backcountry'])
+        ox.config(useful_tags_node=useful_tags_node)
+
+        tags = {
+            'amenity': [
+                'shelter',
+            ],
+            'natural': [
+                'peak',
+                'saddle',
+            ],
+            'tourism': [
+                'alpine_hut',
+                'camp_site',
+                'picnic_site',
+                'viewpoint',
+                'wilderness_hut',
+            ],
+        }  # yapf: ignore
+
+        gdf = ox.create_poi_gdf(polygon=polygon, tags=tags)
+
+        # Some geometries are polygons, so replace geometry with its centroid.
+        # For Points this makes no difference; for Polygons, this takes the
+        # centroid.
+        gdf.geometry = gdf.geometry.centroid
+
+        # TODO: keep only useful columns?
+        return gdf
 
 
 class StatePlaneZones(DataSource):
