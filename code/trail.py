@@ -3,7 +3,7 @@ import geopandas as gpd
 import numpy as np
 import pandas as pd
 from geopandas.tools import sjoin
-from shapely.geometry import LineString, Point, Polygon
+from shapely.geometry import LineString, Point, Polygon, GeometryCollection
 from shapely.ops import linemerge, polygonize
 
 import data as Data
@@ -84,22 +84,24 @@ class TrailSection:
             raw_dir / f'{section_name}_intersections.geojson'
         ]
 
+        # 1. Generate OSM trail data
         if use_cache and all(path.exists() for path in paths):
             res = [gpd.read_file(path) for path in paths]
         else:
-            # Generate OSM data
             res = self.generate_osm_trail_data()
             for gdf, path in zip(res, paths):
                 gdf.to_file(path, driver='GeoJSON')
 
         nodes, edges, intersections = res
 
-        # Get linestring from edges
+        # 2. Get centerline of trail from OSM data
         trail_line = self.construct_linestring_from_edges(edges)
 
-        # Parse OSM data
+        # 3. Parse OSM trail data
         self.parse_generated_osm_trail_data(nodes, edges, intersections)
 
+        # 4. Intersect with NHD data
+        self.intersect_hydrography(trail_line=trail_line)
 
     def generate_osm_trail_data(
             self) -> (gpd.GeoDataFrame, gpd.GeoDataFrame, gpd.GeoDataFrame):
@@ -297,6 +299,58 @@ class TrailSection:
 
         return deviance
 
+    def intersect_hydrography(self, trail_line):
+        # TODO: pass the trail + alternates
+        # TODO pass full OSM path network near trail (take out railways), so
+        # that I can find springs or other water sources that are off trail but
+        # there's a trail to them, + calculate distance
+        trail = gpd.GeoDataFrame([], geometry=[trail_line])
+        buffer = gpd.GeoDataFrame([], geometry=[self.buffer])
+
+        hydro = USGSHydrography()
+        files = hydro.nhd_files_for_geometry(trail_line)
+
+    def _hydro_line(self, hydro, files, trail, buffer)
+        INTERMITTENT = 46003
+        PERENNIAL = 46006
+        flowline = hydro.read_files(files=files, layer='NHDFlowline')
+        flowline = flowline[flowline['FCode'].isin([INTERMITTENT, PERENNIAL])]
+        flowline = sjoin(flowline, trail, how='inner')
+
+        # Intersect flowlines and trail to get points
+        flow_cols = flowline.columns
+        trail_cols = trail.columns
+        msg = 'Flowline and trail column names must be distinct'
+        assert all(x not in flow_cols for x in trail_cols), msg
+
+        data = []
+        for flow in flowline.itertuples(index=False):
+            for tr in trail.itertuples(index=False):
+                intersect = flow.geometry.intersection(tr.geometry)
+
+                # Apparently, when two lines don't cross, the result is a
+                # GeometryCollection with `.geoms == []`
+                if isinstance(intersect, GeometryCollection) and (intersect.geoms == []):
+                    continue
+
+                # Generate row as the attributes of each gdf, then separately
+                # add geometry as the intersection point
+                row = [v for k, v in zip(flow_cols, flow) if k != flowline.geometry.name]
+                row.extend([v for k, v in zip(trail_cols, trail) if k != trail.geometry.name])
+                row.append(intersect)
+                data.append(row)
+
+        cols = [
+            *[x for x in flow_cols if x != 'geometry'],
+            *[x for x in trail_cols if x != 'geometry'],
+            'geometry'
+        ]
+        gdf = gpd.GeoDataFrame(data, columns=cols)
+
+        gdf['perennial'] = gdf['FCode'] == PERENNIAL
+        gdf = gdf[['GNIS_Name', 'perennial', 'geometry']]
+        gdf = gdf.rename(columns={'GNIS_Name': 'name'})
+        return gdf.to_dict('records')
 
     def add_elevations_to_route(self):
         new_geoms = []
