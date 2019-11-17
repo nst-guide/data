@@ -34,6 +34,7 @@ from scipy.interpolate import interp2d
 from shapely.geometry import LineString, Point, box, mapping, shape
 
 import geom
+import scrape
 import util
 from grid import OneDegree, TenthDegree
 
@@ -826,6 +827,18 @@ class WildernessBoundaries(PolygonSource):
         self.url = 'http://www.wilderness.net/GIS/Wilderness_Areas.zip'
         self.filename = 'wilderness.geojson'
 
+    def regulations(self):
+        """Get regulations for each wilderness area from Wilderness Connect
+        """
+        gdf = self.polygon()
+        scraper = scrape.WildernessConnectScraper()
+
+        regs = []
+        for row in gdf.itertuples(index=False):
+            scraper.get(row.URL)
+            regs.append(scraper.regulations())
+
+        return regs
 
 class NationalParkBoundaries(PolygonSource):
     def __init__(self):
