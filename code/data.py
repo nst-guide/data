@@ -428,12 +428,9 @@ class OpenStreetMap(DataSource):
                 'cafe',
                 'drinking_water',
                 'fast_food',
-                'food_court',
                 'ice_cream',
                 'pub',
                 'restaurant',
-                # Education
-                'library',
                 # Financial
                 'atm',
                 'bank',
@@ -443,7 +440,6 @@ class OpenStreetMap(DataSource):
                 'pharmacy',
                 # Others
                 'post_office',
-                'public_bath',
                 'ranger_station',
                 'shower',
                 'toilets',
@@ -473,11 +469,6 @@ class OpenStreetMap(DataSource):
 
         gdf = ox.create_poi_gdf(polygon=polygon, tags=tags)
 
-        # Some geometries are polygons, so replace geometry with its centroid.
-        # For Points this makes no difference; for Polygons, this takes the
-        # centroid.
-        gdf.geometry = gdf.geometry.centroid
-
         # Drop a couple columns
         keep_cols = [
             'osmid', 'geometry', 'name', 'amenity', 'tourism', 'shop',
@@ -486,7 +477,23 @@ class OpenStreetMap(DataSource):
             'addr:street', 'addr:unit', 'addr:city', 'addr:state',
             'addr:postcode'
         ]
+        keep_cols = [x for x in keep_cols if x in gdf.columns]
         gdf = gdf.filter(items=keep_cols, axis=1)
+
+        if len(gdf) == 0:
+            return gdf
+
+        # Keep only rows with a non-missing name
+        if 'name' in gdf.columns:
+            gdf = gdf.loc[gdf['name'].notna()]
+
+        if len(gdf) == 0:
+            return gdf
+
+        # Some geometries are polygons, so replace geometry with its centroid.
+        # For Points this makes no difference; for Polygons, this takes the
+        # centroid.
+        gdf.geometry = gdf.geometry.centroid
 
         return gdf
 
@@ -499,10 +506,16 @@ class OpenStreetMap(DataSource):
         tags = {
             'amenity': [
                 'shelter',
+                'shower',
+                'toilets',
             ],
             'natural': [
                 'peak',
                 'saddle',
+            ],
+            'toilets:disposal': [
+                'pitlatrine',
+                'flush',
             ],
             'tourism': [
                 'alpine_hut',
@@ -905,6 +918,7 @@ class WildernessBoundaries(PolygonSource):
             regs.append(scraper.regulations())
 
         return regs
+
 
 class NationalParkBoundaries(PolygonSource):
     def __init__(self):
