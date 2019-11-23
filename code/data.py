@@ -36,6 +36,7 @@ from shapely.geometry import LineString, Point, Polygon, box, mapping, shape
 import geom
 import scrape
 import util
+from dev import Vis
 from grid import OneDegree, TenthDegree
 
 

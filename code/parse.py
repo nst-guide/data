@@ -27,7 +27,7 @@ def chunker(seq, size):
 
 
 class Parse(object):
-    """docstring for Parse"""
+    """Wrapper for Parse HTTP API"""
     def __init__(self,
                  app_id: str,
                  server_url: str,

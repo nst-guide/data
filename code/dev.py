@@ -33,7 +33,7 @@ SHAPELY_GEOJSON_CLASSES = [
 ]
 
 
-class Visualize:
+class Vis:
     """Quickly visualize data in browser over Mapbox tiles with the help of the AMAZING kepler.gl.
     """
     def __init__(self, data=None, names=None, read_only=False):
@@ -45,7 +45,7 @@ class Visualize:
                 data is not None, then Visualize(data) will perform all steps,
                 including rendering and opening a browser.
         """
-        super(Visualize, self).__init__()
+        super(Vis, self).__init__()
 
         dotenv.load_dotenv()
         self.MAPBOX_API_KEY = os.getenv('MAPBOX_GL_WEB_TESTING')
