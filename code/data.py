@@ -1356,7 +1356,7 @@ class USGSHydrography(DataSource):
 
     def download(self, trail: gpd.GeoDataFrame, overwrite=False):
         self._download_boundaries(overwrite=overwrite)
-        self._download_nhd_for_line(line=line, overwrite=overwrite)
+        self._download_nhd_for_line(line=trail, overwrite=overwrite)
 
     def load_nhd_iter(self) -> str:
         """Iterator to load NHD data for polygons that intersect the trail
@@ -1500,7 +1500,7 @@ class USGSHydrography(DataSource):
             hu8 = hu8.to_crs(epsg=4326)
             intersecting_hu8.append(sjoin(hu8, gdf, how='inner'))
 
-        return gpd.GeoDataFrame(pd.concat(all_intersecting_hu8))
+        return gpd.GeoDataFrame(pd.concat(intersecting_hu8))
 
     def _load_HU8_boundaries(self, hu2_id, region_size: str) -> GDF:
         """Load Subregion Watershed boundaries
