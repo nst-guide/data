@@ -6,8 +6,7 @@ def osm_poly_to_geojson(lines):
     # name = lines[0]
 
     section_starts = [
-        ind for ind, line in enumerate(lines)
-        if line[:3] not in ['   ', 'END']
+        ind for ind, line in enumerate(lines) if line[:3] not in ['   ', 'END']
     ]
     section_ends = [ind for ind, line in enumerate(lines) if line[:3] == 'END']
 
@@ -22,8 +21,8 @@ def osm_poly_to_geojson(lines):
         coords = [(float(coord[0]), float(coord[1])) for coord in coords]
 
         polygon = geojson.Polygon(coordinates=coords)
-        feature = geojson.Feature(geometry=polygon,
-                                  properties={'name': section_name})
+        feature = geojson.Feature(
+            geometry=polygon, properties={'name': section_name})
         features.append(feature)
 
     feature_collection = geojson.FeatureCollection(features)

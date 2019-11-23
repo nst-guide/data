@@ -96,8 +96,7 @@ class Towns(DataSource):
             # a side trail, they have the same section id
             min_dist = min_dist.drop_duplicates('section')
 
-            assert len(
-                min_dist) <= 2, "Boundary has > 2 trails it's closest to"
+            assert len(min_dist) <= 2, "Boundary has > 2 trails it's closest to"
 
             # If a town is touching two trail sections (like Belden), then just
             # pick one of them
@@ -140,10 +139,11 @@ class OpenStreetMap(DataSource):
         hm = Halfmile()
         for section_name, buf in hm.buffer_iter(distance=2, unit='mile'):
             print(f'Getting graph for section: {section_name}')
-            self.get_ways_for_polygon(polygon=buf,
-                                      section_name=section_name,
-                                      overwrite=overwrite,
-                                      simplify=simplify)
+            self.get_ways_for_polygon(
+                polygon=buf,
+                section_name=section_name,
+                overwrite=overwrite,
+                simplify=simplify)
             print(f'Finished getting graph for section: {section_name}')
 
     def get_relations_within_pct(self, trail_id):
@@ -283,11 +283,12 @@ class OpenStreetMap(DataSource):
         node_ids = [int(x['ref']) for x in soup.find_all('nd')]
         return node_ids
 
-    def get_ways_for_polygon(self,
-                             polygon,
-                             section_name,
-                             way_types=['highway', 'railway'],
-                             overwrite=False):
+    def get_ways_for_polygon(
+            self,
+            polygon,
+            section_name,
+            way_types=['highway', 'railway'],
+            overwrite=False):
         """Retrieve graph of OSM nodes and ways for given polygon
 
         I tested out downloading more than just ways tagged "highway"; to also
@@ -328,19 +329,21 @@ class OpenStreetMap(DataSource):
         useful_tags_path = ox.settings.useful_tags_path
         useful_tags_path.extend(['surface', 'wikipedia'])
         useful_tags_path.extend(way_types)
-        ox.config(useful_tags_node=useful_tags_node,
-                  useful_tags_path=useful_tags_path)
+        ox.config(
+            useful_tags_node=useful_tags_node,
+            useful_tags_path=useful_tags_path)
 
         # Get all ways, then restrict to ways of type `way_types`
         # https://github.com/gboeing/osmnx/issues/151#issuecomment-379491607
-        g = ox.graph_from_polygon(polygon,
-                                  simplify=False,
-                                  clean_periphery=True,
-                                  retain_all=True,
-                                  network_type='all_private',
-                                  truncate_by_edge=True,
-                                  name=section_name,
-                                  infrastructure='way')
+        g = ox.graph_from_polygon(
+            polygon,
+            simplify=False,
+            clean_periphery=True,
+            retain_all=True,
+            network_type='all_private',
+            truncate_by_edge=True,
+            name=section_name,
+            infrastructure='way')
 
         # strict=False is very important so that `osmid` in the resulting edges
         # DataFrame is never a List
@@ -550,15 +553,13 @@ class StatePlaneZones(DataSource):
         url = 'http://sandbox.idre.ucla.edu/mapshare/data/usa/other/spcszn83.zip'
         zones = gpd.read_file(url)
         epsg_zones = pd.read_csv(self.data_dir / 'proj' / 'state_planes.csv')
-        zones = zones.merge(epsg_zones,
-                            left_on='ZONENAME',
-                            right_on='zone',
-                            validate='1:1')
+        zones = zones.merge(
+            epsg_zones, left_on='ZONENAME', right_on='zone', validate='1:1')
 
         minimal = zones[['geometry', 'epsg', 'zone']]
         minimal = minimal.rename(columns={'zone': 'name'})
-        minimal.to_file(self.data_dir / 'proj' / 'state_planes.geojson',
-                        driver='GeoJSON')
+        minimal.to_file(
+            self.data_dir / 'proj' / 'state_planes.geojson', driver='GeoJSON')
 
 
 class Halfmile(DataSource):
@@ -578,7 +579,7 @@ class Halfmile(DataSource):
         states = ['ca', 'or', 'wa']
         headers = {
             'User-Agent':
-            'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/77.0.3865.90 Safari/537.36',
+                'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/77.0.3865.90 Safari/537.36',
         }
 
         # First just download the zip files to the raw directory
@@ -642,8 +643,7 @@ class Halfmile(DataSource):
                 'description': wpt.description,
                 'symbol': wpt.symbol,
             }
-            features.append(geojson.Feature(geometry=pt,
-                                            properties=properties))
+            features.append(geojson.Feature(geometry=pt, properties=properties))
 
         return geojson.FeatureCollection(features)
 
@@ -789,8 +789,8 @@ class USFS(DataSource):
         save_dir = self.data_dir / 'pct' / 'polygon' / 'usfs'
         save_dir.mkdir(parents=True, exist_ok=True)
 
-        buffer.to_file(save_dir / f'buffer{distance}mi.geojson',
-                       driver='GeoJSON')
+        buffer.to_file(
+            save_dir / f'buffer{distance}mi.geojson', driver='GeoJSON')
 
 
 class GPSTracks(DataSource):
@@ -843,8 +843,8 @@ class GPSTracks(DataSource):
             geojson.dump(fc, f)
 
     def trail(self):
-        gdf = gpd.read_file(self.data_dir / 'pct' / 'line' / 'gps_track' /
-                            'gps_track.geojson')
+        gdf = gpd.read_file(
+            self.data_dir / 'pct' / 'line' / 'gps_track' / 'gps_track.geojson')
         return gdf
 
 
@@ -859,7 +859,12 @@ class PolygonSource(DataSource):
         files = [self.filename]
         return all((self.save_dir / f).exists() for f in files)
 
-    def download(self, trail: gpd.GeoDataFrame, overwrite=False):
+    def download(
+            self,
+            trail: gpd.GeoDataFrame,
+            buffer_dist=None,
+            buffer_unit='mile',
+            overwrite=False):
         """Download polygon shapefile and intersect with PCT track
         """
         assert self.url is not None, 'self.url must be set'
@@ -1047,8 +1052,8 @@ class Transit(DataSource):
         # walkable distance from the trail (currently set to 1000m)
         for operator in operators_near_trail:
             # First, see if this operator actually has stops near the trail
-            stops = self.get_stops_near_trail(operator['onestop_id'],
-                                              distance=1000)
+            stops = self.get_stops_near_trail(
+                operator['onestop_id'], distance=1000)
             if len(stops) == 0:
                 continue
 
@@ -1101,10 +1106,8 @@ class Transit(DataSource):
 
         return operators_on_trail
 
-    def get_stops_near_trail(self,
-                             trail_line: LineString,
-                             operator_id,
-                             distance=1000):
+    def get_stops_near_trail(
+            self, trail_line: LineString, operator_id, distance=1000):
         """Find all stops in Transitland database that are near trail
 
         Args:
@@ -1122,9 +1125,8 @@ class Transit(DataSource):
             nearest_trail_point = trail_line.interpolate(
                 trail_line.project(point))
 
-            dist = haversine(*point.coords,
-                             *nearest_trail_point.coords,
-                             unit='m')
+            dist = haversine(
+                *point.coords, *nearest_trail_point.coords, unit='m')
             if dist < distance:
                 stop['distance_to_trail'] = dist
                 stops_near_trail.append(stop)
@@ -1184,8 +1186,8 @@ class Transit(DataSource):
                 'vehicle_type': route['vehicle_type'],
                 'operated_by_name': route['operated_by_name'],
             }
-            feature = geojson.Feature(geometry=route['geometry'],
-                                      properties=properties)
+            feature = geojson.Feature(
+                geometry=route['geometry'], properties=properties)
             features.append(feature)
         geojson.FeatureCollection(features)
 
@@ -1262,6 +1264,9 @@ class NationalElevationDataset(DataSource):
     def extract(self):
         """Unzip elevation ZIP files
 
+        TODO: name of .img file inside ZIP can change; use ZipFile to find the
+        .img file
+        TODO delete ZIP file after extract?
         Only extract .img file from ZIP file to keep directory clean
         """
         zip_fnames = self.files('.zip')
@@ -1271,11 +1276,12 @@ class NationalElevationDataset(DataSource):
             cmd = ['unzip', '-o', zip_fname, img_name, '-d', out_dir]
             run(cmd, check=True)
 
-    def query(self,
-              lon: float,
-              lat: float,
-              num_buffer: int = 1,
-              interp_kind: str = 'linear') -> float:
+    def query(
+            self,
+            lon: float,
+            lat: float,
+            num_buffer: int = 1,
+            interp_kind: str = 'linear') -> float:
         """Query elevation data for given point
 
         NOTE: if you want to interpolate over neighboring squares, you can
@@ -1327,8 +1333,8 @@ class NationalElevationDataset(DataSource):
 
         msg = 'array has too few or too many values'
         max_num = 2 * num_buffer + 1
-        assert (1 <= val_arr.shape[0] <= max_num) and (1 <= val_arr.shape[1] <=
-                                                       max_num), msg
+        assert (1 <= val_arr.shape[0] <=
+                max_num) and (1 <= val_arr.shape[1] <= max_num), msg
 
         # Now linearly interpolate
         # Get actual lat/lons
@@ -1624,8 +1630,8 @@ class PCTWaterReport(DataSource):
         df = df.rename(columns=rename_dict)
 
         should_be = [
-            'map', 'mile', 'mile_old', 'waypoint', 'location', 'report',
-            'date', 'reported by', 'posted'
+            'map', 'mile', 'mile_old', 'waypoint', 'location', 'report', 'date',
+            'reported by', 'posted'
         ]
         invalid_cols = set(df.columns).difference(should_be)
         if invalid_cols:
@@ -1648,8 +1654,8 @@ class PCTWaterReport(DataSource):
         idx_cols = df.columns.difference(['report'])
         new_cols_df = pd.DataFrame(df['report'].str.split('\n').tolist())
         # name columns as report0, report1, report2
-        new_cols_df = new_cols_df.rename(mapper=lambda col: f'report{col}',
-                                         axis=1)
+        new_cols_df = new_cols_df.rename(
+            mapper=lambda col: f'report{col}', axis=1)
 
         # Append these new columns to full df
         assert len(df) == len(new_cols_df)
@@ -1665,10 +1671,8 @@ class PCTWaterReport(DataSource):
         # Melt from wide to long
         # Bug prevents working when date is a datetime dtype
         df['date'] = df['date'].astype(str)
-        reshaped = pd.wide_to_long(df,
-                                   stubnames='report',
-                                   i=idx_cols,
-                                   j='report_num')
+        reshaped = pd.wide_to_long(
+            df, stubnames='report', i=idx_cols, j='report_num')
         reshaped = reshaped.reset_index()
         # remove new j column
         reshaped = reshaped.drop('report_num', axis=1)
@@ -1677,8 +1681,7 @@ class PCTWaterReport(DataSource):
 
         return reshaped
 
-    def _assemble_df_with_named_columns(self,
-                                        df: pd.DataFrame) -> pd.DataFrame:
+    def _assemble_df_with_named_columns(self, df: pd.DataFrame) -> pd.DataFrame:
         """Create DataFrame with named columns
 
         Column order changes across time in the water reports. Instead of
@@ -2013,8 +2016,8 @@ class EPAAirNow(DataSource):
                     properties = {'style_id': style_id}
                     properties.update(style)
 
-                    json_feature = geojson.Feature(geometry=placemark.geometry,
-                                                   properties=properties)
+                    json_feature = geojson.Feature(
+                        geometry=placemark.geometry, properties=properties)
                     featurecollection.append(json_feature)
 
         return geojson.FeatureCollection(features=featurecollection)
@@ -2067,8 +2070,8 @@ class GeoMAC(DataSource):
                 desc = self._parse_description(placemark.description)
                 properties.update(desc)
 
-                json_feature = geojson.Feature(geometry=placemark.geometry,
-                                               properties=properties)
+                json_feature = geojson.Feature(
+                    geometry=placemark.geometry, properties=properties)
                 featurecollection.append(json_feature)
 
         return geojson.FeatureCollection(features=featurecollection)
@@ -2157,6 +2160,7 @@ class RecreationGov(DataSource):
         df = pd.read_csv(BytesIO(z.read('Facilities_API_v1.csv')))
         gdf = gpd.GeoDataFrame(
             df,
-            geometry=df.apply(lambda row: Point(row['FacilityLongitude'], row[
-                'FacilityLatitude']),
-                              axis=1))
+            geometry=df.apply(
+                lambda row: Point(
+                    row['FacilityLongitude'], row['FacilityLatitude']),
+                axis=1))

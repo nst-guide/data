@@ -82,8 +82,9 @@ def _to_2d_transform(x, y, z):
 
 
 def reproject(obj, from_epsg, to_epsg):
-    project = partial(pyproj.transform, pyproj.Proj(init=from_epsg),
-                      pyproj.Proj(init=to_epsg))
+    project = partial(
+        pyproj.transform, pyproj.Proj(init=from_epsg),
+        pyproj.Proj(init=to_epsg))
 
     return transform(project, obj)
 

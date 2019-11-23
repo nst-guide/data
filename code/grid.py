@@ -122,9 +122,7 @@ class TenthDegree:
                 intersecting_bboxes.append(bbox)
 
         # Find center points and round to nearest .1
-        centerpoints = [
-            list(x.centroid.coords)[0] for x in intersecting_bboxes
-        ]
+        centerpoints = [list(x.centroid.coords)[0] for x in intersecting_bboxes]
         centerpoints = [(round(coord[0], 1), round(coord[1], 1))
                         for coord in centerpoints]
         return centerpoints

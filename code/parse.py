@@ -28,11 +28,12 @@ def chunker(seq, size):
 
 class Parse(object):
     """Wrapper for Parse HTTP API"""
-    def __init__(self,
-                 app_id: str,
-                 server_url: str,
-                 master_key: str = None,
-                 rest_key: str = None):
+    def __init__(
+            self,
+            app_id: str,
+            server_url: str,
+            master_key: str = None,
+            rest_key: str = None):
         """Wrapper for Parse HTTP API
 
         Args:
@@ -93,10 +94,11 @@ class Parse(object):
     def encode_relation(self, class_name: str):
         return {'__type': 'Relation', 'className': 'GameScore'}
 
-    def upload_gdf(self,
-                   gdf: gpd.GeoDataFrame,
-                   class_name: str,
-                   upload_altitude: bool = True):
+    def upload_gdf(
+            self,
+            gdf: gpd.GeoDataFrame,
+            class_name: str,
+            upload_altitude: bool = True):
         """Upload GeoDataFrame to Parse
 
         Args:
@@ -206,8 +208,9 @@ class Parse(object):
         r = requests.post(url, data=json.dumps(data), headers=headers)
         return r.json()
 
-    def upload_file(self, data: Union[str, bytes], fname: str,
-                    content_type: str) -> dict:
+    def upload_file(
+            self, data: Union[str, bytes], fname: str,
+            content_type: str) -> dict:
         """Upload file
 
         data: Text or binary data to upload. Requests apparently automatically sends bytes as base64.

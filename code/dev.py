@@ -65,11 +65,11 @@ class Vis:
             keplergl_config = json.load(f)
 
         # Replace redacted API key with actual API key
-        keplergl_config['config']['config']['mapStyle']['mapStyles'][
-            'aobtafp']['accessToken'] = self.MAPBOX_API_KEY
-        keplergl_config['config']['config']['mapStyle']['mapStyles'][
-            'aobtafp']['icon'] = keplergl_config['config']['config'][
-                'mapStyle']['mapStyles']['aobtafp']['icon'].replace(
+        keplergl_config['config']['config']['mapStyle']['mapStyles']['aobtafp'][
+            'accessToken'] = self.MAPBOX_API_KEY
+        keplergl_config['config']['config']['mapStyle']['mapStyles']['aobtafp'][
+            'icon'] = keplergl_config['config']['config']['mapStyle'][
+                'mapStyles']['aobtafp']['icon'].replace(
                     'access_token=redacted',
                     f'access_token={self.MAPBOX_API_KEY}')
 
