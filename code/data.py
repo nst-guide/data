@@ -916,12 +916,9 @@ class PolygonSource(DataSource):
     def polygon(self) -> gpd.GeoDataFrame:
         """Load Polygon as GeoDataFrame
         """
-        if self.downloaded():
-            path = self.save_dir / self.filename
-            polygon = gpd.read_file(path)
-            return polygon
-
-        raise ValueError('trails not yet downloaded')
+        path = self.save_dir / self.filename
+        polygon = gpd.read_file(path)
+        return polygon
 
 
 class WildernessBoundaries(PolygonSource):
