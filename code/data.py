@@ -654,10 +654,17 @@ class Halfmile(DataSource):
         for section_name, gdf in self.trail_iter(alternates=True):
             yield section_name, gdf.unary_union.bounds
 
-    def buffer_iter(self, distance, unit='mile'):
+    def buffer_full(self, distance, unit='mile', alternates=True):
+        """
+        """
+        trail = self.trail_full(alternates=alternates)
+        buf = geom.buffer(trail, distance=distance, unit=unit).unary_union
+        return buf
+
+    def buffer_iter(self, distance, unit='mile', alternates=True):
         """Get buffer around each section
         """
-        for section_name, gdf in self.trail_iter(alternates=True):
+        for section_name, gdf in self.trail_iter(alternates=alternates):
             buf = geom.buffer(gdf, distance=distance, unit=unit).unary_union
             yield section_name, buf
 
