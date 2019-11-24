@@ -1,8 +1,10 @@
 from functools import partial
+from math import sqrt
 
 import geopandas as gpd
 import pint
 import pyproj
+from shapely.geometry import GeometryCollection, MultiPolygon, Polygon, box
 from shapely.ops import transform
 
 ureg = pint.UnitRegistry()
@@ -103,3 +105,111 @@ def wgs_to_web_mercator(obj):
 
 def web_mercator_to_wgs(obj):
     return reproject(obj, WEB_MERCATOR, WGS84)
+
+
+def find_circles_that_tile_polygon(polygon, circle_radius):
+    """
+    Following this article [0], I'll split into smaller and smaller rectangles
+    until each rectangle is small enough to be circumscribed within
+    `circle_radius`.
+
+    [0]: https://snorfalorpagus.net/blog/2016/03/13/splitting-large-polygons-for-faster-intersections/
+
+    Args:
+        - polygon
+        - circle_radius: radius in meters
+
+    """
+    # Find box radius (for a square box)
+    box_diameter = (circle_radius / sqrt(2)) * 2
+
+    # First, reproject polygon so that I can work in meters
+    polygon = reproject(polygon, WGS84, CA_ALBERS)
+
+    # Split polygon
+    res = katana(polygon, threshold=box_diameter)
+
+    # For each polygon, find the centroid and then find the max distance from
+    # the centroid back to the polygon
+    circles = []
+    for poly in res:
+        centroid = poly.centroid
+        max_dist = centroid.hausdorff_distance(poly)
+        circle = centroid.buffer(max_dist)
+        circles.append(circle)
+
+    # Reproject back to WGS84
+    return [reproject(circle, CA_ALBERS, WGS84) for circle in circles]
+
+
+def katana(geometry, threshold, count=0):
+    """Split a Polygon into two parts across it's shortest dimension
+
+    Args:
+        - geometry: geometry to split
+        - threshold: maximum width or height for each box
+
+    Retrieved from:
+    https://snorfalorpagus.net/blog/2016/03/13/splitting-large-polygons-for-faster-intersections/
+
+    Copyright © 2016, Joshua Arnott
+
+    All rights reserved.
+
+    Redistribution and use in source and binary forms, with or without
+    modification, are permitted provided that the following conditions are met:
+
+    1. Redistributions of source code must retain the above copyright notice,
+        this list of conditions and the following disclaimer.
+    2. Redistributions in binary form must reproduce the above copyright notice,
+        this list of conditions and the following disclaimer in the
+        documentation and/or other materials provided with the distribution.
+
+    THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS “AS IS”
+    AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+    IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+    ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE
+    LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+    CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+    SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+    INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+    CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+    ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+    POSSIBILITY OF SUCH DAMAGE.
+    """
+    bounds = geometry.bounds
+    width = bounds[2] - bounds[0]
+    height = bounds[3] - bounds[1]
+    if max(width, height) <= threshold or count == 250:
+        # either the polygon is smaller than the threshold, or the maximum
+        # number of recursions has been reached
+        return [geometry]
+    if height >= width:
+        # split left to right
+        a = box(bounds[0], bounds[1], bounds[2], bounds[1] + height / 2)
+        b = box(bounds[0], bounds[1] + height / 2, bounds[2], bounds[3])
+    else:
+        # split top to bottom
+        a = box(bounds[0], bounds[1], bounds[0] + width / 2, bounds[3])
+        b = box(bounds[0] + width / 2, bounds[1], bounds[2], bounds[3])
+    result = []
+    for d in (
+            a,
+            b,
+    ):
+        c = geometry.intersection(d)
+        if not isinstance(c, GeometryCollection):
+            c = [c]
+        for e in c:
+            if isinstance(e, (Polygon, MultiPolygon)):
+                result.extend(katana(e, threshold, count + 1))
+    if count > 0:
+        return result
+    # convert multipart into singlepart
+    final_result = []
+    for g in result:
+        if isinstance(g, MultiPolygon):
+            final_result.extend(g)
+        else:
+            final_result.append(g)
+    return final_result
