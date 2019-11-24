@@ -1982,13 +1982,14 @@ class EPAAirNow(DataSource):
         self.api_key = os.getenv('EPA_AIRNOW_API_KEY')
         assert self.api_key is not None, 'EPA AIRNOW key missing'
 
-    def download(self, bbox=None):
+    def download(self, bbox=None, air_measure='PM25'):
         """Get current air pollution conditions from EPA AirNow
 
         Args:
             bbox: Bounding box for API request. You can only do 5 requests per
                 hour with your API key, so choose a large bounding box, i.e.
                 probably entire US.
+            air_measure: either 'PM25', 'Combined', or 'Ozone'
         """
         # Date string (yyyy-mm-ddTHH)
         # January 1, 2012 at 1PM would be sent as: 2012-01-01T13
@@ -2003,7 +2004,10 @@ class EPAAirNow(DataSource):
         bbox_str = [str(x) for x in bbox]
 
         # You can choose between just PM2.5, Ozone, and Combined
-        url = 'http://www.airnowapi.org/aq/kml/PM25/'
+        air_measure_valid_values = ['PM25', 'Combined', 'Ozone']
+        msg = 'air_measure must be one of {air_measure_valid_values}'
+        assert air_measure in air_measure_valid_values, msg
+        url = f'http://www.airnowapi.org/aq/kml/{air_measure}/'
         params = {
             'DATE': time_str,
             'BBOX': ','.join(bbox_str),
