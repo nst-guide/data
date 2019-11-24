@@ -32,11 +32,13 @@ from geopandas.tools import sjoin
 from haversine import haversine
 from scipy.interpolate import interp2d
 from shapely.geometry import LineString, Point, Polygon, shape
+from shapely.prepared import prep
 
 import geom
 import scrape
 from dev import Vis
 from grid import OneDegree, TenthDegree
+from util import normalize_string
 
 
 def in_ipython():
@@ -2295,19 +2297,27 @@ class Wikipedia(DataSource):
             radius=radius)
         return res
 
-    def find_page_titles_for_polygon(self, polygon):
+    def find_pages_for_polygon(self, polygon):
         """Find pages within polygon using repeated Geosearch
 
         The Geosearch API has no polygon support; only point. To get around
         this, I first find a collection of circles that together tile the
         polygon, then for each circle I call the geosearch API.
         """
-        circles = geom.find_circles_that_tile_polygon(polygon)
+        circles = geom.find_circles_that_tile_polygon(polygon, radius=10000)
         titles = set()
-        for circle in circles:
-            point = circle.center
-            radius = circle.radius
-            res = self.find_page_titles_around_point(point, radius=radius)
+        for circle, radius in circles:
+            res = self.find_page_titles_around_point(
+                point=circle.centroid, radius=math.ceil(radius))
             titles.update(res)
 
-        return titles
+        pages = [wikipedia.page(title) for title in titles]
+        # [::-1] because returned as lat, lon. Point requires lon, lat
+        # "To test one polygon containment against a large batch of points, one
+        # should first use the prepared.prep() function"
+        prepared_polygon = prep(polygon)
+        pages = [
+            page for page in pages
+            if prepared_polygon.contains(Point(page.coordinates[::-1]))
+        ]
+        return pages

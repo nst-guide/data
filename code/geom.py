@@ -1,5 +1,6 @@
 from functools import partial
 from math import sqrt
+from typing import List
 
 import geopandas as gpd
 import pint
@@ -107,21 +108,22 @@ def web_mercator_to_wgs(obj):
     return reproject(obj, WEB_MERCATOR, WGS84)
 
 
-def find_circles_that_tile_polygon(polygon, circle_radius):
+def find_circles_that_tile_polygon(polygon, radius) -> List[Polygon, float]:
     """
     Following this article [0], I'll split into smaller and smaller rectangles
-    until each rectangle is small enough to be circumscribed within
-    `circle_radius`.
+    until each rectangle is small enough to be circumscribed within `radius`.
 
     [0]: https://snorfalorpagus.net/blog/2016/03/13/splitting-large-polygons-for-faster-intersections/
 
     Args:
-        - polygon
-        - circle_radius: radius in meters
+        - polygon: polygon in WGS84
+        - radius: radius in meters
 
+    Returns:
+        - list of (circle Polygons, circle radius)
     """
     # Find box radius (for a square box)
-    box_diameter = (circle_radius / sqrt(2)) * 2
+    box_diameter = (radius / sqrt(2)) * 2
 
     # First, reproject polygon so that I can work in meters
     polygon = reproject(polygon, WGS84, CA_ALBERS)
@@ -132,21 +134,26 @@ def find_circles_that_tile_polygon(polygon, circle_radius):
     # For each polygon, find the centroid and then find the max distance from
     # the centroid back to the polygon
     circles = []
+    distances = []
     for poly in res:
         centroid = poly.centroid
         max_dist = centroid.hausdorff_distance(poly)
         circle = centroid.buffer(max_dist)
         circles.append(circle)
+        distances.append(max_dist)
 
     # Reproject back to WGS84
-    return [reproject(circle, CA_ALBERS, WGS84) for circle in circles]
+    reprojected_circles = [
+        reproject(circle, CA_ALBERS, WGS84) for circle in circles
+    ]
+    return zip(reprojected_circles, distances)
 
 
 def katana(geometry, threshold, count=0):
     """Split a Polygon into two parts across it's shortest dimension
 
     Args:
-        - geometry: geometry to split
+        - geometry: _projected_ geometry to split
         - threshold: maximum width or height for each box
 
     Retrieved from:

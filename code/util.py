@@ -1,5 +1,5 @@
 import geojson
-
+import string
 
 def osm_poly_to_geojson(lines):
     lines = [line.rstrip() for line in lines]
@@ -56,3 +56,12 @@ def coords_to_osm_poly(coords):
     lines.append('END')
     lines.append('END')
     return '\n'.join(lines)
+
+
+def normalize_string(s):
+    """Normalize string
+
+    Very simple string normalization. Just lower case and then keep only ascii
+    letters. So "Yosemite National Park" would become "yosemitenationalpark".
+    """
+    return ''.join([x for x in s.lower() if x in string.ascii_letters])
