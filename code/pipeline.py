@@ -33,7 +33,14 @@ def current_weather():
 
 def current_air_quality():
     """
-    TODO: currently, there's a property named 'color' that has the air quality severity. You should find
+    TODO: currently, there's a property named 'color' that has the air quality
+    severity. An air quality color crosswalk is here:
+    https://www3.epa.gov/airnow/tvweather/airnow_mapping.pdf
+
+    It looks like the color is "abgr"??? aka reverse of rgba??
+
+    Or will `style_id = 1` always be Moderate and `style_id = 2` always be
+    Unhealthy for Sensitive Groups? Probably not.
     """
     airnow = EPAAirNow()
     for air_measure in ['PM25', 'Combined', 'Ozone']:

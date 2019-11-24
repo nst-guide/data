@@ -1996,6 +1996,7 @@ class EPAAirNow(DataSource):
         fmt = '%Y-%m-%dT%H'
         time_str = (time - timedelta(hours=3)).strftime(fmt)
 
+        # TODO: Fix this bbox. Right now it's only a part of central CA
         if bbox is None:
             bbox = (-121.923904, 36.903504, -117.924881, 40.268781)
         bbox_str = [str(x) for x in bbox]
