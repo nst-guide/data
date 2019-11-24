@@ -8,8 +8,8 @@ from datetime import datetime, timedelta
 from io import BytesIO
 from pathlib import Path
 from subprocess import run
-from tempfile import NamedTemporaryFile
 from typing import List, Union
+from urllib.parse import urlparse
 from urllib.request import urlretrieve
 from zipfile import ZipFile
 
@@ -29,13 +29,11 @@ from fiona.io import ZipMemoryFile
 from geopandas import GeoDataFrame as GDF
 from geopandas.tools import sjoin
 from haversine import haversine
-from lxml import etree as ET
 from scipy.interpolate import interp2d
-from shapely.geometry import LineString, Point, Polygon, box, mapping, shape
+from shapely.geometry import LineString, Point, Polygon, shape
 
 import geom
 import scrape
-import util
 from dev import Vis
 from grid import OneDegree, TenthDegree
 
@@ -662,7 +660,7 @@ class Halfmile(DataSource):
 
     @property
     def trk_geojsons(self):
-        return sorted(self.line_dir.glob('*.geojson'))
+        return sorted(self.line_dir.glob('*_tracks.geojson'))
 
     def _get_section(self, geojson_fname):
         # parse filename to get section
@@ -851,13 +849,11 @@ class GPSTracks(DataSource):
 class PolygonSource(DataSource):
     def __init__(self):
         super(PolygonSource, self).__init__()
-        self.save_dir = self.data_dir / 'pct' / 'polygon'
+        self.save_dir = None
         self.url = None
         self.filename = None
-
-    def downloaded(self) -> bool:
-        files = [self.filename]
-        return all((self.save_dir / f).exists() for f in files)
+        self.raw_dir = self.data_dir / 'raw' / 'polygon'
+        self.raw_dir.mkdir(exist_ok=True, parents=True)
 
     def download(
             self,
@@ -867,17 +863,22 @@ class PolygonSource(DataSource):
             overwrite=False):
         """Download polygon shapefile and intersect with PCT track
         """
+        assert self.save_dir is not None, 'self.save_dir must be set'
         assert self.url is not None, 'self.url must be set'
         assert self.filename is not None, 'self.filename must be set'
 
-        if self.downloaded() or (not overwrite):
-            return
+        # Cache original download in self.raw_dir
+        parsed_url = urlparse(self.url)
+        raw_fname = Path(parsed_url.path).name
+        raw_path = self.raw_dir / raw_fname
+        if overwrite or (not raw_path.exists()):
+            urlretrieve(self.url, raw_path)
 
-        # Load the FeatureCollection into a GeoDataFrame
-        r = requests.get(self.url)
-        with fiona.BytesCollection(bytes(r.content)) as f:
-            crs = f.crs
-            gdf = gpd.GeoDataFrame.from_features(f, crs=crs)
+        # Now load the saved file as a GeoDataFrame
+        with open(raw_path, 'rb') as f:
+            with fiona.BytesCollection(f.read()) as fcol:
+                crs = fcol.crs
+                gdf = gpd.GeoDataFrame.from_features(fcol, crs=crs)
 
         # Reproject to WGS84
         gdf = gdf.to_crs(epsg=4326)
@@ -887,11 +888,30 @@ class PolygonSource(DataSource):
         trail = trail.to_crs(epsg=4326)
 
         # Intersect with the trail
-        intersection = sjoin(gdf, trail, how='inner')
+        if buffer_dist is not None:
+            buf = geom.buffer(trail, distance=buffer_dist, unit=buffer_unit)
+            # Returned as GeoSeries; coerce to GDF
+            if not isinstance(buf, gpd.GeoDataFrame):
+                buf = gpd.GeoDataFrame(geometry=buf)
+                buf = buf.to_crs(epsg=4326)
+
+            intersection = sjoin(gdf, buf, how='inner')
+        else:
+            intersection = sjoin(gdf, trail, how='inner')
+
+        # Do any specific steps, to be overloaded in subclasses
+        intersection = self._post_download(intersection)
 
         # Save to GeoJSON
         self.save_dir.mkdir(exist_ok=True, parents=True)
         intersection.to_file(self.save_dir / self.filename, driver='GeoJSON')
+
+    def _post_download(self, gdf):
+        """Situation specific post-download steps
+
+        To be overloaded in subclasses
+        """
+        return gdf
 
     def polygon(self) -> gpd.GeoDataFrame:
         """Load Polygon as GeoDataFrame
