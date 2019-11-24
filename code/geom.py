@@ -81,6 +81,14 @@ def _to_2d_transform(x, y, z):
     return tuple(filter(None, [x, y]))
 
 
+def reproject_gdf(gdf, from_epsg, to_epsg):
+    gdf[gdf.geometry.name] = gdf.apply(
+        lambda row: reproject(
+            row.geometry, from_epsg=from_epsg, to_epsg=to_epsg),
+        axis=1)
+    return gdf
+
+
 def reproject(obj, from_epsg, to_epsg):
     project = partial(
         pyproj.transform, pyproj.Proj(init=from_epsg),
