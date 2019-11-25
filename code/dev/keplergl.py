@@ -61,7 +61,11 @@ class Vis:
     def config(self):
         """Load kepler.gl config and insert Mapbox API Key"""
 
-        with open('keplergl_config.json') as f:
+        import os
+        current_directory = os.path.dirname(os.path.abspath(__file__))
+        config_file = Path(current_directory) / 'keplergl_config.json'
+
+        with open(config_file) as f:
             keplergl_config = json.load(f)
 
         # Replace redacted API key with actual API key
