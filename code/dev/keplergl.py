@@ -2,6 +2,7 @@
 
 import json
 import os
+import tempfile
 import webbrowser
 from pathlib import Path
 
@@ -111,8 +112,9 @@ class Vis:
     def render(self, open_chrome=True, read_only=False):
         """Export kepler.gl map to HTML file and open in Chrome
         """
-        html_path = 'demo.html'
-        self.map.save_to_html(file_name=html_path, read_only=read_only)
+        # Generate path to a temporary file
+        path = os.path.join(tempfile.mkdtemp(), 'vis.html')
+        self.map.save_to_html(file_name=path, read_only=read_only)
 
         # Open Chrome to saved page
         # Note, path to Chrome executable likely different on Windows/Linux
@@ -122,6 +124,6 @@ class Vis:
         if Path(chrome_bin).exists() and open_chrome:
             # Add \ to spaces
             s = 'open -a ' + chrome_bin.replace(' ', '\ ') + ' %s'
-            webbrowser.get(s).open(html_path)
+            webbrowser.get(s).open(path)
         else:
             print('Warning: Chrome binary not found; path ')
