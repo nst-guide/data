@@ -3,7 +3,7 @@ import os
 import requests
 from dotenv import load_dotenv
 
-from base import DataSource, PolygonSource
+from .base import DataSource, PolygonSource
 
 
 class NationalParkBoundaries(PolygonSource):

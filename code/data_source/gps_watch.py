@@ -3,7 +3,7 @@ from subprocess import run
 import geojson
 import geopandas as gpd
 
-from base import DataSource
+from .base import DataSource
 
 
 class GPSTracks(DataSource):

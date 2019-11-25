@@ -1,6 +1,6 @@
 from functools import partial
 from math import sqrt
-from typing import List
+from typing import List, Tuple
 
 import geopandas as gpd
 import pint
@@ -108,7 +108,8 @@ def web_mercator_to_wgs(obj):
     return reproject(obj, WEB_MERCATOR, WGS84)
 
 
-def find_circles_that_tile_polygon(polygon, radius) -> List[Polygon, float]:
+def find_circles_that_tile_polygon(polygon,
+                                   radius) -> List[Tuple[Polygon, float]]:
     """
     Following this article [0], I'll split into smaller and smaller rectangles
     until each rectangle is small enough to be circumscribed within `radius`.

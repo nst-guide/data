@@ -7,7 +7,7 @@ import requests
 from bs4 import BeautifulSoup
 from fastkml import kml
 
-from base import DataSource
+from .base import DataSource
 
 
 class GeoMAC(DataSource):

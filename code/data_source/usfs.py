@@ -5,7 +5,8 @@ import geopandas as gpd
 from fiona.io import ZipMemoryFile
 
 import geom
-from base import DataSource, PolygonSource
+
+from .base import DataSource, PolygonSource
 
 
 class USFS(DataSource):

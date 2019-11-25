@@ -5,7 +5,7 @@ from pathlib import Path
 from subprocess import run
 from typing import List, Union
 
-self = PhotosLibrary()
+
 class PhotosLibrary:
     """Geotag photos from hike
 

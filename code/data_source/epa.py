@@ -6,7 +6,7 @@ import requests
 from dotenv import load_dotenv
 from fastkml import kml
 
-from base import DataSource
+from .base import DataSource
 
 
 class EPAAirNow(DataSource):

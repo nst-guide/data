@@ -4,7 +4,7 @@ from bs4 import BeautifulSoup
 from selenium import webdriver
 from selenium.common.exceptions import ElementNotVisibleException
 
-from base import PolygonSource
+from .base import PolygonSource
 
 
 class WildernessBoundaries(PolygonSource):

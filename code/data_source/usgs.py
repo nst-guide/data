@@ -15,8 +15,9 @@ from scipy.interpolate import interp2d
 from shapely.geometry import LineString
 
 import geom
-from base import DataSource
 from grid import OneDegree
+
+from .base import DataSource
 
 
 class NationalElevationDataset(DataSource):

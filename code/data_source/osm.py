@@ -6,8 +6,8 @@ import requests
 from bs4 import BeautifulSoup
 from shapely.geometry import Polygon
 
-from base import DataSource
-from halfmile import Halfmile
+from .base import DataSource
+from .halfmile import Halfmile
 
 
 class OpenStreetMap(DataSource):

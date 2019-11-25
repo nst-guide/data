@@ -5,8 +5,8 @@ import geopandas as gpd
 import pandas as pd
 from geopandas import GeoDataFrame as GDF
 
-from base import DataSource
-from halfmile import Halfmile
+from .base import DataSource
+from .halfmile import Halfmile
 
 
 class Towns(DataSource):

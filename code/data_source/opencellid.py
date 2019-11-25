@@ -4,7 +4,7 @@ from urllib.request import urlretrieve
 import pandas as pd
 from dotenv import load_dotenv
 
-from base import DataSource
+from .base import DataSource
 
 
 class CellTowers(DataSource):

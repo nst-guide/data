@@ -1,7 +1,7 @@
 import geopandas as gpd
 import pandas as pd
 
-from base import DataSource, PolygonSource
+from .base import DataSource, PolygonSource
 
 
 class StatePlaneZones(DataSource):

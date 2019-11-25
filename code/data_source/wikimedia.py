@@ -8,8 +8,9 @@ from shapely.geometry import Point
 from shapely.prepared import prep
 
 import geom
-from base import DataSource
 from util import normalize_string
+
+from .base import DataSource
 
 
 class Wikipedia(DataSource):

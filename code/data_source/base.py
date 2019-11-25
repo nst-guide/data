@@ -7,7 +7,6 @@ import geopandas as gpd
 from geopandas.tools import sjoin
 
 import geom
-from halfmile import Halfmile
 
 
 def in_ipython():
@@ -71,8 +70,7 @@ class PolygonSource(DataSource):
         # Reproject to WGS84
         gdf = gdf.to_crs(epsg=4326)
 
-        # Load Halfmile track for intersections
-        trail = Halfmile().trail_full(alternates=True)
+        # Use provided `trail` object
         trail = trail.to_crs(epsg=4326)
 
         # Intersect with the trail

@@ -2,8 +2,9 @@ from urllib.request import urlretrieve
 
 import pandas as pd
 
-from base import DataSource
 from grid import TenthDegree
+
+from .base import DataSource
 
 
 class LightningCounts(DataSource):

@@ -11,7 +11,8 @@ import requests
 from shapely.geometry import LineString, Point
 
 import geom
-from base import DataSource
+
+from .base import DataSource
 
 
 class Halfmile(DataSource):

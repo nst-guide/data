@@ -3,7 +3,7 @@ from urllib.request import urlretrieve
 
 import geopandas as gpd
 
-from base import DataSource
+from .base import DataSource
 
 
 class CalFire(DataSource):
@@ -28,4 +28,3 @@ class CalFire(DataSource):
         )
         dict(perimeters['YEAR_'].value_counts())
         perimeters
-        Visualize(perimeters)

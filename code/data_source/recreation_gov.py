@@ -10,8 +10,9 @@ from dotenv import load_dotenv
 from shapely.geometry import Point
 
 import geom
-from base import DataSource
 from halfmile import Halfmile
+
+from .base import DataSource
 
 
 class RecreationGov(DataSource):
