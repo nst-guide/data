@@ -1,10 +1,31 @@
-# Scraping code
-
-from pathlib import Path
+from time import sleep
 
 from bs4 import BeautifulSoup
 from selenium import webdriver
 from selenium.common.exceptions import ElementNotVisibleException
+
+from base import PolygonSource
+
+
+class WildernessBoundaries(PolygonSource):
+    def __init__(self):
+        super(WildernessBoundaries, self).__init__()
+        self.save_dir = self.data_dir / 'pct' / 'polygon' / 'bound'
+        self.url = 'http://www.wilderness.net/GIS/Wilderness_Areas.zip'
+        self.filename = 'wilderness.geojson'
+
+    def regulations(self):
+        """Get regulations for each wilderness area from Wilderness Connect
+        """
+        gdf = self.polygon()
+        scraper = WildernessConnectScraper()
+
+        regs = []
+        for row in gdf.itertuples(index=False):
+            scraper.get(row.URL)
+            regs.append(scraper.regulations())
+
+        return regs
 
 
 class WildernessConnectScraper:

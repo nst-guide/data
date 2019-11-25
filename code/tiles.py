@@ -10,7 +10,7 @@ import requests
 from bs4 import BeautifulSoup
 from shapely.geometry import box
 
-from data import USFS, DataSource
+from data_source import DataSource, Halfmile
 
 ureg = pint.UnitRegistry()
 
@@ -51,9 +51,7 @@ class FSTopo:
         """
 
         # Load trail buffer
-        trail_buffer = USFS().buffer(distance=20)
-        assert len(trail_buffer) == 1, 'Why does gdf have > 1 row?'
-        buffer_polygon = trail_buffer.geometry[0]
+        buffer_polygon = Halfmile().buffer_full(distance=20)
 
         # Create list of polygon bboxes for quads
         bounds = buffer_polygon.bounds

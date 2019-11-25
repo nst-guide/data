@@ -1,5 +1,7 @@
-import geojson
 import string
+
+import geojson
+
 
 def osm_poly_to_geojson(lines):
     lines = [line.rstrip() for line in lines]

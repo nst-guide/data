@@ -6,7 +6,7 @@ from geopandas.tools import sjoin
 from shapely.geometry import LineString, Point, Polygon, GeometryCollection
 from shapely.ops import linemerge, polygonize
 
-import data as Data
+import data_source
 import geom
 import osmnx as ox
 from data import Halfmile, NationalElevationDataset, OpenStreetMap, Towns
@@ -75,7 +75,7 @@ class TrailSection:
             use_cache: Whether to use existing extracts
         """
         # Check cache
-        data_dir = Data.find_data_dir()
+        data_dir = data_source.find_data_dir()
         raw_dir = data_dir / 'raw' / 'osm' / 'clean'
         raw_dir.mkdir(parents=True, exist_ok=True)
         paths = [
