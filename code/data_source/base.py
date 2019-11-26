@@ -30,7 +30,7 @@ def find_data_dir():
     else:
         cwd = Path(__file__).absolute()
 
-    data_dir = (cwd / '..' / 'data').resolve()
+    data_dir = (cwd / '..' / '..' / 'data').resolve()
     return data_dir
 
 
