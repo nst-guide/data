@@ -6,7 +6,7 @@ import requests
 from haversine import haversine
 from shapely.geometry import LineString, shape
 
-from .base import DataSource
+from base import DataSource
 
 
 class Transit(DataSource):

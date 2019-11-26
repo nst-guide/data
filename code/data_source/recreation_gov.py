@@ -9,10 +9,17 @@ import pandas as pd
 from dotenv import load_dotenv
 from shapely.geometry import Point
 
-import geom
-from halfmile import Halfmile
-
 from .base import DataSource
+from .halfmile import Halfmile
+
+try:
+    import geom
+except ModuleNotFoundError:
+    # Development in IPython
+    import sys
+    sys.path.append('../')
+    import geom
+
 
 
 class RecreationGov(DataSource):

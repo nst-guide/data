@@ -14,10 +14,16 @@ from geopandas.tools import sjoin
 from scipy.interpolate import interp2d
 from shapely.geometry import LineString
 
-import geom
-from grid import OneDegree
-
 from .base import DataSource
+from .grid import OneDegree
+
+try:
+    import geom
+except ModuleNotFoundError:
+    # Development in IPython
+    import sys
+    sys.path.append('../')
+    import geom
 
 
 class NationalElevationDataset(DataSource):

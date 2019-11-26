@@ -10,9 +10,16 @@ import pandas as pd
 import requests
 from shapely.geometry import LineString, Point
 
-import geom
-
 from .base import DataSource
+
+try:
+    import geom
+except ModuleNotFoundError:
+    # Development in IPython
+    import sys
+    sys.path.append('../')
+    import geom
+
 
 
 class Halfmile(DataSource):

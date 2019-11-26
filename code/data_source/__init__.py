@@ -11,6 +11,7 @@ from .osm import OpenStreetMap
 from .other import StateBoundaries, StatePlaneZones
 from .pct_water import PCTWaterReport
 from .photos import PhotosLibrary
+from .recreation_gov import RecreationGov
 from .transit_land import Transit
 from .usfs import USFS, NationalForestBoundaries
 from .usgs import NationalElevationDataset, USGSHydrography

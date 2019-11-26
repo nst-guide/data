@@ -6,7 +6,13 @@ import fiona
 import geopandas as gpd
 from geopandas.tools import sjoin
 
-import geom
+try:
+    import geom
+except ModuleNotFoundError:
+    # Development in IPython
+    import sys
+    sys.path.append('../')
+    import geom
 
 
 def in_ipython():

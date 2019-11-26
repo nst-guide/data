@@ -7,10 +7,17 @@ import wikipedia
 from shapely.geometry import Point
 from shapely.prepared import prep
 
-import geom
-from util import normalize_string
-
 from .base import DataSource
+
+try:
+    import geom
+    from util import normalize_string
+except ModuleNotFoundError:
+    # Development in IPython
+    import sys
+    sys.path.append('../')
+    import geom
+    from util import normalize_string
 
 
 class Wikipedia(DataSource):

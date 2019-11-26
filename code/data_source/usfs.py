@@ -4,9 +4,15 @@ from urllib.request import urlretrieve
 import geopandas as gpd
 from fiona.io import ZipMemoryFile
 
-import geom
-
 from .base import DataSource, PolygonSource
+
+try:
+    import geom
+except ModuleNotFoundError:
+    # Development in IPython
+    import sys
+    sys.path.append('../')
+    import geom
 
 
 class USFS(DataSource):
