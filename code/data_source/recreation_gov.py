@@ -6,6 +6,7 @@ from zipfile import ZipFile
 
 import geopandas as gpd
 import pandas as pd
+import requests
 from dotenv import load_dotenv
 from shapely.geometry import Point
 
@@ -20,6 +21,33 @@ except ModuleNotFoundError:
     sys.path.append('../')
     import geom
 
+# FORESTORGC, FORESTNAME, RecAreaID
+rec_area_id_xw = [
+    ('0618', 'Willamette National Forest', '1114'),
+    ('0606', 'Mt. Hood National Forest', '1106'),
+    ('0519', 'Lake Tahoe Basin Management Unit', '2025'),
+    ('0603', 'Gifford Pinchot National Forest', '16684'),
+    ('0515', 'Sierra National Forest', '1074'),
+    ('0516', 'Stanislaus National Forest', '1076'),
+    ('0502', 'Cleveland National Forest', '1062'),
+    ('0514', 'Shasta-Trinity National Forest', '1073'),
+    ('0512', 'San Bernardino National Forest', '1071'),
+    ('0511', 'Plumas National Forest', '1070'),
+    ('0506', 'Lassen National Forest', '1066'),
+    ('0501', 'Angeles National Forest', '1061'),
+    ('0505', 'Klamath National Forest', '1065'),
+    ('0513', 'Sequoia National Forest', '1072'),
+    ('0504', 'Inyo National Forest', '1064'),
+    ('0517', 'Tahoe National Forest', '1077'),
+    ('0503', 'Eldorado National Forest', '1063'),
+    ('0622', 'Columbia River Gorge National Scenic Area', '1102'),
+    ('0602', 'Fremont-Winema National Forest', '1104'),
+    ('0617', 'Okanogan-Wenatchee National Forest', '16822'),
+    ('0610', 'Rogue River-Siskiyou National Forests', '16682'),
+    ('0605', 'Mt. Baker-Snoqualmie National Forest', '1118'),
+    ('0601', 'Deschutes National Forest', '14492'),
+    ('0615', 'Umpqua National Forest', '1112'),
+]
 
 
 class RecreationGov(DataSource):
@@ -32,6 +60,8 @@ class RecreationGov(DataSource):
         load_dotenv()
         self.api_key = os.getenv('RIDB_API_KEY')
         assert self.api_key is not None, 'Missing Recreation.gov API Key'
+
+        self.base_url = 'https://ridb.recreation.gov/api/v1'
 
     def download(self, overwrite=False):
         # To download all the RIDB recreation area, facility, and site level
@@ -58,3 +88,23 @@ class RecreationGov(DataSource):
                 lambda row: Point(
                     row['FacilityLongitude'], row['FacilityLatitude']),
                 axis=1))
+
+    def query(self, query, endpoint, limit=2, full=True):
+        """Get information from Recreation.gov API
+
+        Args:
+            - query: Park identifier, usually four letters, i.e. YOSE
+            - endpoint: either
+            - limit: max number of results
+            - full: whether to return "full" results or not. Full results includes
+        """
+        endpoint = endpoint.strip('/')
+        url = f'{self.base_url}/{endpoint}'
+        params = {
+            'query': query,
+            'limit': limit,
+            'full': full,
+        }
+        headers = {'accept': 'application/json', 'apikey': self.api_key}
+        r = requests.get(url, params=params, headers=headers)
+        return r.json()
