@@ -23,12 +23,17 @@ except ModuleNotFoundError:
 class Wikipedia(DataSource):
     """
     Wrapper to access the Wikipedia API
+
+    No type checking is done in the wikipedia module, and passing something
+    other than a string raises a very obscure error that makes debugging
+    difficult, so I do some simple type checking before passing things to the
+    wikipedia module.
     """
     def __init__(self):
         super(Wikipedia, self).__init__()
         self.image_dir = self.data_dir / 'raw' / 'wikipedia' / 'images'
 
-    def find_page_by_name(self, name: str):
+    def find_page_by_name(self, name: str, point=None, radius=None):
         """Find a single Wikipedia page given a name
 
         Search for the top 5 results. If there's a result with the exact same
@@ -40,8 +45,30 @@ class Wikipedia(DataSource):
         Wilderness" is "Mount Rainier National Park". And it would be ok to show
         the wikipedia page for the National Park when a user clicks on the
         wilderness polygon.
+
+        Args:
+            - name: name to search for
+            - point: point in WGS84 to search around
+            - radius: radius in meters to search around point
         """
-        res = wikipedia.search(name, results=5)
+        if not isinstance(name, str):
+            raise TypeError('name must be str')
+        if point is not None:
+            if not isinstance(point, Point):
+                raise TypeError('point must be of type Point')
+
+        if point is None:
+            res = wikipedia.search(name, results=5)
+        else:
+            lon, lat = list(point.coords)[0]
+            radius = 400 if radius is None else radius
+            res = wikipedia.geosearch(
+                latitude=lat,
+                longitude=lon,
+                title=name,
+                results=5,
+                radius=radius)
+
         exact_match = [
             ind for ind, s in enumerate(res)
             if normalize_string(s) == normalize_string(name)
@@ -56,6 +83,9 @@ class Wikipedia(DataSource):
 
     def page(self, title):
         """Simple page wrapper around wikipedia.page"""
+        if not isinstance(title, str):
+            raise TypeError('title must be str')
+
         return wikipedia.page(title)
 
     def get_html_for_page(self, page: wikipedia.WikipediaPage):
@@ -68,6 +98,9 @@ class Wikipedia(DataSource):
         also in the Wikipedia extract, because then you could link to it
         offline!?!?
         """
+        if not isinstance(page, wikipedia.WikipediaPage):
+            raise TypeError('page must be of type wikipedia.WikipediaPage')
+
         html = page.html()
 
         # Download images
@@ -115,6 +148,12 @@ class Wikipedia(DataSource):
               slower, so that can be done in a later function, in case I want to
               get just titles to filter.
         """
+        if not isinstance(point, Point):
+            raise TypeError('point must be of type Point')
+        if title is not None:
+            if not isinstance(title, str):
+                raise TypeError('title must be str')
+
         assert isinstance(point, Point), 'point must have Point geometry'
         lon, lat = list(point.coords)[0]
 
