@@ -50,6 +50,12 @@ class PolygonSource(DataSource):
             buffer_unit='mile',
             overwrite=False):
         """Download polygon shapefile and intersect with PCT track
+
+        Args:
+            - trail: gdf of trail to use to find polygons that intersect
+            - buffer_dist: distance to use for trail buffer when intersecting with polygons. By default is None, so no buffer will be used.
+            - buffer_unit: unit to use for buffer
+            - overwrite: whether to overwrite existing data
         """
         assert self.save_dir is not None, 'self.save_dir must be set'
         assert self.url is not None, 'self.url must be set'
@@ -85,6 +91,9 @@ class PolygonSource(DataSource):
             intersection = sjoin(gdf, buf, how='inner')
         else:
             intersection = sjoin(gdf, trail, how='inner')
+
+        # Make sure I have valid geometries
+        gdf = geom.validate_geom_gdf(gdf)
 
         # Do any specific steps, to be overloaded in subclasses
         intersection = self._post_download(intersection)

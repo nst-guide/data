@@ -52,6 +52,19 @@ def buffer(gdf: gpd.GeoDataFrame, distance: float, unit: str) -> gpd.GeoSeries:
     return buffer
 
 
+def validate_geom_gdf(gdf):
+    geom_col = gdf.geometry.name
+    gdf[geom_col] = gdf.apply(lambda row: validate_geom(row.geometry), axis=1)
+    return gdf
+
+
+def validate_geom(geom):
+    if geom.is_valid:
+        return geom
+
+    return geom.buffer(0)
+
+
 def to_2d(obj):
     """Convert geometric object from 3D to 2D"""
     if isinstance(obj, gpd.GeoDataFrame):
