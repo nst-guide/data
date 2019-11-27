@@ -29,34 +29,39 @@ class NationalParksAPI(DataSource):
         self.api_key = os.getenv('NPS_API_KEY')
         assert self.api_key is not None, 'Missing nps.gov API Key'
 
-        self.park_codes = [
-            'SEKI',
-            'DEPO',
-            'LAVO',
-            'MORA',
-            'YOSE',
-            'NOCA',
-            'LACH',
-            'CRLA',
-        ]
         self.base_url = 'https://developer.nps.gov/api/v1'
 
-    def download(self):
-        """Download park metadata for each park
+    def query(self, park_codes, endpoint, fields=None):
+        """Get information from NPS API
+
+        Args:
+            - park_codes: Park identifier, usually four letters, i.e. YOSE
+            - endpoint: either
+            - fields: fields to return
         """
+        if not isinstance(park_codes, list):
+            raise TypeError('park_codes must be a list of str')
+        if not isinstance(fields, list):
+            raise TypeError('fields must be None or a list of str')
+
+        if fields is None and endpoint == 'parks':
+            fields = ['images']
 
         url = f'{self.base_url}/parks'
         params = {
-            'fields': 'name,images,designation,description',
-            'api_key': self.api_key
+            'api_key': self.api_key,
+            'parkCode': ','.join(park_codes),
+            'fields': fields,
+            'limit': 500,
         }
-        for park_code in self.park_codes:
-            params['parkCode'] = park_code
-            r = requests.get(url, params=params)
-            # assert
-            # r.url
-            # r.json()
-            #
-            # break
-        # curl -X GET "/parks?parkCode=SEKI&fields=images&api_key=L2KkzRsHg5wo3HHuLte4AhlZykoNnEhcEKWWQ9Ev" -H "accept: application/json"
-        # Get
+        headers = {'accept': 'application/json'}
+        r = requests.get(url, params=params, headers=headers)
+
+        # Make a dict of list of dicts, where the top-level key is the park code
+        dict_data = {}
+        for d in r.json()['data']:
+            park_code = d['parkCode'].lower()
+            dict_data[park_code] = dict_data.get(park_code, [])
+            dict_data[park_code].append(d)
+
+        return dict_data
