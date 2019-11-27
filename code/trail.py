@@ -1,17 +1,16 @@
-import requests
-import fiona
 import geopandas as gpd
 import numpy as np
+import osmnx as ox
 import pandas as pd
+import requests
 from geopandas.tools import sjoin
-from shapely.geometry import LineString, Point, Polygon, GeometryCollection
+from shapely.geometry import GeometryCollection, LineString, Point, Polygon
 from shapely.ops import linemerge, polygonize
 
 import data_source
 import geom
-import osmnx as ox
-from data_source import (
-    Halfmile, NationalElevationDataset, OpenStreetMap, Towns)
+from data_source import (Halfmile, NationalElevationDataset, OpenStreetMap,
+                         Towns)
 from geom import buffer, reproject, reproject_gdf
 
 
@@ -164,7 +163,6 @@ class TrailSection:
     """docstring for TrailSection"""
     def __init__(self, buffer, section_name, use_cache):
         """
-
         Args:
             buffer: buffer or bbox around trail, used to filter OSM data
             section_name: Name of section, i.e. 'CA_A' or 'OR_C'
@@ -182,7 +180,8 @@ class TrailSection:
           trail. Using this graph, find the edges and nodes that make up the
           PCT, and all roads, trails, and railways that intersect the PCT.
         2. Using the edges that make up the PCT, create the PCT line
-        3. Using the trail buffer and trail line, find nearby water sources from
+        3. Parse OSM trail data
+        4. Using the trail buffer and trail line, find nearby water sources from
           NHD dataset.
 
         Args:
@@ -194,13 +193,13 @@ class TrailSection:
         raw_dir = data_dir / 'raw' / 'osm' / 'clean'
         raw_dir.mkdir(parents=True, exist_ok=True)
         paths = [
-            raw_dir / f'{section_name}_nodes.geojson',
-            raw_dir / f'{section_name}_edges.geojson',
-            raw_dir / f'{section_name}_intersections.geojson'
+            raw_dir / f'{self.section_name}_nodes.geojson',
+            raw_dir / f'{self.section_name}_edges.geojson',
+            raw_dir / f'{self.section_name}_intersections.geojson'
         ]
 
         # 1. Generate OSM trail data
-        if use_cache and all(path.exists() for path in paths):
+        if self.use_cache and all(path.exists() for path in paths):
             res = [gpd.read_file(path) for path in paths]
         else:
             res = self.generate_osm_trail_data()
@@ -254,9 +253,10 @@ class TrailSection:
         osm = OpenStreetMap()
 
         # Download osm ways for this section
-        g = osm.get_ways_for_polygon(polygon=self.buffer,
-                                     section_name=self.section_name,
-                                     overwrite=(not self.use_cache))
+        g = osm.get_ways_for_polygon(
+            polygon=self.buffer,
+            section_name=self.section_name,
+            overwrite=(not self.use_cache))
         nodes, edges = ox.graph_to_gdfs(g)
 
         # Get ordered list of way ids for this section
@@ -285,8 +285,8 @@ class TrailSection:
             ]]
             if len(_edges_list_osm) > 0:
                 msg = 'an edge with multiple osm ids is on the PCT'
-                assert not any(x in way_ids
-                               for x in _edges_list_osm['osmid']), msg
+                assert not any(
+                    x in way_ids for x in _edges_list_osm['osmid']), msg
 
             _edges = _edges[[
                 not isinstance(value, list) for value in _edges['osmid']
@@ -317,9 +317,9 @@ class TrailSection:
         # unsorts pct_nodes, so instead, I generate the ordering of nodes, then
         # join them and sort on the order
         node_ordering = [(ind, x) for ind, x in enumerate(pct_nodes)]
-        node_ordering = pd.DataFrame(node_ordering,
-                                     columns=['node_order',
-                                              'node_id']).set_index('node_id')
+        node_ordering = pd.DataFrame(
+            node_ordering, columns=['node_order',
+                                    'node_id']).set_index('node_id')
 
         pct_nodes_unsorted = nodes[nodes.index.isin(pct_nodes)]
         pct_nodes_sorted = pct_nodes_unsorted.join(node_ordering).sort_values(
@@ -331,8 +331,8 @@ class TrailSection:
 
         return pct_nodes_sorted, pct_edges, intersect_edges
 
-    def construct_linestring_from_edges(self,
-                                        edges: gpd.GeoDataFrame) -> LineString:
+    def construct_linestring_from_edges(
+            self, edges: gpd.GeoDataFrame) -> LineString:
         """Given OSM edges that make up a section, return its LineString
 
         Args:
@@ -350,8 +350,8 @@ class TrailSection:
 
         raise NotImplementedError('Linestring not in correct direction')
 
-    def compute_deviance_of_two_lines(self, line1: LineString,
-                                      line2: LineString) -> float:
+    def compute_deviance_of_two_lines(
+            self, line1: LineString, line2: LineString) -> float:
         """Compute the deviance of two lines
 
         It's important to check how accurate the OSM track is compared to other
@@ -501,7 +501,6 @@ class TrailSection:
         all_coords_z = [(x[0][0], x[0][1], x[1]) for x in zip(coords, elevs)]
         return LineString(all_coords_z)
 
-
     def _create_route_no_elevation(self):
         """Create route from OSM data using API
 
@@ -527,7 +526,6 @@ class TrailSection:
 
             section_line = LineString(all_points_in_section)
             full_data.append(section_line)
-
 
 
 class PacificCrestTrail(Trail):
@@ -566,20 +564,6 @@ class PacificCrestTrail(Trail):
         section_polygons = gpd.GeoDataFrame(geometry=section_polygons)
         section_polygons.to_file(path, driver='GeoJSON')
         return section_polygons
-
-    def construct_route(self):
-        """Construct PCT mainline and alternate routes
-
-        For now, I just use Halfmile's track. However, for the future, I
-        envision using the OSM track because then it's easy to generate trail
-        junction waypoints using other OSM data. But then I'll need to join
-        elevation data from either USGS data or from the Halfmile track.
-
-        TODO: Analytically check how far apart the Halfmile and OSM tracks are.
-        Note, you can just use the linestrings to create a polygon and then call
-        polygon.area using shapely. Ref: https://stackoverflow.com/q/25439243
-        """
-        return data.Halfmile().trail()
 
 
 def intersect_trail_with_polygons(
