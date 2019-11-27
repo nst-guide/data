@@ -1,9 +1,11 @@
+import os
 from pathlib import Path
 from urllib.parse import urlparse
 from urllib.request import urlretrieve
 
 import fiona
 import geopandas as gpd
+from dotenv import load_dotenv
 from geopandas.tools import sjoin
 
 try:
@@ -15,23 +17,16 @@ except ModuleNotFoundError:
     import geom
 
 
-def in_ipython():
-    try:
-        return __IPYTHON__
-    except NameError:
-        return False
+def find_root_dir():
+    load_dotenv()
+    root_dir = os.getenv('ROOT_DIR')
+    assert root_dir is not None, 'ROOT_DIR env variable is not defined'
+    return Path(root_dir).resolve()
 
 
 def find_data_dir():
-    if in_ipython():
-        # Note, this will get the path of the file this is called from;
-        # __file__ doesn't exist in IPython
-        cwd = Path().absolute()
-    else:
-        cwd = Path(__file__).absolute()
-
-    data_dir = (cwd / '..' / '..' / 'data').resolve()
-    return data_dir
+    root_dir = find_root_dir()
+    return (root_dir / 'data').resolve()
 
 
 class DataSource:
