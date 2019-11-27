@@ -1,5 +1,6 @@
 from math import ceil, floor
 from pathlib import Path
+from subprocess import run
 from typing import Dict, List
 from urllib.parse import urljoin
 from urllib.request import urlretrieve
@@ -24,8 +25,8 @@ class FSTopo:
     def generate_tiles(self):
         blocks_dict = self.get_quads()
         tif_urls = self.find_urls(blocks_dict)
-        self.download_tifs(tif_urls)
-        self.tifs_to_tiles()
+        fs_tiles_dir = self.download_tifs(tif_urls)
+        self.tifs_to_tiles(tile_dir=fs_tiles_dir)
 
     def get_quads(self) -> Dict[str, List[str]]:
         """Find FSTopo quad files
@@ -153,7 +154,39 @@ class FSTopo:
             if overwrite or (not local_path.exists()):
                 urlretrieve(tif_url, local_path)
 
-    def tifs_to_tiles(self):
+        return fs_tiles_dir
+
+    def tifs_to_tiles(self, tile_dir, n_processes=8, resume=False):
         """Convert tifs to tiles
+
+        So far, I've only run these commands in the shell. Need to test from
+        Python.
         """
-        pass
+        raise NotImplementedError("Haven't tested this code from Python yet")
+
+        tif_files = tile_dir.glob('*.tif')
+        vrt_path = tile_dir / 'mosaic.vrt'
+
+        # Create virtual mosaic of connected quad tifs
+        cmd = ['gdalbuildvrt', vrt_path, *tif_files]
+        run(cmd, check=True)
+
+        # Expand into rgba
+        # gdal_translate -of vrt -expand rgba output.vrt expanded.vrt
+        rgba_path = tile_dir / 'rgba.vrt'
+        cmd = [
+            'gdal_translate', '-of', 'vrt', '-expand', 'rgba', vrt_path,
+            rgba_path
+        ]
+        run(cmd, check=True)
+
+        # Split into tiles
+        # Make sure you call my fork of `gdal2tiles.py` that sets the image size
+        # to 512
+        cmd = [
+            'gdal2tiles.py', rgba_path, '--processes', n_processes,
+            '--srcnodata="0,0,0,0"'
+        ]
+        if resume:
+            cmd.append('--resume')
+        run(cmd, check=True)
