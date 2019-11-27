@@ -94,6 +94,59 @@ class Trail:
         # TODO: Join NPS API data with geometry data
         return d
 
+    def handle_wilderness_areas(self):
+        # Get trail track as a single geometric line
+        trail = self.hm.trail_full(alternates=False)
+        merged = linemerge([*trail.geometry])
+        projected = reproject(merged, geom.WGS84, geom.CA_ALBERS)
+
+        # Get Wilderness boundaries
+        wild_bounds = data_source.WildernessBoundaries().polygon()
+        wild_bounds = reproject_gdf(wild_bounds, geom.WGS84, geom.CA_ALBERS)
+
+        # Find portions of the trail that intersect with these boundaries
+        d = intersect_trail_with_polygons(projected, wild_bounds, 'WID')
+        return d
+
+    def handle_national_forests(self):
+        # Get trail track as a single geometric line
+        trail = self.hm.trail_full(alternates=False)
+        merged = linemerge([*trail.geometry])
+        projected = reproject(merged, geom.WGS84, geom.CA_ALBERS)
+
+        # Get Wilderness boundaries
+        fs_bounds = data_source.NationalForestBoundaries().polygon()
+        fs_bounds = reproject_gdf(fs_bounds, geom.WGS84, geom.CA_ALBERS)
+
+        # Find portions of the trail that intersect with these boundaries
+        d = intersect_trail_with_polygons(projected, fs_bounds, 'FORESTORGC')
+
+        # Ping RIDB searching by Forest Name
+        # NOTE: if you end up splitting National Forest MultiPolygons into
+        # multiple rows of single Polygons, you might want to deduplicate before
+        # pinging the API
+        ridb_api = data_source.RecreationGov()
+        results = []
+        for forest_name in fs_bounds['FORESTNAME']:
+            # Sometimes the response with matching name is >5 deep
+            d = ridb_api.query(query=forest_name, endpoint='recareas', limit=10, full=False)
+
+            # If any result has the same RecAreaName, choose that. Otherwise,
+            # choose the first one.
+            append_index = None
+            for i in range(len(d['RECDATA'])):
+                if d['RECDATA'][i]['RecAreaName'].lower() == forest_name.lower():
+                    append_index = i
+
+
+            if append_index is not None:
+                results.append(d['RECDATA'][append_index])
+            else:
+                results.append({})
+
+        [(name, x.get('RecAreaName'), x.get('RecAreaID')) for x, name in zip(results, fs_bounds['FORESTNAME'])]
+        return d
+
     def handle_sections(self, use_cache: bool = True):
         hm = Halfmile()
         for (section_name, trk), (_, wpt) in zip(hm.trail_iter(),

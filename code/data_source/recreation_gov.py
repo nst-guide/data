@@ -22,7 +22,7 @@ except ModuleNotFoundError:
     import geom
 
 # FORESTORGC, FORESTNAME, RecAreaID
-rec_area_id_xw = [
+nf_rec_area_id_xw = [
     ('0618', 'Willamette National Forest', '1114'),
     ('0606', 'Mt. Hood National Forest', '1106'),
     ('0519', 'Lake Tahoe Basin Management Unit', '2025'),
@@ -47,6 +47,13 @@ rec_area_id_xw = [
     ('0605', 'Mt. Baker-Snoqualmie National Forest', '1118'),
     ('0601', 'Deschutes National Forest', '14492'),
     ('0615', 'Umpqua National Forest', '1112'),
+]
+wild_rec_area_id_xw = [
+    ('Domeland Wilderness', '14779'),
+    ('Kiavah Wilderness', '13088'),
+    ('San Gorgonio Wilderness', '13237'),
+    ('Soda Mountain Wilderness', '13481'),
+    ('Chimney Peak Wilderness', '13367'),
 ]
 
 
