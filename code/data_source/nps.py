@@ -47,7 +47,8 @@ class NationalParksAPI(DataSource):
         if fields is None and endpoint == 'parks':
             fields = ['images']
 
-        url = f'{self.base_url}/parks'
+        endpoint = endpoint.strip('/')
+        url = f'{self.base_url}/{endpoint}'
         params = {
             'api_key': self.api_key,
             'parkCode': ','.join(park_codes),
