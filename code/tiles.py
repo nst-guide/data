@@ -1,7 +1,9 @@
+import json
+import re
 from math import ceil, floor
 from pathlib import Path
 from subprocess import run
-from typing import Dict, List
+from typing import Dict, List, Tuple
 from urllib.parse import urljoin
 from urllib.request import urlretrieve
 
@@ -9,7 +11,7 @@ import numpy as np
 import pint
 import requests
 from bs4 import BeautifulSoup
-from shapely.geometry import box
+from shapely.geometry import Polygon, box, mapping
 
 from data_source import DataSource, Halfmile
 
@@ -190,3 +192,40 @@ class FSTopo:
         if resume:
             cmd.append('--resume')
         run(cmd, check=True)
+
+
+def tiles_for_polygon(polygon: Polygon, zoom_levels) -> List[Tuple[int]]:
+    """Generate x,y,z tile tuples for polygon
+
+    Args:
+        - polygon: polygon to generate tiles for
+        - zoom_levels: iterable with integers for zoom levels
+    """
+    stdin = json.dumps(mapping(polygon))
+
+    xyz_tuples = []
+    for zoom_level in zoom_levels:
+        cmd = ['supermercado', 'burn', str(zoom_level)]
+        r = run(cmd, capture_output=True, input=stdin, encoding='utf-8')
+        xyz_tuples.extend(r.stdout.strip().split('\n'))
+
+    regex = re.compile(r'\[(\d+), (\d+), (\d+)\]')
+    xyz_tuples = [tuple(map(int, regex.match(s).groups())) for s in xyz_tuples]
+    return xyz_tuples
+
+
+def geojson_for_tiles(tile_tuples: List[Tuple[int]]) -> str:
+    """Generate GeoJSON for list of map tile tuples
+
+    Args:
+        - tile_tuples: list of (x, y, z) tuples
+    """
+    stdin = '\n'.join([f'[{x}, {y}, {z}]' for x, y, z in tile_tuples])
+
+    cmd = ['mercantile', 'shapes']
+    r = run(cmd, capture_output=True, input=stdin, encoding='utf-8')
+
+    cmd = ['fio', 'collect']
+    r = run(cmd, capture_output=True, input=r.stdout, encoding='utf-8')
+
+    return r.stdout
