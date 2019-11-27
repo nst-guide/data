@@ -186,7 +186,7 @@ class FSTopo:
         # Make sure you call my fork of `gdal2tiles.py` that sets the image size
         # to 512
         cmd = [
-            'gdal2tiles.py', rgba_path, '--processes', n_processes,
+            'gdal2tiles.py', rgba_path, f'--processes={n_processes}',
             '--srcnodata="0,0,0,0"'
         ]
         if resume:
