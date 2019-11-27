@@ -15,15 +15,16 @@ from scipy.interpolate import interp2d
 from shapely.geometry import LineString
 
 from .base import DataSource
-from .grid import OneDegree
 
 try:
     import geom
+    from grid import OneDegree
 except ModuleNotFoundError:
     # Development in IPython
     import sys
     sys.path.append('../')
     import geom
+    from grid import OneDegree
 
 
 class NationalElevationDataset(DataSource):
