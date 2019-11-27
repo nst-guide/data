@@ -465,3 +465,42 @@ class PacificCrestTrail(Trail):
         polygon.area using shapely. Ref: https://stackoverflow.com/q/25439243
         """
         return data.Halfmile().trail()
+
+
+def intersect_trail_with_polygons(
+        trail: LineString, gdf: gpd.GeoDataFrame, key_col: str):
+    """Intersect trail with polygons to produce overlapping line segments
+
+    Both trail and bounds must be projected to a projected coordinate system
+    before being passed to this function.
+
+    Args:
+        - trail: projected LineString of trail
+        - bounds: projected GDF of polygons to find intersections of
+        - key_col: column of GDF to use as keys of dict
+
+    Returns:
+        - {key_col: {'lines': [LineString], 'length': float}}
+        where `lines` is a list of lines where the trail intersects with the
+        given polygon, and `length` is the sum of distances in the polygon.
+    """
+    intersections = {}
+    for row in gdf.itertuples():
+        int_line = trail.intersection(row.geometry)
+        key = getattr(row, key_col)
+        intersections[key] = intersections.get(key, {})
+        intersections[key]['lines'] = intersections[key].get('lines', [])
+
+        if int_line.type == 'LineString':
+            intersections[key]['lines'].append(int_line)
+        elif int_line.type == 'MultiLineString':
+            intersections[key]['lines'].extend(int_line)
+        else:
+            msg = 'intersection of Polygon, LineString should be LineString'
+            raise ValueError(msg)
+
+    for key, d in intersections.items():
+        length = sum([line.length for line in d['lines']])
+        intersections[key]['length'] = length
+
+    return intersections
