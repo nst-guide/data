@@ -106,13 +106,12 @@ class Parse(object):
             class_name: name of class to upload data to in Parse
             upload_altitude: whether to upload altitude as an attribute for Point Z geometries. Uploaded as "alt".
         """
-        url = f'{self.server_url}/classes/{class_name}'
         headers = self.headers.copy()
         headers['Content-Type'] = 'application/json'
 
         json_data = []
         geom_name = gdf.geometry.name
-        columns = [x for x in gdf.columns if x != geom_column_name]
+        columns = [x for x in gdf.columns if x != geom_name]
         for row in gdf.itertuples():
             d = {}
 
