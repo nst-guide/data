@@ -41,8 +41,9 @@ class NationalParksAPI(DataSource):
         """
         if not isinstance(park_codes, list):
             raise TypeError('park_codes must be a list of str')
-        if not isinstance(fields, list):
-            raise TypeError('fields must be None or a list of str')
+        if fields is not None:
+            if not isinstance(fields, list):
+                raise TypeError('fields must be None or a list of str')
 
         if fields is None and endpoint == 'parks':
             fields = ['images']

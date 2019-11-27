@@ -1,3 +1,4 @@
+import requests
 import fiona
 import geopandas as gpd
 import numpy as np
@@ -9,8 +10,9 @@ from shapely.ops import linemerge, polygonize
 import data_source
 import geom
 import osmnx as ox
-from data import Halfmile, NationalElevationDataset, OpenStreetMap, Towns
-from geom import buffer, reproject
+from data_source import (
+    Halfmile, NationalElevationDataset, OpenStreetMap, Towns)
+from geom import buffer, reproject, reproject_gdf
 
 
 class Trail:
@@ -31,6 +33,66 @@ class Trail:
         super(Trail, self).__init__()
         self.osm = OpenStreetMap()
         self.hm = Halfmile()
+
+    def handle_national_parks(self):
+        """Generate information cards for each National Park
+
+        - mile length inside park
+        - linestrings inside park
+        """
+
+        # Get trail track as a single geometric line
+        trail = self.hm.trail_full(alternates=False)
+        merged = linemerge([*trail.geometry])
+        projected = reproject(merged, geom.WGS84, geom.CA_ALBERS)
+
+        # Get NPS boundaries
+        nps_bounds = data_source.NationalParkBoundaries().polygon()
+        nps_bounds = reproject_gdf(nps_bounds, geom.WGS84, geom.CA_ALBERS)
+        nps_bounds['UNIT_CODE'] = nps_bounds['UNIT_CODE'].str.lower()
+
+        # Find portions of the trail that intersect with these boundaries
+        d = intersect_trail_with_polygons(projected, nps_bounds, 'UNIT_CODE')
+
+        # Search NPS names in wikipedia
+        wiki = data_source.Wikipedia()
+        wikipedia_urls = []
+        for unit_name in nps_bounds['UNIT_NAME']:
+            page = wiki.find_page_by_name(unit_name)
+            wikipedia_urls.append(page.url)
+
+        nps_bounds['wiki_url'] = wikipedia_urls
+
+        # Some unit codes in the
+        nps_url_xw = {
+            'sequ': 'seki',
+            'kica': 'seki',
+            'lach': 'noca',
+        }
+        nps_bounds['url_code'] = nps_bounds['UNIT_CODE'].apply(
+            lambda code: nps_url_xw.get(code, code))
+        nps_bounds['nps_url'] = nps_bounds['url_code'].apply(
+            lambda code: f'https://www.nps.gov/{code.lower()}')
+
+        # Make sure that all these pages exist
+        redirected_urls = []
+        for url in nps_bounds['nps_url']:
+            r = requests.head(url, allow_redirects=True)
+            if r.status_code == 404:
+                raise ValueError(f'NPS 404 for: {url}')
+
+            redirected_urls.append(r.url)
+
+        nps_bounds['nps_url'] = redirected_urls
+
+        # Get blurb about each park from NPS API
+        nps_api = data_source.NationalParksAPI()
+        park_codes = list(set(nps_bounds['url_code']))
+        r = nps_api.query(park_codes=park_codes, endpoint='parks')
+        r = nps_api.query(park_codes=park_codes, endpoint='alerts')
+
+        # TODO: Join NPS API data with geometry data
+        return d
 
     def handle_sections(self, use_cache: bool = True):
         hm = Halfmile()
