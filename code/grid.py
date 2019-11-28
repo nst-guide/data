@@ -1,128 +1,90 @@
-# Helpers for dealing with irregularly spaced grids
+"""
+Helpers for dealing with regularly spaced grids
 
+There are multiple sizes of grids that are important.
+
+- 1 degree: USGS elevation files
+- .125 degree: USGS and USFS topo maps
+- .1 degree: Lightning count data (with .05 degree offset?)
+
+Lightning data has .1 degree _centerpoints_, so the grid lines are at
+40.05, 40.15, 40.25 etc.
+"""
 from math import ceil, floor
-from typing import Dict, List
+from typing import Iterable
 
-import geopandas as gpd
 import numpy as np
 import pint
-from shapely.geometry import box
+from shapely.geometry import Polygon, box
 
 ureg = pint.UnitRegistry()
 
 
-class OneDegree:
-    """1 degree grid
-
-    Used for accessing elevation data
+def get_cells(geom, cell_size, offset=0):
     """
-    def __init__(self):
-        pass
+    Args:
+        - geom: geometry to check intersections with. Can either be a LineString or a Polygon
+        - cell_size: size of cell, usually either 1, .125, or .1 (degrees)
+        - offset: Non-zero when looking for centerpoints, i.e. for lightning
+          strikes data where the labels are by the centerpoints of the
+          cells, not the bordering lat/lons
 
-    def get_cells(self, trail: gpd.GeoDataFrame) -> Dict[str, List[str]]:
-        """Find boundaries of 1 degree cells that PCT passes through
-
-        The elevation datasets are identified by the _UPPER_ latitude and
-        _LOWER_ longitude, i.e. max and min repsectively
-
-        Create shapely Polygons for each lat/lon quads, then intersect
-        with the buffer polygon.
-
-        Args:
-            trail_line: LineString representing PCT
-
-        Returns:
-            Dictionary with degree blocks and degree-minute blocks that
-            represent quads within 20 miles of trail
-        """
-        # Create list of polygon bboxes for quads
-        trail_line = trail.unary_union
-        bounds = trail_line.bounds
-
-        # Get whole-degree bounding box of `bounds`
-        minx, miny, maxx, maxy = bounds
-        minx, miny = floor(minx), floor(miny)
-        maxx, maxy = ceil(maxx), ceil(maxy)
-
-        # maxx, maxy not included in list, but when generating polygons, will
-        # add .1 for x and y, and hence maxx, maxy will be upper corner of
-        # last bounding box.
-        # ll_points: lower left points of bounding boxes
-
-        # How big the cells are (i.e. 1 degree, .5 degree, or .1 degree)
-        stepsize = 1
-        # Non-zero when looking for centerpoints, i.e. for lightning strikes
-        # data where the labels are by the centerpoints of the cells, not the
-        # bordering lat/lons
-        offset = 0
-
-        ll_points = []
-        for x in np.arange(minx - offset, maxx + offset, stepsize):
-            for y in np.arange(miny - offset, maxy + offset, stepsize):
-                ll_points.append((x, y))
-
-        intersecting_bboxes = []
-        for ll_point in ll_points:
-            ur_point = (ll_point[0] + stepsize, ll_point[1] + stepsize)
-            bbox = box(*ll_point, *ur_point)
-            if bbox.intersects(trail_line):
-                intersecting_bboxes.append(bbox)
-
-        return intersecting_bboxes
-
-
-class TenthDegree:
-    """.1 degree grid
-
-    Used for LightningCounts
+    Returns:
+        Iterable[polygon]: generator yielding polygons representing matching
+        cells
     """
-    def __init__(self):
-        pass
+    bounds = geom.bounds
 
-    def get_cells(self, trail: gpd.GeoDataFrame) -> Dict[str, List[str]]:
-        """Find centerpoints of .1 degree cells that PCT passes through
+    # Get whole-degree bounding box of `bounds`
+    minx, miny, maxx, maxy = bounds
+    minx, miny = floor(minx), floor(miny)
+    maxx, maxy = ceil(maxx), ceil(maxy)
 
-        Lightning data has .1 degree _centerpoints_, so the grid lines are at
-        40.05, 40.15, 40.25 etc.
+    # Get the lower left corner of each box
+    ll_points = get_ll_points(minx, maxx, miny, maxy, offset, cell_size)
 
-        Create shapely Polygons for each lat/lon quads, then intersect
-        with the buffer polygon.
+    # Get grid intersections
+    return get_grid_intersections(geom, ll_points, cell_size)
 
-        Args:
-            trail_line: LineString representing PCT
 
-        Returns:
-            Dictionary with degree blocks and degree-minute blocks that
-            represent quads within 20 miles of trail
-        """
-        # Create list of polygon bboxes for quads
-        trail_line = trail.unary_union
-        bounds = trail_line.bounds
+def get_centroids(cells: Iterable[Polygon], round_digits=None):
+    """
+    Args:
+        - cells: iterable of cells to get centroids of
+        - round_digits:
+    """
+    for cell in cells:
+        coord = cell.centroid.coords[0]
+        if round_digits is None:
+            yield coord
+        else:
+            yield (round(coord[0], round_digits), round(coord[1], round_digits))
 
-        # Get whole-degree bounding box of `bounds`
-        minx, miny, maxx, maxy = bounds
-        minx, miny = floor(minx), floor(miny)
-        maxx, maxy = ceil(maxx), ceil(maxy)
 
-        # maxx, maxy not included in list, but when generating polygons, will
-        # add .1 for x and y, and hence maxx, maxy will be upper corner of
-        # last bounding box.
-        # ll_points: lower left points of bounding boxes
-        stepsize = 0.1
-        ll_points = []
-        for x in np.arange(minx - .05, maxx + .05, stepsize):
-            for y in np.arange(miny - .05, maxy + .05, stepsize):
-                ll_points.append((x, y))
+def get_ll_points(minx, maxx, miny, maxy, offset, cell_size):
+    for x in np.arange(minx - offset, maxx + offset, cell_size):
+        for y in np.arange(miny - offset, maxy + offset, cell_size):
+            yield (x, y)
 
-        intersecting_bboxes = []
-        for ll_point in ll_points:
-            ur_point = (ll_point[0] + stepsize, ll_point[1] + stepsize)
-            bbox = box(*ll_point, *ur_point)
-            if bbox.intersects(trail_line):
-                intersecting_bboxes.append(bbox)
 
-        # Find center points and round to nearest .1
-        centerpoints = [list(x.centroid.coords)[0] for x in intersecting_bboxes]
-        centerpoints = [(round(coord[0], 1), round(coord[1], 1))
-                        for coord in centerpoints]
-        return centerpoints
+def get_grid_intersections(geom, ll_points, cell_size):
+    for ll_point in ll_points:
+        ur_point = (ll_point[0] + cell_size, ll_point[1] + cell_size)
+        bbox = box(*ll_point, *ur_point)
+        if bbox.intersects(geom):
+            yield bbox
+
+
+class LightningGrid:
+    def __init__(self, geom):
+        super(LightningGrid, self).__init__()
+
+        self.cells = list(get_cells(geom, cell_size=.1, offset=.05))
+        self.centroids = list(get_centroids(self.cells, round_digits=1))
+
+
+class TopoQuadGrid:
+    def __init__(self, geom):
+        super(TopoQuadGrid, self).__init__()
+
+        self.cells = list(get_cells(geom, cell_size=.125))
