@@ -94,13 +94,13 @@ class FSTopo:
             degree_y = str(floor(miny))
             degree_x = str(abs(ceil(maxx)))
 
-            decimal_y = miny % 1
+            decimal_y = abs(miny) % 1
             minute_y = str(
                 floor((decimal_y * ureg.degree).to(ureg.arcminute).magnitude))
             # Left pad to two digits
             minute_y = minute_y.zfill(2)
 
-            decimal_x = maxx % 1
+            decimal_x = abs(maxx) % 1
             minute_x = str(
                 floor((decimal_x * ureg.degree).to(ureg.arcminute).magnitude))
             # Left pad to two digits
