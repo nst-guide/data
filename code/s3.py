@@ -27,9 +27,9 @@ def upload_geojson_to_s3(
 def upload_directory_to_s3(
         local_path,
         bucket_path,
+        content_type,
         bucket_name='tiles.nst.guide',
-        content_type='x-protobuf',
-        content_encoding='gzip'):
+        content_encoding=None):
     """This uses AWS CLI and must be preconfigured
 
     Args:
@@ -52,7 +52,8 @@ def upload_directory_to_s3(
         '--recursive',
         '--content-type',
         content_type,
-        '--content-encoding',
-        content_encoding,
     ]
+    if content_encoding is not None:
+        cmd.extend(['--content-encoding', content_encoding])
+
     run(cmd, capture_output=True, check=True, encoding='utf-8')
