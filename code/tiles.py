@@ -7,13 +7,13 @@ from typing import Dict, List, Tuple
 from urllib.parse import urljoin
 from urllib.request import urlretrieve
 
-import numpy as np
 import pint
 import requests
 from bs4 import BeautifulSoup
-from shapely.geometry import Polygon, box, mapping
+from shapely.geometry import Polygon, mapping
 
-from data_source import DataSource, Halfmile
+import grid
+from s3 import upload_directory_to_s3
 
 ureg = pint.UnitRegistry()
 
@@ -24,13 +24,18 @@ class FSTopo:
     def __init__(self):
         pass
 
-    def generate_tiles(self):
-        blocks_dict = self.get_quads()
+    def generate_tiles(self, geom):
+        blocks_dict = self.get_quads(geom)
         tif_urls = self.find_urls(blocks_dict)
         fs_tiles_dir = self.download_tifs(tif_urls)
-        self.tifs_to_tiles(tile_dir=fs_tiles_dir)
+        tile_dir = tifs_to_tiles(tif_dir=fs_tiles_dir)
+        upload_directory_to_s3(
+            tile_dir,
+            bucket_path='fstopo',
+            bucket_name='tiles.nst.guide',
+            content_type='image/png')
 
-    def get_quads(self) -> Dict[str, List[str]]:
+    def get_quads(self, geom) -> Dict[str, List[str]]:
         """Find FSTopo quad files
 
         FSTopo is a 7.5-minute latitude/longitude grid system. Forest service
@@ -43,54 +48,26 @@ class FSTopo:
         each lat/lon block. FSTopo map quads are only created for National
         Forest areas, so not every lat/lon block has 64 files.
 
-        Idea: Create shapely Polygons for each lat/lon quads, then intersect
-        with the buffer polygon.
-
         Returns:
             Dictionary with degree blocks and degree-minute blocks that
             represent quads within 20 miles of trail
 
         [block_46121]: https://data.fs.usda.gov/geodata/rastergateway/states-regions/quad-index.php?blockID=46121
         """
+        topo_grid = grid.TopoQuadGrid(geom)
+        return self.create_blocks_dict(topo_grid.cells)
 
-        # Load trail buffer
-        buffer_polygon = Halfmile().buffer_full(distance=20)
+    def create_blocks_dict(self, cells):
+        """
+        The FS website directory goes by lat/lon boxes, so I need to get the
+        whole-degree boxes
 
-        # Create list of polygon bboxes for quads
-        bounds = buffer_polygon.bounds
-
-        # Get whole-degree bounding box of `bounds`
-        minx, miny, maxx, maxy = bounds
-        minx, miny = floor(minx), floor(miny)
-        maxx, maxy = ceil(maxx), ceil(maxy)
-
-        # 7.5 minutes is 1/8 degree
-        # maxx, maxy not included in list, but when generating polygons, will
-        # add .125 for x and y, and hence maxx, maxy will be upper corner of
-        # last bounding box.
-        # ll_points: lower left points of bounding boxes
-        stepsize = 0.125
-        ll_points = []
-        for x in np.arange(minx, maxx, stepsize):
-            for y in np.arange(miny, maxy, stepsize):
-                ll_points.append((x, y))
-
-        intersecting_bboxes = []
-        for ll_point in ll_points:
-            ur_point = (ll_point[0] + stepsize, ll_point[1] + stepsize)
-            bbox = box(*ll_point, *ur_point)
-            if bbox.intersects(buffer_polygon):
-                intersecting_bboxes.append(bbox)
-
-        # The FS website directory goes by lat/lon boxes, so I need to get the
-        # whole-degree boxes
-        # FS uses the min for lat, max for lon, aka 46121 has quads with lat >=
-        # 46 and lon <= -121
+        FS uses the min for lat, max for lon, aka 46121 has quads with lat >= 46
+        and lon <= -121
+        """
         blocks_dict = {}
-        for intersecting_bbox in intersecting_bboxes:
-            bound = intersecting_bbox.bounds
-            miny = bound[1]
-            maxx = bound[2]
+        for cell in cells:
+            miny, maxx = cell.bounds[1:3]
             degree_y = str(floor(miny))
             degree_x = str(abs(ceil(maxx)))
 
@@ -100,6 +77,8 @@ class FSTopo:
             # Left pad to two digits
             minute_y = minute_y.zfill(2)
 
+            # Needs to be abs because otherwise the mod of a negative number is
+            # opposite of what I want.
             decimal_x = abs(maxx) % 1
             minute_x = str(
                 floor((decimal_x * ureg.degree).to(ureg.arcminute).magnitude))
@@ -116,6 +95,9 @@ class FSTopo:
 
     def find_urls(self, blocks_dict):
         """Find urls for FS Topo tif files near trail
+
+        Args:
+            - blocks_dict: {header: [all_values]}, e.g. {'41123': ['413012322']}
         """
         all_tif_urls = []
         for degree_block_id, minute_quad_ids in blocks_dict.items():
@@ -139,14 +121,14 @@ class FSTopo:
 
         return all_tif_urls
 
-    def download_tifs(self, tif_urls: List[str], overwrite: bool = False):
+    def download_tifs(
+            self, data_dir, tif_urls: List[str], overwrite: bool = False):
         """Download FSTopo tif files to local storage
 
         Args:
             tif_urls: list of urls to tif quads on Forest Service website
             overwrite: whether to overwrite currently-downloaded tif files
         """
-        data_dir = DataSource().data_dir
         fs_tiles_dir = data_dir / 'pct' / 'tiles' / 'fstopo'
         fs_tiles_dir.mkdir(exist_ok=True, parents=True)
 
@@ -158,40 +140,41 @@ class FSTopo:
 
         return fs_tiles_dir
 
-    def tifs_to_tiles(self, tile_dir, n_processes=8, resume=False):
-        """Convert tifs to tiles
 
-        So far, I've only run these commands in the shell. Need to test from
-        Python.
-        """
-        raise NotImplementedError("Haven't tested this code from Python yet")
+def tifs_to_tiles(tif_dir, n_processes=8, resume=False):
+    """Convert tifs to tiles
 
-        tif_files = tile_dir.glob('*.tif')
-        vrt_path = tile_dir / 'mosaic.vrt'
+    So far, I've only run these commands in the shell. Need to test from Python.
+    """
+    raise NotImplementedError("Haven't tested this code from Python yet")
 
-        # Create virtual mosaic of connected quad tifs
-        cmd = ['gdalbuildvrt', vrt_path, *tif_files]
-        run(cmd, check=True)
+    tif_files = tif_dir.glob('*.tif')
+    vrt_path = tif_dir / 'mosaic.vrt'
 
-        # Expand into rgba
-        # gdal_translate -of vrt -expand rgba output.vrt expanded.vrt
-        rgba_path = tile_dir / 'rgba.vrt'
-        cmd = [
-            'gdal_translate', '-of', 'vrt', '-expand', 'rgba', vrt_path,
-            rgba_path
-        ]
-        run(cmd, check=True)
+    # Create virtual mosaic of connected quad tifs
+    cmd = ['gdalbuildvrt', vrt_path, *tif_files]
+    run(cmd, check=True)
 
-        # Split into tiles
-        # Make sure you call my fork of `gdal2tiles.py` that sets the image size
-        # to 512
-        cmd = [
-            'gdal2tiles.py', rgba_path, f'--processes={n_processes}',
-            '--srcnodata="0,0,0,0"'
-        ]
-        if resume:
-            cmd.append('--resume')
-        run(cmd, check=True)
+    # Expand into rgba
+    # gdal_translate -of vrt -expand rgba output.vrt expanded.vrt
+    rgba_path = tif_dir / 'rgba.vrt'
+    cmd = [
+        'gdal_translate', '-of', 'vrt', '-expand', 'rgba', vrt_path, rgba_path
+    ]
+    run(cmd, check=True)
+
+    # Split into tiles
+    # Make sure you call my fork of `gdal2tiles.py` that sets the image size
+    # to 512
+    cmd = [
+        'gdal2tiles.py', rgba_path, f'--processes={n_processes}',
+        '--srcnodata="0,0,0,0"'
+    ]
+    if resume:
+        cmd.append('--resume')
+    run(cmd, check=True)
+    tile_dir = tif_dir / 'rgba'
+    return tile_dir
 
 
 def tiles_for_polygon(polygon: Polygon, zoom_levels) -> List[Tuple[int]]:
