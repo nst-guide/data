@@ -2,7 +2,7 @@ from urllib.request import urlretrieve
 
 import pandas as pd
 
-from grid import TenthDegree
+from grid import LightningGrid
 
 from .base import DataSource
 
@@ -30,8 +30,11 @@ class LightningCounts(DataSource):
             if overwrite or (not (self.save_dir / stub).exists()):
                 urlretrieve(url + stub, self.save_dir / stub)
 
-    def read_data(self, year) -> pd.DataFrame:
+    def read_data(self, year, geom) -> pd.DataFrame:
         """Read lightning data and return daily count for PCT cells
+
+        Args:
+            - geom: geometry to intersect to find lightning counts
         """
         stub = f'nldn-tiles-{year}.csv.gz'
         df = pd.read_csv(self.save_dir / stub, compression='gzip', skiprows=2)
@@ -47,8 +50,9 @@ class LightningCounts(DataSource):
         # Keep only the cells intersecting the trail
         # TODO: take the following get_cells() outside of this function because
         # it's slow
-        centerpoints = TenthDegree().get_cells()
-        center_df = pd.DataFrame(centerpoints, columns=['lon', 'lat'])
+        lightning_grid = LightningGrid(geom)
+        center_df = pd.DataFrame(
+            lightning_grid.centroids, columns=['lon', 'lat'])
 
         merged = df.merge(center_df, how='inner')
         return merged

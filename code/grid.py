@@ -78,7 +78,6 @@ def get_grid_intersections(geom, ll_points, cell_size):
 class LightningGrid:
     def __init__(self, geom):
         super(LightningGrid, self).__init__()
-
         self.cells = list(get_cells(geom, cell_size=.1, offset=.05))
         self.centroids = list(get_centroids(self.cells, round_digits=1))
 
@@ -86,5 +85,10 @@ class LightningGrid:
 class TopoQuadGrid:
     def __init__(self, geom):
         super(TopoQuadGrid, self).__init__()
-
         self.cells = list(get_cells(geom, cell_size=.125))
+
+
+class USGSElevGrid:
+    def __init__(self, geom):
+        super(USGSElevGrid, self).__init__()
+        self.cells = list(get_cells(geom, cell_size=1))

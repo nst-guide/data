@@ -18,13 +18,13 @@ from .base import DataSource
 
 try:
     import geom
-    from grid import OneDegree
+    from grid import USGSElevGrid
 except ModuleNotFoundError:
     # Development in IPython
     import sys
     sys.path.append('../')
     import geom
-    from grid import OneDegree
+    from grid import USGSElevGrid
 
 
 class NationalElevationDataset(DataSource):
@@ -77,17 +77,20 @@ class NationalElevationDataset(DataSource):
 
     def _get_download_urls(self, trail):
         """Create download urls
+
+        Args:
+            - trail: geometry, not gdf
         """
-        intersecting_bboxes = OneDegree().get_cells(trail)
+        cells = USGSElevGrid(trail)
 
         # The elevation datasets are identified by the _UPPER_ latitude and
         # _LOWER_ longitude, i.e. max and min repsectively
         baseurl = 'https://prd-tnm.s3.amazonaws.com/StagedProducts/Elevation'
         baseurl += '/13/IMG/'
         urls = []
-        for bbox in intersecting_bboxes:
-            lat = str(int(bbox.bounds[3]))
-            lon = str(int(abs(bbox.bounds[0])))
+        for cell in cells:
+            lat = str(int(cell.bounds[3]))
+            lon = str(int(abs(cell.bounds[0])))
             url = baseurl + f'USGS_NED_13_n{lat}w{lon}_IMG.zip'
             urls.append(url)
 
