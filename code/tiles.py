@@ -250,3 +250,20 @@ def geojson_for_tiles(tile_tuples: List[Tuple[int]]) -> str:
     r = run(cmd, capture_output=True, input=r.stdout, encoding='utf-8')
 
     return r.stdout
+
+
+def switch_xyz_tms(x, y, z):
+    """Switch between xyz and tms coordinates
+
+    https://gist.github.com/tmcw/4954720
+    """
+    y = (2 ** z) - y - 1
+    return x, y, z
+
+
+def xyz_to_tms(x, y, z):
+    return switch_xyz_tms(x, y, z)
+
+
+def tms_to_xyz(x, y, z):
+    return switch_xyz_tms(x, y, z)
