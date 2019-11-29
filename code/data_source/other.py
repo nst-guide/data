@@ -32,3 +32,23 @@ class StateBoundaries(PolygonSource):
         self.save_dir = self.data_dir / 'pct' / 'polygon' / 'bound'
         self.url = 'https://www2.census.gov/geo/tiger/TIGER2017//STATE/tl_2017_us_state.zip'
         self.filename = 'state.geojson'
+
+
+class ZipCodeTabulationAreas(PolygonSource):
+    """
+    Note: when downloading, you should pass
+    towns = Towns().boundaries()
+
+    ```
+    trail=towns
+    buffer_dist=None
+    buffer_unit='mile'
+    overwrite=False
+    ```
+    """
+    def __init__(self):
+        super(ZipCodeTabulationAreas, self).__init__()
+        self.save_dir = self.data_dir / 'pct' / 'attrs'
+        stub = 'cb_2018_us_zcta510_500k.zip'
+        self.url = 'https://www2.census.gov/geo/tiger/GENZ2018/shp/' + stub
+        self.filename = 'zcta.geojson'
