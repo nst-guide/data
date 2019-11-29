@@ -10,6 +10,9 @@ it's only a two week trial.
 For now, I'm going to use https://opencagedata.com/, which looks like it has a
 perpetual free tier of 2500 queries a day, and also doesn't have restrictions.
 
+The Census' geocoding may be worthwhile to check out, but I'd suspect it's not
+as good as a private solution. https://geocoding.geo.census.gov/
+
 Here's a sample result for the query '209 Oakland Ave, Pittsburgh PA 15213':
 
 ```py
