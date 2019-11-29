@@ -215,32 +215,54 @@ def tifs_to_tiles(tif_dir, n_processes=8, resume=False):
     return tile_dir
 
 
-def tiles_for_polygon(polygon: Polygon, zoom_levels) -> List[Tuple[int]]:
+def tiles_for_polygon(polygon: Polygon, zoom_levels,
+                      scheme='xyz') -> List[Tuple[int]]:
     """Generate x,y,z tile tuples for polygon
 
     Args:
         - polygon: polygon to generate tiles for
         - zoom_levels: iterable with integers for zoom levels
+        - scheme: scheme of output tuples, either "xyz" or "tms"
     """
+    if scheme not in ['xyz', 'tms']:
+        raise ValueError('scheme must be "xyz" or "tms"')
+
     stdin = json.dumps(mapping(polygon))
 
-    xyz_tuples = []
+    tile_tuples = []
     for zoom_level in zoom_levels:
         cmd = ['supermercado', 'burn', str(zoom_level)]
         r = run(cmd, capture_output=True, input=stdin, encoding='utf-8')
-        xyz_tuples.extend(r.stdout.strip().split('\n'))
+        tile_tuples.extend(r.stdout.strip().split('\n'))
 
     regex = re.compile(r'\[(\d+), (\d+), (\d+)\]')
-    xyz_tuples = [tuple(map(int, regex.match(s).groups())) for s in xyz_tuples]
-    return xyz_tuples
+    tile_tuples = [
+        tuple(map(int,
+                  regex.match(s).groups())) for s in tile_tuples
+    ]
+
+    if scheme == 'tms':
+        tile_tuples = [xyz_to_tms(x, y, z) for x, y, z in tile_tuples]
+
+    return tile_tuples
 
 
-def geojson_for_tiles(tile_tuples: List[Tuple[int]]) -> str:
+def geojson_for_tiles(tile_tuples: List[Tuple[int]], scheme='xyz') -> str:
     """Generate GeoJSON for list of map tile tuples
 
     Args:
         - tile_tuples: list of (x, y, z) tuples
+        - scheme: scheme of input tuples, either "xyz" or "tms"
+    Returns:
+        GeoJSON FeatureCollection of covered tiles
     """
+    if scheme == 'xyz':
+        pass
+    elif scheme == 'tms':
+        tile_tuples = [tms_to_xyz(x, y, z) for x, y, z in tile_tuples]
+    else:
+        raise ValueError('scheme must be "xyz" or "tms"')
+
     stdin = '\n'.join([f'[{x}, {y}, {z}]' for x, y, z in tile_tuples])
 
     cmd = ['mercantile', 'shapes']
