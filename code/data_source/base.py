@@ -97,7 +97,7 @@ class PolygonSource(DataSource):
             intersection = sjoin(gdf, trail, how='inner')
 
         # Make sure I have valid geometries
-        gdf = geom.validate_geom_gdf(gdf)
+        intersection = geom.validate_geom_gdf(intersection)
 
         # Do any specific steps, to be overloaded in subclasses
         intersection = self._post_download(intersection)
