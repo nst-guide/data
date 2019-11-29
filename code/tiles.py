@@ -13,7 +13,9 @@ from bs4 import BeautifulSoup
 from shapely.geometry import Polygon, mapping
 
 import grid
-from s3 import upload_directory_to_s3
+
+from .data_source import find_data_dir
+from .s3 import upload_directory_to_s3
 
 ureg = pint.UnitRegistry()
 
@@ -22,12 +24,16 @@ class FSTopo:
     """Forest Service topo maps
     """
     def __init__(self):
-        pass
+        self.data_dir = find_data_dir()
 
-    def generate_tiles(self, geom, data_dir):
+    def generate_tiles(self, geom):
+        """
+        Args:
+            - geom: geometry to find quadrangle intersections with
+        """
         blocks_dict = self.get_quads(geom)
         tif_urls = self.find_urls(blocks_dict)
-        fs_tiles_dir = self.download_tifs(data_dir, tif_urls, overwrite=False)
+        fs_tiles_dir = self.download_tifs(tif_urls, overwrite=False)
         tile_dir = tifs_to_tiles(tif_dir=fs_tiles_dir)
         upload_directory_to_s3(
             tile_dir,
@@ -121,15 +127,14 @@ class FSTopo:
 
         return all_tif_urls
 
-    def download_tifs(
-            self, data_dir, tif_urls: List[str], overwrite: bool = False):
+    def download_tifs(self, tif_urls: List[str], overwrite: bool = False):
         """Download FSTopo tif files to local storage
 
         Args:
             tif_urls: list of urls to tif quads on Forest Service website
             overwrite: whether to overwrite currently-downloaded tif files
         """
-        fs_tiles_dir = data_dir / 'pct' / 'tiles' / 'fstopo'
+        fs_tiles_dir = self.data_dir / 'pct' / 'tiles' / 'fstopo'
         fs_tiles_dir.mkdir(exist_ok=True, parents=True)
 
         for tif_url in tif_urls:
