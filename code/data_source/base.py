@@ -126,8 +126,19 @@ class Scraper:
         super(Scraper, self).__init__()
         self.driver = webdriver.Chrome()
 
+    def click(self, css_selector):
+        button = self.driver.find_element_by_css_selector(css_selector)
+        button.click()
+
     def get(self, url):
         self.driver.get(url)
+
+    def html(self):
+        return BeautifulSoup(self.driver.page_source, 'lxml')
+
+    def send_keys(self, css_selector, text):
+        field = self.driver.find_element_by_css_selector(css_selector)
+        field.send_keys(text)
 
     def wait_for(self, css_selector):
         try:
@@ -135,9 +146,6 @@ class Scraper:
         except ElementNotVisibleException:
             sleep(1)
             self.wait_for(css_selector)
-
-    def html(self):
-        return BeautifulSoup(self.driver.page_source, 'lxml')
 
     # def _get_regulations(self, soup):
     #     regs = soup.select('#regulations')
