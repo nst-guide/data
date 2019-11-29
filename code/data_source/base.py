@@ -1,12 +1,16 @@
 import os
 from pathlib import Path
+from time import sleep
 from urllib.parse import urlparse
 from urllib.request import urlretrieve
 
 import fiona
 import geopandas as gpd
+from bs4 import BeautifulSoup
 from dotenv import load_dotenv
 from geopandas.tools import sjoin
+from selenium import webdriver
+from selenium.common.exceptions import ElementNotVisibleException
 
 try:
     import geom
@@ -115,3 +119,29 @@ class PolygonSource(DataSource):
         path = self.save_dir / self.filename
         polygon = gpd.read_file(path)
         return polygon
+
+
+class Scraper:
+    def __init__(self):
+        super(Scraper, self).__init__()
+        self.driver = webdriver.Chrome()
+
+    def get(self, url):
+        self.driver.get(url)
+
+    def wait_for(self, css_selector):
+        try:
+            self.driver.find_element_by_css_selector(css_selector)
+        except ElementNotVisibleException:
+            sleep(1)
+            self.wait_for(css_selector)
+
+    def html(self):
+        return BeautifulSoup(self.driver.page_source, 'lxml')
+
+    # def _get_regulations(self, soup):
+    #     regs = soup.select('#regulations')
+    #     assert len(regs) == 1, '#regulations gives >1 result'
+    #     regs = regs[0]
+    #
+    #     print(regs.text)
