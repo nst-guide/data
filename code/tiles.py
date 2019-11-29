@@ -24,10 +24,10 @@ class FSTopo:
     def __init__(self):
         pass
 
-    def generate_tiles(self, geom):
+    def generate_tiles(self, geom, data_dir):
         blocks_dict = self.get_quads(geom)
         tif_urls = self.find_urls(blocks_dict)
-        fs_tiles_dir = self.download_tifs(tif_urls)
+        fs_tiles_dir = self.download_tifs(data_dir, tif_urls, overwrite=False)
         tile_dir = tifs_to_tiles(tif_dir=fs_tiles_dir)
         upload_directory_to_s3(
             tile_dir,
@@ -145,6 +145,44 @@ def tifs_to_tiles(tif_dir, n_processes=8, resume=False):
     """Convert tifs to tiles
 
     So far, I've only run these commands in the shell. Need to test from Python.
+
+    Shell commands for working transparency:
+    ```
+    # Call gdalbuildvrt with -addalpha.
+    # > Adds an alpha mask band to the VRT when the source raster have none. The
+    # > alpha band is filled on-the-fly with the value 0 in areas without any
+    # > source raster, and with value 255 in areas with source raster. The
+    # > effect is that a RGBA viewer will render the areas without source
+    # > rasters as transparent and areas with source rasters as opaque.
+    gdalbuildvrt -addalpha mosaic.vrt *.tif
+
+    # Use gdal_translate to take the single band with color table and expand it
+    # into a 3-band VRT
+    gdal_translate -of vrt -expand rgb mosaic.vrt rgb.vrt
+
+    # Split the three rgb bands from rgb.vrt into separate files. This is
+    # because I need to merge these rgb bands with the transparency band that's
+    # the second band of mosaic.vrt from `gdalbuildvrt`, and I don't know how to
+    # do that without separating bands into individual VRTs and then merging
+    # them.
+    gdal_translate -b 1 rgb.vrt r.vrt
+    gdal_translate -b 2 rgb.vrt g.vrt
+    gdal_translate -b 3 rgb.vrt b.vrt
+    gdal_translate -b 2 mosaic.vrt a.vrt
+
+    # Merge the four bands back together
+    gdalbuildvrt -separate rgba.vrt r.vrt g.vrt b.vrt a.vrt
+
+    # Any raster cell where the fourth band is 0 should be transparent. I
+    # couldn't figure out how to declare that all such data should be considered
+    # nodata, but from inspection it looks like those areas have rgb values of
+    # 54, 52, 52
+    # This process is still better than just declaring 54, 52, 52 to be nodata
+    # in a plain rgb file, in case there is any actual data in the map that's
+    # defined as this rgb trio
+    ./gdal2tiles.py rgba.vrt --processes 16 --srcnodata="54,52,52,0" --exclude
+    ```
+    # TODO: update below Python code to reflect the above bash commands.
     """
     raise NotImplementedError("Haven't tested this code from Python yet")
 
