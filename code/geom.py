@@ -5,7 +5,9 @@ from typing import List, Tuple
 import geopandas as gpd
 import pint
 import pyproj
-from shapely.geometry import GeometryCollection, MultiPolygon, Polygon, box
+from geojson import Feature
+from shapely.geometry import (
+    GeometryCollection, MultiPolygon, Polygon, asShape, box, shape)
 from shapely.ops import transform
 
 ureg = pint.UnitRegistry()
@@ -50,6 +52,95 @@ def buffer(gdf: gpd.GeoDataFrame, distance: float, unit: str) -> gpd.GeoSeries:
     buffer = buffer.to_crs(epsg=4326)
 
     return buffer
+
+
+def round_geometry(geom, digits):
+    """Round coordinates of geometry to desired digits
+
+    Args:
+        - geom: geometry to round coordinates of
+        - digits: number of decimal places to round
+
+    Returns:
+        geometry of same type as provided
+    """
+    gj = [Feature(geometry=geom)]
+    truncated = list(coord_precision(gj, precision=digits))
+    return shape(truncated[0].geometry)
+
+
+def coord_precision(features, precision, validate=True):
+    """Truncate precision of GeoJSON features
+
+    Taken from geojson-precision:
+    https://github.com/perrygeo/geojson-precision
+
+    The MIT License (MIT)
+
+    Copyright (c) 2016 Matthew Perry
+
+    Permission is hereby granted, free of charge, to any person obtaining a copy
+    of this software and associated documentation files (the "Software"), to
+    deal in the Software without restriction, including without limitation the
+    rights to use, copy, modify, merge, publish, distribute, sublicense, and/or
+    sell copies of the Software, and to permit persons to whom the Software is
+    furnished to do so, subject to the following conditions:
+
+    The above copyright notice and this permission notice shall be included in
+    all copies or substantial portions of the Software.
+
+    THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+    IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+    FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+    AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+    LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+    FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
+    IN THE SOFTWARE.
+    """
+    for feature in features:
+        coords = _set_precision(feature['geometry']['coordinates'], precision)
+        feature['geometry']['coordinates'] = coords
+        if validate:
+            geom = asShape(feature['geometry'])
+            geom.is_valid
+        yield feature
+
+
+def _set_precision(coords, precision):
+    """Truncate precision of coordinates
+
+    Taken from geojson-precision:
+    https://github.com/perrygeo/geojson-precision
+
+    The MIT License (MIT)
+
+    Copyright (c) 2016 Matthew Perry
+
+    Permission is hereby granted, free of charge, to any person obtaining a copy
+    of this software and associated documentation files (the "Software"), to
+    deal in the Software without restriction, including without limitation the
+    rights to use, copy, modify, merge, publish, distribute, sublicense, and/or
+    sell copies of the Software, and to permit persons to whom the Software is
+    furnished to do so, subject to the following conditions:
+
+    The above copyright notice and this permission notice shall be included in
+    all copies or substantial portions of the Software.
+
+    THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+    IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+    FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+    AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+    LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+    FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
+    IN THE SOFTWARE.
+    """
+    result = []
+    try:
+        return round(coords, int(precision))
+    except TypeError:
+        for coord in coords:
+            result.append(_set_precision(coord, precision))
+    return result
 
 
 def validate_geom_gdf(gdf):
