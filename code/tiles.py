@@ -7,24 +7,29 @@ from typing import Dict, List, Tuple
 from urllib.parse import urljoin
 from urllib.request import urlretrieve
 
+import geopandas as gpd
 import pint
 import requests
 from bs4 import BeautifulSoup
-from shapely.geometry import Polygon, mapping
+from geopandas.tools import sjoin
+from shapely.geometry import MultiPolygon, Polygon, box, mapping
 
 import grid
+from geom import round_geometry
 
-from .data_source import find_data_dir
+from .data_source import DataSource, MapIndices, NationalMapAPI
 from .s3 import upload_directory_to_s3
 
 ureg = pint.UnitRegistry()
 
 
-class FSTopo:
+class FSTopo(DataSource):
     """Forest Service topo maps
     """
     def __init__(self):
-        self.data_dir = find_data_dir()
+        super(FSTopo, self).__init__()
+        self.tiles_dir = self.data_dir / 'pct' / 'tiles' / 'fstopo'
+        self.tiles_dir.mkdir(exist_ok=True, parents=True)
 
     def generate_tiles(self, geom):
         """
@@ -33,8 +38,9 @@ class FSTopo:
         """
         blocks_dict = self.get_quads(geom)
         tif_urls = self.find_urls(blocks_dict)
-        fs_tiles_dir = self.download_tifs(tif_urls, overwrite=False)
-        tile_dir = tifs_to_tiles(tif_dir=fs_tiles_dir)
+        self.download_tifs(
+            tif_urls, download_dir=self.tiles_dir, overwrite=False)
+        tile_dir = tifs_to_tiles(tif_dir=self.tiles_dir)
         upload_directory_to_s3(
             tile_dir,
             bucket_path='fstopo',
@@ -144,6 +150,90 @@ class FSTopo:
                 urlretrieve(tif_url, local_path)
 
         return fs_tiles_dir
+
+
+class NAIPImagery(DataSource):
+    """docstring for NAIPImagery"""
+    def __init__(self):
+        super(NAIPImagery, self).__init__()
+        self.tiles_dir = self.data_dir / 'pct' / 'tiles' / 'naip'
+        self.tiles_dir.mkdir(exist_ok=True, parents=True)
+
+    def generate_tiles(self, geom):
+        """
+        Should set buffer set to 2 miles around HM for now. That's like 30GB of
+        data as it is.
+
+        Args:
+            - geom: geometry to find quadrangle intersections with
+        """
+        urls = self.get_urls(geom)
+        download_urls(urls=urls, download_dir=self.tiles_dir, overwrite=False)
+
+    def get_urls(self, geom):
+        """Get NAIP download urls for geometry
+
+        Args:
+            - geom: geometry to get urls for
+
+        Returns:
+            - list of urls to download
+        """
+        # Get quad indices; intersect with the provided geometry
+        indices = MapIndices().read(layer='3_75Minute')
+        gdf = gpd.GeoDataFrame(geometry=[geom])
+        intersection = sjoin(indices, gdf, how='inner')
+
+        # For each intersecting box,
+        api = NationalMapAPI()
+        urls = []
+        for bbox in intersection.geometry:
+            # bbox from MapIndices has some floating point deviations so need to
+            # round the geometry to find the matching item from the API request
+            bbox = round_geometry(bbox, digits=4)
+
+            if isinstance(bbox, MultiPolygon):
+                msg = 'More than one item in MultiPolygon'
+                assert len(bbox) == 1, msg
+                bbox = bbox[0]
+            elif isinstance(bbox, Polygon):
+                pass
+            else:
+                msg = 'Map Index geometry is not Polygon'
+                raise ValueError(msg)
+
+            res = api.search_products(bbox=bbox, product_name='naip')
+            url = self._find_url_from_result(bbox=bbox, res=res)
+            urls.append(url)
+
+        return urls
+
+    def _find_url_from_result(self, bbox, res):
+        """From the API results, find the exact file requested
+        """
+        matches = [item for item in res['items'] if item['bestFitIndex'] == 1.0]
+        assert len(matches) == 1, 'more than one API result for bbox'
+        return matches[0]['downloadURL']
+
+    def _item_geom(self, item):
+        return box(
+            item['boundingBox']['minX'], item['boundingBox']['minY'],
+            item['boundingBox']['maxX'], item['boundingBox']['maxY'])
+
+
+def download_urls(self, urls: List[str], download_dir, overwrite: bool = False):
+    """Download tif files to local storage
+
+    Args:
+        urls: list of urls to download
+        overwrite: whether to overwrite currently-downloaded tif files
+    """
+    download_dir.mkdir(exist_ok=True, parents=True)
+    for url in urls:
+        name = Path(url).name
+        local_path = download_dir / name
+        if overwrite or (not local_path.exists()):
+            urlretrieve(url, local_path)
 
 
 def tifs_to_tiles(tif_dir, n_processes=8, resume=False):
