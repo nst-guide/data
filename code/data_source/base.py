@@ -146,10 +146,3 @@ class Scraper:
         except ElementNotVisibleException:
             sleep(1)
             self.wait_for(css_selector)
-
-    # def _get_regulations(self, soup):
-    #     regs = soup.select('#regulations')
-    #     assert len(regs) == 1, '#regulations gives >1 result'
-    #     regs = regs[0]
-    #
-    #     print(regs.text)
