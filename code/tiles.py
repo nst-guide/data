@@ -1,6 +1,7 @@
 import json
 import re
 from math import ceil, floor
+from operator import itemgetter
 from pathlib import Path
 from subprocess import run
 from typing import Dict, List, Tuple
@@ -11,6 +12,7 @@ import geopandas as gpd
 import pint
 import requests
 from bs4 import BeautifulSoup
+from dateutil.parser import parse
 from geopandas.tools import sjoin
 from shapely.geometry import MultiPolygon, Polygon, box, mapping
 
@@ -212,8 +214,13 @@ class NAIPImagery(DataSource):
         """From the API results, find the exact file requested
         """
         matches = [item for item in res['items'] if item['bestFitIndex'] == 1.0]
-        assert len(matches) == 1, 'more than one API result for bbox'
-        return matches[0]['downloadURL']
+        if len(matches) == 1:
+            return matches[0]['downloadURL']
+
+        # Choose the most recent image if there are more than one
+        dates = [parse(item['dateCreated']) for item in matches]
+        idx = max(enumerate(dates), key=itemgetter(1))[0]
+        return matches[idx]['downloadURL']
 
     def _item_geom(self, item):
         return box(
