@@ -9,10 +9,11 @@ import fiona
 import geopandas as gpd
 import pandas as pd
 import rasterio
+import requests
 from geopandas import GeoDataFrame as GDF
 from geopandas.tools import sjoin
 from scipy.interpolate import interp2d
-from shapely.geometry import LineString
+from shapely.geometry import LineString, Polygon
 
 from .base import DataSource
 
@@ -378,3 +379,58 @@ class USGSHydrography(DataSource):
         assert f'WBD{region_size}' in layers, msg
 
         return gpd.read_file(path, layer=f'WBD{region_size}')
+
+
+class NationalMapAPI(DataSource):
+    """Wrapper for National Map API
+
+    Written documentation:
+    https://viewer.nationalmap.gov/help/documents/TNMAccessAPIDocumentation/TNMAccessAPIDocumentation.pdf
+
+    Playground:
+    https://viewer.nationalmap.gov/tnmaccess/api/index
+    """
+    def __init__(self):
+        super(NationalMapAPI, self).__init__()
+
+        self.baseurl = 'https://viewer.nationalmap.gov/tnmaccess/api'
+
+    def search_datasets(self, bbox):
+        url = f'{self.baseurl}/datasets'
+        params = {
+            'bbox': ','.join(map(str, bbox.bounds)),
+        }
+        r = requests.get(url)
+        return r.json()
+
+    def search_products(self, bbox: Polygon, product_name: str):
+        """Search the products endpoint of the National Map API
+
+        Args:
+            - bbox:
+        """
+        url = f'{self.baseurl}/products'
+
+        products_xw = {
+            'nbd': 'National Boundary Dataset (NBD)',
+            'nhd': 'National Hydrography Dataset (NHD) Best Resolution',
+            'wbd': 'National Watershed Boundary Dataset (WBD)',
+            'naip': 'USDA National Agriculture Imagery Program (NAIP)',
+            'ned1/3': 'National Elevation Dataset (NED) 1/3 arc-second',
+            'ned1': 'National Elevation Dataset (NED) 1 arc-second',
+        }
+        product_kw = products_xw.get(product_name)
+        if product_kw is None:
+            msg = 'Invalid product_name provided'
+            msg += f"\nValid values: {', '.join(products_xw.keys())}"
+            raise ValueError(msg)
+
+        params = {
+            'datasets': product_kw,
+            'bbox': ','.join(map(str, bbox.bounds)),
+            'outputFormat': 'JSON',
+            'version': 1
+        }
+
+        r = requests.get(url, params=params)
+        return r.json()
