@@ -63,6 +63,8 @@ class NationalElevationDataset(DataSource):
         n37w119.zip, not USGS_NED_13_n37w119_IMG.zip. Apparently this data was
         published in 2013, not 2018, which is why it has a different name. I
         haven't implemented a way to check this automatically yet.
+
+        TODO: update to use the TNM API
         """
         urls = sorted(self._get_download_urls(trail=trail))
         for url in urls:
@@ -379,6 +381,59 @@ class USGSHydrography(DataSource):
         assert f'WBD{region_size}' in layers, msg
 
         return gpd.read_file(path, layer=f'WBD{region_size}')
+
+
+class MapIndices(DataSource):
+    """docstring for MapIndices"""
+    def __init__(self):
+        super(MapIndices, self).__init__()
+        self.raw_dir = self.data_dir / 'raw' / 'usgs'
+        self.raw_dir.mkdir(parents=True, exist_ok=True)
+        self.states = ['Washington', 'Oregon', 'California']
+
+    def _stub(self, state):
+        return f'MAPINDICES_{state}_State_GDB.zip'
+
+    def download(self, overwrite=False):
+        """Download Map Indices for each state
+        """
+        baseurl = 'https://prd-tnm.s3.amazonaws.com/StagedProducts/MapIndices/GDB'
+        for state in self.states:
+            stub = self._stub(state)
+            url = f'{baseurl}/{stub}'
+            local_path = self.raw_dir / stub
+            if overwrite or (not local_path.exists()):
+                urlretrieve(url, local_path)
+
+    def read(self, layer):
+        """Read layer from Map Indices file
+
+        Args:
+            - layer: Must be one of:
+                - 15Minute
+                - 1X1Degree
+                - 1X2Degree
+                - 3_75Minute
+                - 30X60Minute
+                - 7_5Minute
+        """
+        valid_layers = [
+            '15Minute', '1X1Degree', '1X2Degree', '3_75Minute', '30X60Minute',
+            '7_5Minute'
+        ]
+
+        msg = f'valid layers are: {valid_layers}'
+        assert layer in valid_layers, msg
+        layer = f'CellGrid_{layer}'
+
+        files = []
+        for state in self.states:
+            stub = self._stub(state)
+            file = self.raw_dir / stub
+            files.append(file)
+
+        gdfs = [gpd.read_file(f, layer=layer).to_crs(epsg=4326) for f in files]
+        return gpd.GeoDataFrame(pd.concat(gdfs))
 
 
 class NationalMapAPI(DataSource):
