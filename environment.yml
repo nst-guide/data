@@ -28,5 +28,5 @@ dependencies:
   - xlrd
   - pip:
     - fastkml
-    - keplergl # For development
+    - keplergl_quickvis
     - python-language-server[all]

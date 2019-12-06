@@ -12,7 +12,7 @@ import geom
 from data_source import (Halfmile, NationalElevationDataset, OpenStreetMap,
                          Towns)
 from geom import buffer, reproject, reproject_gdf
-
+from keplergl_quickvis import Visualize as Vis
 
 class Trail:
     """
