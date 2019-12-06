@@ -480,24 +480,11 @@ class TrailSection:
             g = self._get_elevations_for_linestring(row.geometry)
             new_geoms.append(g)
 
-    def _get_elevations_for_linestring(self, line):
+    def _get_elevations_for_linestring(self, line, interp_kind):
         dem = NationalElevationDataset()
 
-        # NOTE: temporary; remove when all elevation data files are
-        # downloaded and unzipped
-        coords = [
-            coord for coord in line.coords
-            if -117 <= coord[0] <= -116 and 32 <= coord[1] <= 33
-        ]
-
-        elevs = []
-        for coord in coords:
-            elevs.append(
-                dem.query(lon=coord[0],
-                          lat=coord[1],
-                          num_buffer=2,
-                          interp_kind='cubic'))
-
+        coords = line.coords
+        elevs = dem.query(coords)
         all_coords_z = [(x[0][0], x[0][1], x[1]) for x in zip(coords, elevs)]
         return LineString(all_coords_z)
 

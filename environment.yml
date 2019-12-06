@@ -3,6 +3,7 @@ channels:
   - conda-forge
 dependencies:
   - beautifulsoup4
+  - demquery
   - fiona
   - gdal # needed?
   - geojson

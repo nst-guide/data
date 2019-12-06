@@ -1,18 +1,16 @@
-import math
 import re
 from pathlib import Path
 from subprocess import run
 from typing import List, Union
 from urllib.request import urlretrieve
 
+import demquery
 import fiona
 import geopandas as gpd
 import pandas as pd
-import rasterio
 import requests
 from geopandas import GeoDataFrame as GDF
 from geopandas.tools import sjoin
-from scipy.interpolate import interp2d
 from shapely.geometry import LineString, Polygon
 
 from .base import DataSource
@@ -99,8 +97,8 @@ class NationalElevationDataset(DataSource):
 
         return urls
 
-    def files(self, ext):
-        return sorted(self.raw_dir.glob(f'*IMG{ext}'))
+    def files(self, ext='.img'):
+        return sorted(self.raw_dir.glob(f'*{ext}'))
 
     def extract(self):
         """Unzip elevation ZIP files
@@ -117,81 +115,21 @@ class NationalElevationDataset(DataSource):
             cmd = ['unzip', '-o', zip_fname, img_name, '-d', out_dir]
             run(cmd, check=True)
 
-    def query(
-            self,
-            lon: float,
-            lat: float,
-            num_buffer: int = 1,
-            interp_kind: str = 'linear') -> float:
-        """Query elevation data for given point
-
-        NOTE: if you want to interpolate over neighboring squares, you can
-        expand then window when reading, then get the actual xy position as lat
-        lon, then get the neighboring positions as lat lon too
+    def query(self, coords, interp_kind=None):
+        """Query elevation data for coordinates
 
         Args:
-            lon: longitude
-            lat: latitude
-            num_buffer: number of bordering cells around (lon, lat) to use when interpolating
-            interp_kind: kind of interpolation. Passed to scipy.interpolate.interp2d. Can be ['linear’, ‘cubic’, ‘quintic']
+            - coords: list of tuples in longitude, latitude order
+            - interp_kind: kind of interpolation. Passed to
+                scipy.interpolate.interp2d. Can be [None, 'linear’, ‘cubic’,
+                ‘quintic']
 
-        Returns elevation for point (in meters)
+        Returns elevations for coordinates (in meters)
         """
-        # Find file given lon, lat
-        s = f'n{int(abs(math.ceil(lat)))}w{int(abs(math.floor(lon)))}'
-        fname = [x for x in self.files('.img') if s in str(x)]
-        assert len(fname) == 1, 'More than one elevation file matched query'
-        fname = fname[0]
-
-        # Read metadata of file
-        dataset = rasterio.open(fname)
-
-        # Find x, y of elevation square inside raster
-        x, y = dataset.index(lon, lat)
-
-        # Make window include cells around it
-        # The number of additional cells depends on the value of num_buffer
-        # When num_buffer==1, an additional 8 cells will be loaded and
-        # interpolated on;
-        # When num_buffer==2, an additional 24 cells will be loaded and
-        # interpolated on, etc.
-        # When using kind='linear' interpolation, I'm not sure if having the
-        # extra cells makes a difference; ie if it creates the plane based only
-        # on the closest cells or from all. When using kind='cubic', it's
-        # probably more accurate with more cells.
-
-        minx = x - num_buffer if x >= num_buffer else x
-        maxx = x + num_buffer if x + num_buffer <= dataset.width else x
-        miny = y - num_buffer if y >= num_buffer else y
-        maxy = y + num_buffer if y + num_buffer <= dataset.width else y
-
-        # Add +1 to deal with range() not including end
-        maxx += 1
-        maxy += 1
-
-        window = ([minx, maxx], [miny, maxy])
-        val_arr = dataset.read(1, window=window)
-
-        msg = 'array has too few or too many values'
-        max_num = 2 * num_buffer + 1
-        assert (1 <= val_arr.shape[0] <=
-                max_num) and (1 <= val_arr.shape[1] <= max_num), msg
-
-        # Now linearly interpolate
-        # Get actual lat/lons
-        # Note that zipping together means that I get the diagonal, i.e. one of
-        # each of x, y. Since these aren't projected coordinates, but rather the
-        # original lat/lons, this is a regular grid and this is ok.
-        lonlats = [
-            dataset.xy(x, y)
-            for x, y in zip(range(minx, maxx), range(miny, maxy))
-        ]
-        lons = [x[0] for x in lonlats]
-        lats = [x[1] for x in lonlats]
-
-        fun = interp2d(x=lons, y=lats, z=val_arr, kind=interp_kind)
-        value = fun(lon, lat)
-        return value[0]
+        dem_paths = self.files()
+        query = demquery.Query(dem_paths)
+        elevations = query.query_points(coords, interp_kind=interp_kind)
+        return elevations
 
 
 class USGSHydrography(DataSource):
