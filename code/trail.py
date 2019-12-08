@@ -14,6 +14,7 @@ from data_source import (Halfmile, NationalElevationDataset, OpenStreetMap,
 from geom import buffer, reproject, reproject_gdf
 from keplergl_quickvis import Visualize as Vis
 
+
 class Trail:
     """
     Combine multiple data sources to create all necessary data for trail.
@@ -128,22 +129,24 @@ class Trail:
         results = []
         for forest_name in fs_bounds['FORESTNAME']:
             # Sometimes the response with matching name is >5 deep
-            d = ridb_api.query(query=forest_name, endpoint='recareas', limit=10, full=False)
+            d = ridb_api.query(
+                query=forest_name, endpoint='recareas', limit=10, full=False)
 
             # If any result has the same RecAreaName, choose that. Otherwise,
             # choose the first one.
             append_index = None
             for i in range(len(d['RECDATA'])):
-                if d['RECDATA'][i]['RecAreaName'].lower() == forest_name.lower():
+                if d['RECDATA'][i]['RecAreaName'].lower() == forest_name.lower(
+                ):
                     append_index = i
-
 
             if append_index is not None:
                 results.append(d['RECDATA'][append_index])
             else:
                 results.append({})
 
-        [(name, x.get('RecAreaName'), x.get('RecAreaID')) for x, name in zip(results, fs_bounds['FORESTNAME'])]
+        [(name, x.get('RecAreaName'), x.get('RecAreaID'))
+         for x, name in zip(results, fs_bounds['FORESTNAME'])]
         return d
 
     def handle_sections(self, use_cache: bool = True):
