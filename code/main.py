@@ -1,3 +1,5 @@
+import re
+
 import click
 
 from .package_tiles import package_tiles as _package_tiles
@@ -52,7 +54,7 @@ def main():
     '--output',
     type=click.Path(exists=False, writable=True, resolve_path=True),
     required=True,
-    help='Output path')
+    help='Output directory')
 @click.option(
     '--raise/--no-raise',
     'raise_errors',
@@ -64,7 +66,7 @@ def package_tiles(geometry, buffer, directory, tile_json, output, raise_errors):
     """Package tiles into zip based on distance from trail
 
     Example:
-    python main.py package-tiles -g ../data/pct/polygon/bound/town/ca/acton.geojson -b "0 1 2" -d ~/Desktop -o out.zip
+    python main.py package-tiles -g ../data/pct/polygon/bound/town/ca/acton.geojson -b "0 1 2" -d ~/Desktop -o out/
     """
     # Make sure that buffer and geometry have same dimensions
     msg = 'geometry and buffer must be provided the same number of times'
@@ -75,9 +77,17 @@ def package_tiles(geometry, buffer, directory, tile_json, output, raise_errors):
         msg = 'tile-json and directory must be provided the same number of times'
         assert len(geometry) == len(buffer), msg
 
+    # Convert buffer from tuple of strings to tuple of tuple of int
+    # I.e. -b "0 1 2" -b "2" is passed into this function as ("0 1 2", "2"), to
+    # be converted to
+    # [[0, 1, 2], [2]]
+    new_buffer = []
+    for s in buffer:
+        new_buffer.append([int(num) for num in re.split(r'[ ,]', s)])
+
     _package_tiles(
         geometry=geometry,
-        buffer=buffer,
+        buffer=new_buffer,
         directory=directory,
         tile_json=tile_json,
         output=output,
