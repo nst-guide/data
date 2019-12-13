@@ -17,7 +17,7 @@ from geopandas.tools import sjoin
 from shapely.geometry import MultiPolygon, Polygon, box, mapping
 
 import grid
-from geom import round_geometry
+from geom import round_geometry, to_2d
 
 from .data_source import DataSource, MapIndices, NationalMapAPI
 from .s3 import upload_directory_to_s3
@@ -329,12 +329,14 @@ def tiles_for_polygon(polygon: Polygon, zoom_levels,
     if scheme not in ['xyz', 'tms']:
         raise ValueError('scheme must be "xyz" or "tms"')
 
-    stdin = json.dumps(mapping(polygon))
+    # Supermercado gets upset with 3D coordinates
+    stdin = json.dumps(mapping(to_2d(polygon)))
 
     tile_tuples = []
     for zoom_level in zoom_levels:
         cmd = ['supermercado', 'burn', str(zoom_level)]
-        r = run(cmd, capture_output=True, input=stdin, encoding='utf-8')
+        r = run(
+            cmd, capture_output=True, input=stdin, check=True, encoding='utf-8')
         tile_tuples.extend(r.stdout.strip().split('\n'))
 
     regex = re.compile(r'\[(\d+), (\d+), (\d+)\]')
