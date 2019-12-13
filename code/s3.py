@@ -10,6 +10,8 @@ def upload_geojson_to_s3(
     """
     This takes a geojson, cuts it into tiles, then uploads to s3
 
+    TODO: check when to upload with content-encoding: gzip
+
     Args:
         - geojson_data: geojson as string
         - bucket_path: folder structure after bucket_name

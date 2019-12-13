@@ -349,7 +349,7 @@ def tiles_for_polygon(polygon: Polygon, zoom_levels,
     return tile_tuples
 
 
-def geojson_for_tiles(tile_tuples: List[Tuple[int]], scheme='xyz') -> str:
+def geojson_from_tiles(tile_tuples: List[Tuple[int]], scheme='xyz') -> str:
     """Generate GeoJSON for list of map tile tuples
 
     Args:

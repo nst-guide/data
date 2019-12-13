@@ -62,14 +62,50 @@ This repository contains code for data pipelines to generate map waypoints and l
 - CalFire
 - Recreation.gov: Recreation.gov has an API for accessing information about features in National Forests.
 
-### Folder Structure
+### Repository Structure
 
-- `data.py`
-- `dev.py`
-- `geom.py`
-- `grid.py`
-- `keplergl_config.json`
-- `parse.py`
-- `tiles.py`
-- `trail.py`
-- `util.py`
+- `data_source/`: This folder contains wrappers for each individual data source.
+  Files are generally named by the organization that releases the data I use,
+  and there can be more than one loader in each file. These classes attempt to
+  abstract reading of the original data, though the classes do not all have the
+  same interface. These should hold only function/class definitions, and no code
+  should be evaluated when the script is run.
+- `geom.py`: This file holds geometric abstractions. Included are functions to
+  reproject data between CRS's, truncate precision of geometries, create buffers
+  at a given distance around a geometry, and project 3D coordinates onto the 2D
+  plane. Again, this file should only define functions and constants, and not
+  evaluate anything itself.
+- `grid.py`: Helpers for generating intersections with regularly spaced grids.
+  For example, USGS elevation files, or topo quads, are packaged for download in
+  a regular grid, and this helps to find which files intersect a provided
+  geometry. Note that for USGS data, it's probably easier to just use the USGS
+  National Map API.
+- `main.py`: This should handle delegating commands to other files. I.e. the
+  only file that should be run directly from the command line.
+- `parse.py`: This is a wrapper for uploading data to my [Parse
+  Server](https://docs.parseplatform.org/parse-server/guide/) instance. It wraps
+  the [Parse REST API](https://docs.parseplatform.org/rest/guide/) to upload
+  Parse's custom classes, like `GeoPoint`s. Also in this file (?) is where
+  schema-checking will take place, making sure data uploads conform to the [JSON
+  schemas defined here](https://github.com/nst-guide/schema).
+- `s3.py`: Wrapper for the AWS S3 CLI. This doesn't use `boto3` directly,
+  because I already knew the CLI commands I wanted to use, and didn't want to
+  spend the time figuring out boto3.
+- `tiles.py`: This holds functions to make working with tiled data easier. Like
+  supplying a Polygon and getting the [XYZ or TMS tile
+  coordinates](https://wiki.openstreetmap.org/wiki/Slippy_map_tilenames).
+- `trail.py`: This holds the meat of taking the data sources and assembling them into a useful dataset.
+- `util.py`: Small non-geometric utilities
+
+### CLI API
+
+Under construction...
+
+#### `package_tile`
+
+Takes a geometry, or a trail section(?), generates buffers, and generates zipped
+files. These zip files should be "nested", i.e. if you want to create 2, 5, and
+10 mile tile buffers of the trail, create zip files for 0-2, 2-5, and 5-10, so
+that if someone wants to download aerial imagery for 0-2, but OSM tiles for
+0-10, then they'd download aerial 0-2, osm 0-2, osm 2-5, and osm 5-10. This
+should reduce redundancy.
