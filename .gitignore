@@ -4,6 +4,8 @@ meta/
 !data/proj/state_planes.csv
 demo.html
 .DS_Store
+*.pbf
+*.png
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
