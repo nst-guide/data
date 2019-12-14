@@ -15,6 +15,20 @@ from geom import buffer, reproject, reproject_gdf
 from keplergl_quickvis import Visualize as Vis
 
 
+
+VALID_TRAIL_CODES = ['pct']
+VALID_TRAIL_SECTIONS = {
+    'pct': ['ca_south', 'ca_central', 'ca_north', 'or', 'wa']
+}
+TRAIL_HM_XW = {
+    'ca_south': ['ca_a', 'ca_b', 'ca_c', 'ca_d', 'ca_e'],
+    'ca_central': ['ca_f', 'ca_g', 'ca_h', 'ca_i', 'ca_j', 'ca_k'],
+    'ca_north': ['ca_l', 'ca_m', 'ca_n', 'ca_o', 'ca_p', 'ca_q', 'ca_r'],
+    'or': ['or_b', 'or_c', 'or_d', 'or_e', 'or_f', 'or_g'],
+    'wa': ['wa_h', 'wa_i', 'wa_j', 'wa_k', 'wa_l'],
+}
+
+
 class Trail:
     """
     Combine multiple data sources to create all necessary data for trail.
