@@ -21,7 +21,6 @@ except ModuleNotFoundError:
     import geom
 
 
-
 class Halfmile(DataSource):
     """docstring for Halfmile"""
     def __init__(self):
@@ -136,7 +135,7 @@ class Halfmile(DataSource):
         sect_regex = re.compile(r'^(CA|OR|WA)_Sec_([A-Z])')
         state, letter = sect_regex.match(geojson_fname.stem).groups()
         section_id = f'{state}_{letter}'
-        return section_id
+        return section_id.lower()
 
     def _add_section_to_gdf(self, gdf, geojson_fname):
         section = self._get_section(geojson_fname)
@@ -162,6 +161,30 @@ class Halfmile(DataSource):
         for f in self.trk_geojsons:
             gdf = gpd.read_file(f)
             gdf = self._add_section_to_gdf(gdf, f)
+            gdfs.append(gdf)
+
+        gdf = pd.concat(gdfs)
+        if not alternates:
+            gdf = gdf[~gdf['alternate']]
+
+        return gdf.to_crs(epsg=4326)
+
+    def trail_section(self, section_names, alternates=True):
+        """
+        Args:
+            - section_names: list of str, of type ca_a, ca_b, or_c, etc
+        """
+
+        extended_names = [
+            s[:2].upper() + '_Sec_' + s[3:].upper() for s in section_names
+        ]
+        fnames = [
+            self.line_dir / f'{name}_tracks.geojson' for name in extended_names
+        ]
+        gdfs = []
+        for fname in fnames:
+            gdf = gpd.read_file(fname)
+            gdf = self._add_section_to_gdf(gdf, fname)
             gdfs.append(gdf)
 
         gdf = pd.concat(gdfs)
