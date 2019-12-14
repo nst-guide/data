@@ -27,6 +27,36 @@ TRAIL_HM_XW = {
     'or': ['or_b', 'or_c', 'or_d', 'or_e', 'or_f', 'or_g'],
     'wa': ['wa_h', 'wa_i', 'wa_j', 'wa_k', 'wa_l'],
 }
+TRAIL_TOWNS_XW = {
+    'ca_south': [
+        'acton', 'agua_dulce', 'big_bear_lake', 'cabazon', 'cajon_pass',
+        'campo', 'hikertown', 'idyllwild', 'julian', 'lake_morena',
+        'mount_laguna', 'tehachapi', 'warner_springs'
+    ],
+    'ca_central': [
+        'bishop', 'donner_pass', 'independence', 'inyokern',
+        'kennedy_meadows_north', 'kernville', 'lake_isabella', 'lone_pine',
+        'mammoth_lakes', 'markleeville', 'mojave', 'reds_meadow', 'ridgecrest',
+        'south_lake_tahoe', 'truckee', 'tuolumne_meadows', 'vvr',
+        'yosemite_village', 'tehachapi'
+    ],
+    'ca_north': [
+        'belden', 'bucks_lake', 'burney', 'burney_falls', 'castella', 'chester',
+        'drakesbad', 'dunsmuir', 'etna', 'mount_shasta', 'old_station',
+        'seiad_valley', 'sierra_city', 'soda_springs', 'truckee', 'weed',
+        'ashland', 'callahans_lodge'
+    ],
+    'or': [
+        'ashland', 'bend', 'callahans_lodge', 'cascade_locks', 'diamond_lake',
+        'fish_lake', 'government_camp', 'mazama_village', 'olallie_lake',
+        'rim_village', 'sisters', 'timberline'
+    ],
+    'wa': [
+        'cascade_locks', 'leavenworth', 'mazama', 'packwood', 'skykomish',
+        'snoqualmie_pass', 'stehekin', 'stevens_pass', 'stevenson',
+        'trout_lake', 'white_pass', 'winthrop'
+    ],
+}
 
 
 class Trail:
@@ -616,3 +646,19 @@ def approx_trail(
         return hm.trail_section(hm_sections, alternates=alternates)
 
 
+def towns_for_trail(trail_code, trail_section):
+    """A mapping from trail section to town boundaries
+    """
+    if trail_code not in VALID_TRAIL_CODES:
+        msg = f'Invalid trail_code. Valid values are: {VALID_TRAIL_CODES}'
+        raise ValueError(msg)
+
+    if trail_section != True:
+        if trail_section not in VALID_TRAIL_SECTIONS.get(trail_code):
+            msg = f'Invalid trail_section. Valid values are: {VALID_TRAIL_SECTIONS}'
+            raise ValueError(msg)
+
+    if trail_code == 'pct':
+        gdf = Towns().boundaries()
+        towns_in_section = TRAIL_TOWNS_XW[trail_section]
+        return gdf[gdf['id'].isin(towns_in_section)]
