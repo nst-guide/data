@@ -58,7 +58,7 @@ def package_tiles(
 
     # For each buffer distance, package all files into directory
     for buffer_dist, tile_indices in tile_indices_dict.items():
-        out_dir_this = out_dir / str(buffer_dist)
+        out_dir_this = out_dir / f'{buffer_dist:.0f}'
         out_dir_this.mkdir(parents=True, exist_ok=False)
         _copy_tiles(
             dest_dir=out_dir_this,
