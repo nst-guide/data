@@ -100,7 +100,11 @@ def get_tile_indices(gdf, buffer_dists, max_zoom):
     # geometry
     tile_indices = {}
     for buffer_dist in buffer_dists:
-        buf = buffer(gdf, distance=buffer_dist, unit='mile').unary_union
+        if buffer_dist > 0:
+            buf = buffer(gdf, distance=buffer_dist, unit='mile').unary_union
+        else:
+            buf = gdf.unary_union
+
         tiles = tiles_for_polygon(buf, zoom_levels=range(0, max(max_zoom) + 1))
         tile_indices[buffer_dist] = tiles
 
