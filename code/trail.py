@@ -1,20 +1,20 @@
+from typing import Union
+
 import geopandas as gpd
 import numpy as np
-import osmnx as ox
 import pandas as pd
 import requests
 from geopandas.tools import sjoin
+from keplergl_quickvis import Visualize as Vis
 from shapely.geometry import GeometryCollection, LineString, Point, Polygon
 from shapely.ops import linemerge, polygonize
 
 import data_source
 import geom
-from data_source import (Halfmile, NationalElevationDataset, OpenStreetMap,
-                         Towns)
+import osmnx as ox
+from data_source import (
+    Halfmile, NationalElevationDataset, OpenStreetMap, Towns)
 from geom import buffer, reproject, reproject_gdf
-from keplergl_quickvis import Visualize as Vis
-
-
 
 VALID_TRAIL_CODES = ['pct']
 VALID_TRAIL_SECTIONS = {
@@ -569,3 +569,50 @@ def intersect_trail_with_polygons(
         intersections[key]['length'] = length
 
     return intersections
+
+
+def approx_trail(
+        trail_code: str, trail_section: Union[str, bool], alternates: bool):
+    """Retrieve approximate trail geometry
+
+    There are many instances when I need an _approximate_ trail geometry. First
+    and foremost, I use the approximate trail line to generate the polygons
+    within which to download OSM data! It takes _forever_ to download the entire
+    PCT relation through the OSM api, because you have to recursively download
+    relations -> way -> nodes, and so make tens of thousands of http requests.
+
+    (This function isn't currently used for downloading OSM; that's hardcoded,
+    but it can be refactored in the future.)
+
+    Otherwise, also helpful for:
+
+    - getting wikipedia articles near the trail
+    - transit near the trail
+
+    Args:
+        - trail_code: the code for the trail of interest, i.e. 'pct'
+        - trail_section: the code for the trail section of interest, i.e.
+          ca_south. If True, returns the entire trail.
+        - alternates: if True, includes alternates
+
+    Returns:
+        GeoDataFrame representing trail
+    """
+    if trail_code not in VALID_TRAIL_CODES:
+        msg = f'Invalid trail_code. Valid values are: {VALID_TRAIL_CODES}'
+        raise ValueError(msg)
+
+    if trail_section != True:
+        if trail_section not in VALID_TRAIL_SECTIONS.get(trail_code):
+            msg = f'Invalid trail_section. Valid values are: {VALID_TRAIL_SECTIONS}'
+            raise ValueError(msg)
+
+    if trail_code == 'pct':
+        hm = Halfmile()
+        if trail_section == True:
+            return hm.trail_full(alternates=alternates)
+
+        hm_sections = TRAIL_HM_XW.get(trail_section)
+        return hm.trail_section(hm_sections, alternates=alternates)
+
+
