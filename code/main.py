@@ -9,6 +9,7 @@ from package_tiles import package_tiles as _package_tiles
 logging.basicConfig(stream=sys.stdout, level=logging.INFO)
 Log = logging.getLogger()
 
+
 @click.group()
 def main():
     pass
@@ -48,7 +49,7 @@ def main():
     type=click.Path(
         exists=True, file_okay=True, dir_okay=False, resolve_path=True),
     required=False,
-    default=(None,),
+    default=(None, ),
     multiple=True,
     help=
     'Paths to tile.json files for each directory. If not provided, assumes a tile JSON file is at directory/tile.json. Otherwise, the same number of options as directory must be provided.'
@@ -58,7 +59,7 @@ def main():
     '--min-zoom',
     type=int,
     required=False,
-    default=(None,),
+    default=(None, ),
     multiple=True,
     help='Min zoom for each tile source')
 @click.option(
@@ -66,7 +67,7 @@ def main():
     '--max-zoom',
     type=int,
     required=False,
-    default=(None,),
+    default=(None, ),
     multiple=True,
     help='Max zoom for each tile source')
 @click.option(
@@ -83,11 +84,7 @@ def main():
     'Whether to raise an error if a desired tile is not found in the directory.'
 )
 @click.option(
-    '-v',
-    '--verbose',
-    is_flag=True,
-    default=False,
-    help='Verbose output')
+    '-v', '--verbose', is_flag=True, default=False, help='Verbose output')
 def package_tiles(
         geometry, buffer, directory, tile_json, min_zoom, max_zoom, output,
         raise_errors, verbose):
@@ -97,17 +94,17 @@ def package_tiles(
     python main.py package-tiles -g ../data/pct/polygon/bound/town/ca/acton.geojson -b "0 1 2" -d ~/Desktop -o out/
     """
     # Make sure that tile_json and directory have same dimensions
-    if tile_json != (None,):
+    if tile_json != (None, ):
         msg = 'tile-json and directory must be provided the same number of times'
         assert len(tile_json) == len(directory), msg
 
     # Make sure that min_zoom and directory have same dimensions
-    if min_zoom != (None,):
+    if min_zoom != (None, ):
         msg = 'min-zoom and directory must be provided the same number of times'
         assert len(min_zoom) == len(directory), msg
 
     # Make sure that min_zoom and directory have same dimensions
-    if max_zoom != (None,):
+    if max_zoom != (None, ):
         msg = 'max-zoom and directory must be provided the same number of times'
         assert len(max_zoom) == len(directory), msg
 
@@ -118,11 +115,11 @@ def package_tiles(
 
     # If any of tile_json, min_zoom, and max_zoom are not provided, then
     # generate a tuple of None with same length as source directories tuple
-    if tile_json == (None,):
+    if tile_json == (None, ):
         tile_json = [None] * len(directory)
-    if min_zoom == (None,):
+    if min_zoom == (None, ):
         min_zoom = [0] * len(directory)
-    if max_zoom == (None,):
+    if max_zoom == (None, ):
         max_zoom = [14] * len(directory)
 
     if verbose:
