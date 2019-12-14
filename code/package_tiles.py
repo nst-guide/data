@@ -4,11 +4,18 @@
 Package tiles into Zip file
 """
 
-from tiles import tiles_for_polygon
-from geom import buffer
-import geopandas as gpd
-from pathlib import Path
+import logging
 import shutil
+import sys
+from pathlib import Path
+
+import geopandas as gpd
+
+from geom import buffer
+from tiles import tiles_for_polygon
+
+logging.basicConfig(stream=sys.stdout, level=logging.INFO)
+Log = logging.getLogger()
 
 
 def temp():
@@ -24,8 +31,15 @@ def temp():
 
 
 def package_tiles(
-        geometry_path, buffer_dists, src_dirs, tile_jsons, min_zooms, max_zooms,
-        out_dir, raise_errors):
+        geometry_path,
+        buffer_dists,
+        src_dirs,
+        tile_jsons,
+        min_zooms,
+        max_zooms,
+        out_dir,
+        raise_errors,
+        verbose=False):
     """Package tiles into directory
 
     TODO: TMS? Index of files pointed to by each buffer?
@@ -58,6 +72,9 @@ def package_tiles(
 
     # For each buffer distance, package all files into directory
     for buffer_dist, tile_indices in tile_indices_dict.items():
+        if verbose:
+            Log.info(f'Running for buffer_dist={buffer_dist}')
+
         out_dir_this = out_dir / f'{buffer_dist:.0f}'
         out_dir_this.mkdir(parents=True, exist_ok=False)
         _copy_tiles(
@@ -67,7 +84,8 @@ def package_tiles(
             tile_jsons=tile_jsons,
             min_zooms=min_zooms,
             max_zooms=max_zooms,
-            raise_errors=raise_errors)
+            raise_errors=raise_errors,
+            verbose=verbose)
 
 
 def get_tile_indices(gdf, buffer_dists, max_zoom):
@@ -118,6 +136,7 @@ def _copy_tiles(
         min_zooms,
         max_zooms,
         raise_errors,
+        verbose=False,
         ext=None):
     """Copy tiles to output directory
 
@@ -143,6 +162,9 @@ def _copy_tiles(
         # I.e. you want 2/openmaptiles/{z}/{x}/{y}.ext
         # For now I'll get the name from the source dir
         tiledir_name = Path(src_dir).name
+        if verbose:
+            Log.info(f'copying from src_dir={src_dir}')
+            Log.info(f'to dest_dir={dest_dir / tiledir_name}')
 
         # Get indices within min zoom and max zoom
         filtered_indices = [
