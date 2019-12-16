@@ -1,10 +1,10 @@
 from .base import DataSource, find_data_dir
 from .epa import EPAAirNow
-from .geomac import GeoMAC
 from .gps_watch import GPSTracks
 from .halfmile import Halfmile
 from .manual import Towns
 from .noaa import LightningCounts
+from .nifc import NIFC
 from .nps import NationalParkBoundaries, NationalParksAPI
 from .opencellid import CellTowers
 from .osm import OpenStreetMap

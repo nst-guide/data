@@ -58,7 +58,8 @@ This repository contains code for data pipelines to generate map waypoints and l
 - USGS Hydrography: The USGS's [National Hydrography products](https://www.usgs.gov/core-science-systems/ngp/national-hydrography/about-national-hydrography-products) are the premier water source datasets for the US. The Watershed Boundary dataset splits the US into a pyramid of smaller and smaller hydrologic regions. I first use the Watershed Boundary dataset to find the watersheds that the PCT passes through, then go to the National Hydrography dataset to find all streams, lakes, and springs near the trail.
 - [PCT Water Report](pctwater.net): The PCT water report is an openly-licensed set of spreadsheets with reports from hikers of which water sources are flowing.
 - EPA AirNow: The EPA has an [API](https://docs.airnowapi.org/) where you can access current air quality regions.
-- GeoMAC: GeoMAC is the standard for accessing historical and current wildfire boundaries.
+- NIFC: National Interagency Fire Center. GeoMAC is closing as of the end of
+  April 2020, and NIFC is the new place for retrieving wildfire boundaries.
 - CalFire
 - Recreation.gov: Recreation.gov has an API for accessing information about features in National Forests.
 
