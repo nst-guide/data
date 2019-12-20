@@ -4,6 +4,7 @@ import geojson
 import geopandas as gpd
 import gpxpy
 import gpxpy.gpx
+import pandas as pd
 
 from .base import DataSource
 
@@ -62,20 +63,46 @@ class GPSTracks(DataSource):
             self.data_dir / 'pct' / 'line' / 'gps_track' / 'gps_track.geojson')
         return gdf
 
-    def load_tracks(self):
-        """Load saved GPX tracks
+    def points_df(self):
+        """Load GPX track points into Pandas DataFrame
+
+        GeoJSON files don't store other helpful information like time or
+        altitude, which are stored in a GPX file. This creates a pandas
+        DataFrame mapping timestamps to gps locations. This allows for creating
+        an ordered list of timestamps that's possible to be interpolated
+        between.
+
+        GPX files can have one or more _tracks_, one or more _segments_ within
+        each track, and one or more _points_ within each segment.
+
+        All track points should have a latitude, longitude, and timestamp. Some,
+        but not all, track points also have an elevation.
 
         Returns:
-            Iterable of gpxpy track objects
+            DataFrame with columns
+            - time: tz aware column of timestamps
+            - ele: elevation in m; often missing
+            - lat: latitude
+            - lon: longitude
         """
-        for gpx_file in self.raw_dir.glob('*.gpx'):
+        points = []
+        for gpx_file in self.raw_dir.glob('Move_*.gpx'):
             with gpx_file.open() as f:
                 gpx = gpxpy.parse(f)
 
-                assert len(gpx.tracks) == 1, f'>1 track in GPX file: {gpx_file}'
-                track = gpx.tracks[0]
+                for track in gpx.tracks:
+                    for segment in track.segments:
+                        for point in segment.points:
+                            points.append(point)
 
-                yield track
+        rows = [{
+            'time': p.time,
+            'ele': p.elevation,
+            'lat': p.latitude,
+            'lon': p.longitude
+        } for p in points]
+        df = pd.DataFrame.from_records(rows)
 
-    def project_onto_line(self, gdf):
-        tracks = self.load_tracks()
+        # Sort df on timestamp
+        df = df.sort_values('time')
+        return df
