@@ -16,8 +16,7 @@ from constants import (
     TRAIL_HM_XW, TRAIL_TOWNS_XW, VALID_TRAIL_CODES, VALID_TRAIL_SECTIONS)
 from data_source import (
     Halfmile, NationalElevationDataset, OpenStreetMap, Towns)
-from geom import buffer, reproject, reproject_gdf
-
+from geom import buffer, reproject
 
 class Trail:
     """
@@ -52,7 +51,8 @@ class Trail:
 
         # Get NPS boundaries
         nps_bounds = data_source.NationalParkBoundaries().polygon()
-        nps_bounds = reproject_gdf(nps_bounds, geom.WGS84, geom.CA_ALBERS)
+        # Reproject to EPSG 3488
+        nps_bounds = nps_bounds.to_crs(epsg=3488)
         nps_bounds['UNIT_CODE'] = nps_bounds['UNIT_CODE'].str.lower()
 
         # Find portions of the trail that intersect with these boundaries
@@ -106,7 +106,8 @@ class Trail:
 
         # Get Wilderness boundaries
         wild_bounds = data_source.WildernessBoundaries().polygon()
-        wild_bounds = reproject_gdf(wild_bounds, geom.WGS84, geom.CA_ALBERS)
+        # Reproject to EPSG 3488
+        wild_bounds = wild_bounds.to_crs(epsg=3488)
 
         # Find portions of the trail that intersect with these boundaries
         d = intersect_trail_with_polygons(projected, wild_bounds, 'WID')
@@ -120,7 +121,8 @@ class Trail:
 
         # Get Wilderness boundaries
         fs_bounds = data_source.NationalForestBoundaries().polygon()
-        fs_bounds = reproject_gdf(fs_bounds, geom.WGS84, geom.CA_ALBERS)
+        # Reproject to EPSG 3488
+        fs_bounds = fs_bounds.to_crs(epsg=3488)
 
         # Find portions of the trail that intersect with these boundaries
         d = intersect_trail_with_polygons(projected, fs_bounds, 'FORESTORGC')
