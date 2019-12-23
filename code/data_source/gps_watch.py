@@ -105,4 +105,14 @@ class GPSTracks(DataSource):
 
         # Sort df on timestamp
         df = df.sort_values('time')
+
+        # Coerce lat/lon columns to GeoDataFrame geometry
+        df = gpd.GeoDataFrame(
+            df,
+            geometry=gpd.points_from_xy(df['lon'], df['lat']),
+            crs={'init': 'epsg:4326'})
+        df = df.drop(['lat', 'lon'], axis=1)
+
+        # Set timestamp as index
+        df = df.set_index('time')
         return df
