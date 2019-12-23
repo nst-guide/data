@@ -1,9 +1,13 @@
+import json
 import logging
 import re
 import sys
+from pathlib import Path
 
+import boto3
 import click
 
+from data_source import GPSTracks, PhotosLibrary
 from package_tiles import package_tiles as _package_tiles
 
 logging.basicConfig(stream=sys.stdout, level=logging.INFO)
@@ -143,6 +147,58 @@ def package_tiles(
         out_dir=output,
         raise_errors=raise_errors,
         verbose=verbose)
+
+
+@main.command()
+@click.option(
+    '-a',
+    '--album',
+    required=False,
+    type=str,
+    default='nst-guide-web',
+    help='Photos.app album to use for photos geocoding.')
+@click.option(
+    '-b',
+    '--bucket',
+    required=False,
+    type=str,
+    default='tiles.nst.guide',
+    help='S3 bucket to upload to.')
+@click.option(
+    '-x',
+    '--xw-path',
+    required=True,
+    type=click.Path(
+        exists=False, file_okay=True, dir_okay=False, resolve_path=True),
+    help='Output path for UUID-photo path crosswalk')
+def geotag_photos(album, bucket, xw_path):
+    """Geotag photos from album using watch's GPS tracks
+    """
+    # Instantiate Photos and GPSTracks classes
+    photos_library = PhotosLibrary()
+    tracks = GPSTracks()
+
+    # Get GeoDataFrame of GPS points
+    points = tracks.points_df()
+
+    # Get photos in given album
+    photos = photos_library.find_photos(album)
+
+    # Geotag those photos
+    fc, uuid_xw = photos_library.geotag_photos(photos, points)
+    minified = json.dumps(fc, separators=(',', ':'))
+
+    # Write UUID-photo path crosswalk to disk
+    Path(xw_path).resolve().parents[0].mkdir(exist_ok=True, parents=True)
+    with open(xw_path, 'w') as f:
+        json.dump(uuid_xw, f)
+
+    # Upload to S3
+    s3 = boto3.resource('s3')
+    obj = s3.Object(bucket, 'photos/index.geojson')
+    res = obj.put(
+        Body=minified, ContentType='application/geo+json', ACL='public-read')
+    Log.info(res)
 
 
 if __name__ == '__main__':

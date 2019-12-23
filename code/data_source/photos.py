@@ -41,19 +41,22 @@ class PhotosLibrary:
             - points: DataFrame of points from watch
 
         Returns:
-            GeoJSON FeatureCollection of points representing photo locations and
-            metadata for each photo:
-            - uuid: UUID from Photos.app for photo
-            - favorite: True if photo is listed as a favorite in Photos.app
-            - keywords: list of keywords from Photos.app
-            - title: title from Photos.app
-            - desc: description from Photos.app
-            - date: corrected photo date in ISO8601 format
-            - path: path to edited photo if it exists, otherwise to original
-              photo
+            - GeoJSON FeatureCollection of points representing photo locations
+              and metadata for each photo:
+                - uuid: UUID from Photos.app for photo
+                - favorite: True if photo is listed as a favorite in Photos.app
+                - keywords: list of keywords from Photos.app
+                - title: title from Photos.app
+                - desc: description from Photos.app
+                - date: corrected photo date in ISO8601 format
+                - path: path to edited photo if it exists, otherwise to original
+                  photo
+
+            - dict linking file paths to UUIDs from Photos.app
         """
         geometries = []
         properties = []
+        uuid_xw = {}
         for photo in photos:
             point = self._geotag_photo(photo, points)
             geometries.append(point)
@@ -67,17 +70,17 @@ class PhotosLibrary:
             }
             date = pd.to_datetime(photo.date, utc=True) + pd.DateOffset(hours=1)
             d['date'] = date.isoformat()
+            properties.append(d)
 
             path = photo.path_edited if photo.path_edited is not None else photo.path
-            d['path'] = path
-            properties.append(d)
+            uuid_xw[path] = photo.uuid
 
         features = []
         for g, prop in zip(geometries, properties):
             features.append(geojson.Feature(geometry=g, properties=prop))
 
         fc = geojson.FeatureCollection(features)
-        return fc
+        return fc, uuid_xw
 
     def _geotag_photo(self, photo, points):
         """Geotag single photo
