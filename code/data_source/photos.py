@@ -15,10 +15,6 @@ class PhotosLibrary:
     I have two sets of photos; photos from my phone, an iPhone XR, and from my
     camera, a Sony a6000. Photos taken by my iPhone are automatically stored in
     HEIC format, a private format developed by Apple.
-
-    The `exiftool` command line tool is able to read the EXIF from virtually any
-    file type, including HEIC, so I'll run `exiftool` on the Photos directory,
-    then use the output to geotag photos.
     """
     def __init__(self):
         super(PhotosLibrary, self).__init__()
@@ -43,6 +39,18 @@ class PhotosLibrary:
         Args:
             - photos: list of osxphotos.PhotoInfo instances
             - points: DataFrame of points from watch
+
+        Returns:
+            GeoJSON FeatureCollection of points representing photo locations and
+            metadata for each photo:
+            - uuid: UUID from Photos.app for photo
+            - favorite: True if photo is listed as a favorite in Photos.app
+            - keywords: list of keywords from Photos.app
+            - title: title from Photos.app
+            - desc: description from Photos.app
+            - date: corrected photo date in ISO8601 format
+            - path: path to edited photo if it exists, otherwise to original
+              photo
         """
         geometries = []
         properties = []
