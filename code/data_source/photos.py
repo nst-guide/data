@@ -136,9 +136,8 @@ class PhotosLibrary:
         # Difference in time b
         a = rows.index[0].tz_convert(None)
         b = rows.index[1].tz_convert(None)
-        c = dt.tz_convert(None)
         # Percentage of the way from a to b
-        pct = (c - a) / (b - a)
+        pct = (dt - a) / (b - a)
         # Line between the two points
         line = LineString([rows.iloc[0].geometry, rows.iloc[1].geometry])
         # Find interpolated point
