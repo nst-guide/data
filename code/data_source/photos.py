@@ -23,19 +23,6 @@ class PhotosLibrary:
     def geotag_photos(self, photos, points):
         """Geotag photos
 
-        It appears that my photos are uniformly 1 hour behind the accurate time.
-        For some reason, my photos are listed as having UTC-6, when Pacific
-        Daylight Time is UTC-7.
-
-        Since offsets from UTC are confusing, here's an example: If I took a
-        photo at 10:00AM set to UTC-6, the timestamp would be 16:00Z. In UTC-7,
-        that would be 9:00AM. Since the actual time was 10AM in UTC-7, I need to
-        add one hour so that the UTC time is correct.
-
-        Still a little confusing to me, but my manual checks confirmed that
-        adding 1 hour gave accurate geocoding at both the start and end of the
-        trail.
-
         Args:
             - photos: list of osxphotos.PhotoInfo instances
             - points: DataFrame of points from watch
@@ -66,10 +53,9 @@ class PhotosLibrary:
                 'favorite': photo.favorite,
                 'keywords': photo.keywords,
                 'title': photo.title,
-                'desc': photo.description
+                'desc': photo.description,
+                'date': self._get_photo_date(photo).isoformat()
             }
-            date = pd.to_datetime(photo.date, utc=True) + pd.DateOffset(hours=1)
-            d['date'] = date.isoformat()
             properties.append(d)
 
             path = photo.path_edited if photo.path_edited is not None else photo.path
@@ -82,6 +68,52 @@ class PhotosLibrary:
         fc = geojson.FeatureCollection(features)
         return fc, uuid_xw
 
+    def _get_photo_date(self, photo):
+        """Get Timestamp for photo
+
+        It looks like I need to add one hour to most photos, unless they already
+        come in as UTC-7. Most photos from my a6000 come in as UTC-6, which is
+        one hour behind. But for example, any photo that I transferred by wifi
+        from the camera to my phone is stored in Photos.app with the correct
+        time as UTC-7.
+
+        In general, my a6000 photos are uniformly 1 hour behind the accurate
+        time. For some reason, my photos are listed as having UTC-6, when
+        Pacific Daylight Time is UTC-7.
+
+        Since offsets from UTC are confusing, here's an example: If I took a
+        photo at 10:00AM set to UTC-6, the timestamp would be 16:00Z. In UTC-7,
+        that would be 9:00AM. Since the actual time was 10AM in UTC-7, I need to
+        add one hour so that the UTC time is correct.
+
+        Still a little confusing to me, but my manual checks confirmed that
+        adding 1 hour gave accurate geocoding at both the start and end of the
+        trail.
+
+        Args:
+            - photo: osxphotos.PhotoInfo instance
+
+        Returns:
+            pd.Timestamp in UTC (timezone naive)
+        """
+        # Convert photo's date to a pandas Timestamp object
+        dt = pd.to_datetime(photo.date)
+
+        tzname = dt.tz.tzname(None)
+        # If the time zone is UTC-6, I need to add an hour
+        if tzname == 'UTC-06:00':
+            dt += pd.DateOffset(hours=1)
+        # If the time zone is already UTC-7, it should be good
+        elif tzname == 'UTC-07:00':
+            pass
+        else:
+            msg = f'tz not UTC-6 or UTC-7: {tzname}'
+            raise ValueError(msg)
+
+        # Convert to UTC
+        dt = dt.tz_convert(None)
+        return dt
+
     def _geotag_photo(self, photo, points):
         """Geotag single photo
 
@@ -92,10 +124,7 @@ class PhotosLibrary:
         Returns:
             - shapely.geometry.Point
         """
-        # Convert photo's date to a pandas Timestamp object in UTC
-        dt = pd.to_datetime(photo.date, utc=True)
-        # Fix timestamp by adding 1 hour
-        dt += pd.DateOffset(hours=1)
+        dt = self._get_photo_date(photo)
 
         # Find closest point previous in time
         idx = points.index.get_loc(dt, method='pad')
