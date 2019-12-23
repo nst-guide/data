@@ -2,9 +2,10 @@ from subprocess import run
 
 import geojson
 import geopandas as gpd
+import pandas as pd
+
 import gpxpy
 import gpxpy.gpx
-import pandas as pd
 
 from .base import DataSource
 

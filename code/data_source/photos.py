@@ -3,13 +3,12 @@ from pathlib import Path
 from subprocess import run
 from typing import List, Union
 
+import geojson
 import osxphotos
 import pandas as pd
-from keplergl_quickvis import Visualize
 from shapely.geometry import LineString
 
 
-# self = PhotosLibrary()
 class PhotosLibrary:
     """Geotag photos from hike
 
@@ -23,10 +22,9 @@ class PhotosLibrary:
     """
     def __init__(self):
         super(PhotosLibrary, self).__init__()
-
         self.photos_dir = Path('~/Pictures').expanduser()
 
-    def geotag_photos(photos, points):
+    def geotag_photos(self, photos, points):
         """Geotag photos
 
         It appears that my photos are uniformly 1 hour behind the accurate time.
@@ -46,34 +44,67 @@ class PhotosLibrary:
             - photos: list of osxphotos.PhotoInfo instances
             - points: DataFrame of points from watch
         """
-        geotagged_points = []
+        geometries = []
+        properties = []
         for photo in photos:
-            # Convert photo's date to a pandas Timestamp object in UTC
-            dt = pd.to_datetime(photo.date, utc=True)
-            # Fix timestamp by adding 1 hour
-            dt += pd.DateOffset(hours=1)
+            point = self._geotag_photo(photo, points)
+            geometries.append(point)
 
-            # Find closest point previous in time
-            idx = points.index.get_loc(dt, method='pad')
-            # Get the two nearest rows
-            rows = points.iloc[idx:idx + 2]
+            d = {
+                'uuid': photo.uuid,
+                'favorite': photo.favorite,
+                'keywords': photo.keywords,
+                'title': photo.title,
+                'desc': photo.description
+            }
+            date = pd.to_datetime(photo.date, utc=True) + pd.DateOffset(hours=1)
+            d['date'] = date.isoformat()
 
-            # Linearly interpolate between the two rows' timestamps and the
-            # photo's timestamp
-            # Difference in time b
-            a = rows.index[0].tz_convert(None)
-            b = rows.index[1].tz_convert(None)
-            c = dt.tz_convert(None)
-            # Percentage of the way from a to b
-            pct = (c - a) / (b - a)
-            # Line between the two points
-            line = LineString([rows.iloc[0].geometry, rows.iloc[1].geometry])
-            # Find interpolated point
-            interp = line.interpolate(pct, normalized=True)
+            path = photo.path_edited if photo.path_edited is not None else photo.path
+            d['path'] = path
+            properties.append(d)
 
-            geotagged_points.append(interp)
+        features = []
+        for g, prop in zip(geometries, properties):
+            features.append(geojson.Feature(geometry=g, properties=prop))
 
-        Visualize(geotagged_points, style='outdoors')
+        fc = geojson.FeatureCollection(features)
+        return fc
+
+    def _geotag_photo(self, photo, points):
+        """Geotag single photo
+
+        Args:
+            - photo: osxphotos.PhotoInfo instance
+            - points: GeoDataFrame of watch GPS points with timestamps
+
+        Returns:
+            - shapely.geometry.Point
+        """
+        # Convert photo's date to a pandas Timestamp object in UTC
+        dt = pd.to_datetime(photo.date, utc=True)
+        # Fix timestamp by adding 1 hour
+        dt += pd.DateOffset(hours=1)
+
+        # Find closest point previous in time
+        idx = points.index.get_loc(dt, method='pad')
+        # Get the two nearest rows
+        rows = points.iloc[idx:idx + 2]
+
+        # Linearly interpolate between the two rows' timestamps and the
+        # photo's timestamp
+        # Difference in time b
+        a = rows.index[0].tz_convert(None)
+        b = rows.index[1].tz_convert(None)
+        c = dt.tz_convert(None)
+        # Percentage of the way from a to b
+        pct = (c - a) / (b - a)
+        # Line between the two points
+        line = LineString([rows.iloc[0].geometry, rows.iloc[1].geometry])
+        # Find interpolated point
+        interp = line.interpolate(pct, normalized=True)
+
+        return interp
 
     def find_photos(self, album='nst-guide-web'):
         """Recursively find photos that were taken between dates
