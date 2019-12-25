@@ -1,4 +1,5 @@
 import json
+from datetime import datetime
 from pathlib import Path
 from subprocess import run
 from typing import List, Union
@@ -6,6 +7,8 @@ from typing import List, Union
 import geojson
 import osxphotos
 import pandas as pd
+import pytz
+from dateutil.parser import parse
 from shapely.geometry import LineString
 
 
@@ -145,11 +148,14 @@ class PhotosLibrary:
 
         return interp
 
-    def find_photos(self, albums=None):
+    def find_photos(self, albums=None, start_date=None, end_date=None, exif=False):
         """Recursively find photos that were taken between dates
 
         Args:
+
             - album: name of album
+            - start_date: first day to include photos
+            - end_date: last day to include photos
 
         Returns:
             List of osxphotos.PhotoInfo
@@ -160,7 +166,32 @@ class PhotosLibrary:
             msg = f'Album not found'
             assert all(album in photosdb.albums for album in albums), msg
             args['albums'] = albums
+
+        # Find photos
         photos = photosdb.photos(**args)
+
+        tz = pytz.timezone('America/Los_Angeles')
+        if start_date is not None:
+            if not isinstance(start_date, datetime):
+                start_date = parse(start_date)
+
+            # Assign tz
+            start_date = pytz.utc.localize(start_date)
+
+        if end_date is not None:
+            if not isinstance(end_date, datetime):
+                end_date = parse(end_date)
+
+            # Assign tz
+            end_date = pytz.utc.localize(end_date)
+
+        # Select photos between dates
+        if start_date is not None:
+            photos = [photo for photo in photos if photo.date >= start_date]
+
+        if end_date is not None
+            photos = [photo for photo in photos if photo.date <= end_date]
+
         return photos
 
     def get_photos_metadata(self, overwrite=False):
