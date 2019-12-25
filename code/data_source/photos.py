@@ -1,11 +1,10 @@
-import geopandas as gpd
 import json
 from datetime import datetime
 from pathlib import Path
 from subprocess import run
 from typing import List, Union
 
-import geojson
+import geopandas as gpd
 import osxphotos
 import pandas as pd
 import pytz
