@@ -176,20 +176,20 @@ class PhotosLibrary:
                 start_date = parse(start_date)
 
             # Assign tz
-            start_date = pytz.utc.localize(start_date)
+            start_date = tz.localize(start_date)
 
         if end_date is not None:
             if not isinstance(end_date, datetime):
                 end_date = parse(end_date)
 
             # Assign tz
-            end_date = pytz.utc.localize(end_date)
+            end_date = tz.localize(end_date)
 
         # Select photos between dates
         if start_date is not None:
             photos = [photo for photo in photos if photo.date >= start_date]
 
-        if end_date is not None
+        if end_date is not None:
             photos = [photo for photo in photos if photo.date <= end_date]
 
         return photos
