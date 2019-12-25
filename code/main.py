@@ -176,6 +176,20 @@ def package_tiles(
         exists=False, file_okay=True, dir_okay=False, resolve_path=True),
     help='Output path for UUID-photo path crosswalk')
 @click.option(
+    '-s',
+    '--start-date',
+    required=False,
+    type=str,
+    default=None,
+    help='Start date to find photos')
+@click.option(
+    '-e',
+    '--end-date',
+    required=False,
+    type=str,
+    default=None,
+    help='End date to find photos')
+@click.option(
     '-x',
     '--xw-path',
     required=False,
@@ -183,7 +197,8 @@ def package_tiles(
     type=click.Path(
         exists=False, file_okay=True, dir_okay=False, resolve_path=True),
     help='Output path for UUID-photo path crosswalk')
-def geotag_photos(album, exif, all_cols, out_path, xw_path):
+def geotag_photos(
+        album, start_date, end_date, exif, all_cols, out_path, xw_path):
     """Geotag photos from album using watch's GPS tracks
     """
     # Instantiate Photos and GPSTracks classes
@@ -194,7 +209,8 @@ def geotag_photos(album, exif, all_cols, out_path, xw_path):
     points = tracks.points_df()
 
     # Get photos in given album
-    photos = photos_library.find_photos(albums=album, exif=exif)
+    photos = photos_library.find_photos(
+        albums=album, exif=exif, start_date=start_date, end_date=end_date)
 
     # Geotag those photos
     gdf = photos_library.geotag_photos(photos, points)
@@ -226,6 +242,7 @@ def geotag_photos(album, exif, all_cols, out_path, xw_path):
         Path(xw_path).resolve().parents[0].mkdir(exist_ok=True, parents=True)
         with open(xw_path, 'w') as f:
             json.dump(uuid_xw, f)
+
 
 if __name__ == '__main__':
     main()
