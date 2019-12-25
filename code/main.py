@@ -155,6 +155,7 @@ def package_tiles(
     '--album',
     required=False,
     type=str,
+    multiple=True,
     default='nst-guide-web',
     help='Photos.app album to use for photos geocoding.')
 @click.option(
@@ -182,7 +183,7 @@ def geotag_photos(album, bucket, xw_path):
     points = tracks.points_df()
 
     # Get photos in given album
-    photos = photos_library.find_photos(album)
+    photos = photos_library.find_photos(albums=album)
 
     # Geotag those photos
     fc, uuid_xw = photos_library.geotag_photos(photos, points)

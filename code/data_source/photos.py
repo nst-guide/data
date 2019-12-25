@@ -145,7 +145,7 @@ class PhotosLibrary:
 
         return interp
 
-    def find_photos(self, album='nst-guide-web'):
+    def find_photos(self, albums=None):
         """Recursively find photos that were taken between dates
 
         Args:
@@ -155,8 +155,12 @@ class PhotosLibrary:
             List of osxphotos.PhotoInfo
         """
         photosdb = osxphotos.PhotosDB()
-        assert album in photosdb.albums, f'Album {album} not found'
-        photos = photosdb.photos(albums=[album])
+        args = {}
+        if albums is not None:
+            msg = f'Album not found'
+            assert all(album in photosdb.albums for album in albums), msg
+            args['albums'] = albums
+        photos = photosdb.photos(**args)
         return photos
 
     def get_photos_metadata(self, overwrite=False):
