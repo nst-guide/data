@@ -171,6 +171,9 @@ class PhotosLibrary:
             # Assign tz
             end_date = tz.localize(end_date)
 
+            # Add one day to end_date to include last day
+            end_date += pd.DateOffset(days=1)
+
         # Select photos between dates
         if start_date is not None:
             photos = [photo for photo in photos if photo.date >= start_date]
