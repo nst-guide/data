@@ -4,7 +4,6 @@ import re
 import sys
 from pathlib import Path
 
-import boto3
 import click
 
 from data_source import GPSTracks, PhotosLibrary
@@ -221,19 +220,24 @@ def geotag_photos(
 
     # Generate features and uuid-path crosswalk
     gdf['date'] = gdf['date'].apply(lambda x: x.isoformat())
+    cols = [
+        'uuid', 'favorite', 'keywords', 'title', 'description', 'date',
+        'geometry'
+    ]
+    # Manually add a few more columns
     if all_cols:
-        cols = gdf.columns
-    else:
-        cols = [
-            'uuid', 'favorite', 'keywords', 'title', 'description', 'date',
-            'geometry'
+        other_cols = [
+            'path', 'GPSAltitude', 'GPSDateTime', 'GPSLatitude', 'GPSLongitude',
+            'GPSSpeedRef', 'GPSSpeed', 'GPSImgDirectionRef', 'GPSImgDirection',
+            'GPSHPositioningError'
         ]
+        cols.extend(other_cols)
+
     fc = gdf[cols].to_json()
-    minified = json.dumps(fc, separators=(',', ':'))
 
     Path(out_path).resolve().parents[0].mkdir(exist_ok=True, parents=True)
     with open(out_path, 'w') as f:
-        json.dump(minified, f)
+        json.dump(json.loads(fc), f, separators=(',', ':'))
 
     # Generate UUID-file path xw and write to disk
     if xw_path is not None:
