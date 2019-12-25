@@ -186,8 +186,22 @@ def geotag_photos(album, bucket, xw_path):
     photos = photos_library.find_photos(albums=album)
 
     # Geotag those photos
-    fc, uuid_xw = photos_library.geotag_photos(photos, points)
+    gdf = photos_library.geotag_photos(photos, points)
+
+    # Generate features and uuid-path crosswalk
+    gdf['date'] = gdf['date'].apply(lambda x: x.isoformat())
+    cols = [
+        'uuid', 'favorite', 'keywords', 'title', 'description', 'date',
+        'geometry'
+    ]
+    fc = gdf[cols].to_json()
     minified = json.dumps(fc, separators=(',', ':'))
+
+    # If path_edited exists, replace path with the edited path
+    gdf.loc[gdf['path_edited'].notna(
+    ), 'path'] = gdf.loc[gdf['path_edited'].notna(), 'path_edited']
+
+    uuid_xw = gdf[['path', 'uuid']].set_index('path')['uuid'].to_dict()
 
     # Write UUID-photo path crosswalk to disk
     Path(xw_path).resolve().parents[0].mkdir(exist_ok=True, parents=True)

@@ -1,3 +1,4 @@
+import geopandas as gpd
 import json
 from datetime import datetime
 from pathlib import Path
@@ -44,32 +45,17 @@ class PhotosLibrary:
 
             - dict linking file paths to UUIDs from Photos.app
         """
-        geometries = []
-        properties = []
-        uuid_xw = {}
-        for photo in photos:
-            point = self._geotag_photo(photo, points)
-            geometries.append(point)
+        # Fix dates
+        photos['date'] = photos.apply(
+            lambda row: self._get_photo_date(row), axis=1)
 
-            d = {
-                'uuid': photo.uuid,
-                'favorite': photo.favorite,
-                'keywords': photo.keywords,
-                'title': photo.title,
-                'desc': photo.description,
-                'date': self._get_photo_date(photo).isoformat()
-            }
-            properties.append(d)
+        # Geotag points and convert to GeoDataFrame
+        photos = gpd.GeoDataFrame(
+            photos,
+            geometry=photos.apply(
+                lambda photo: self._geotag_photo(photo, points), axis=1))
 
-            path = photo.path_edited if photo.path_edited is not None else photo.path
-            uuid_xw[path] = photo.uuid
-
-        features = []
-        for g, prop in zip(geometries, properties):
-            features.append(geojson.Feature(geometry=g, properties=prop))
-
-        fc = geojson.FeatureCollection(features)
-        return fc, uuid_xw
+        return photos
 
     def _get_photo_date(self, photo):
         """Get Timestamp for photo
@@ -94,7 +80,7 @@ class PhotosLibrary:
         trail.
 
         Args:
-            - photo: osxphotos.PhotoInfo instance
+            - photo: pandas Series
 
         Returns:
             pd.Timestamp in UTC (timezone naive)
@@ -102,15 +88,14 @@ class PhotosLibrary:
         # Convert photo's date to a pandas Timestamp object
         dt = pd.to_datetime(photo.date)
 
-        tzname = dt.tz.tzname(None)
         # If the time zone is UTC-6, I need to add an hour
-        if tzname == 'UTC-06:00':
+        if dt.utcoffset().total_seconds() / 60 / 60 == -6:
             dt += pd.DateOffset(hours=1)
         # If the time zone is already UTC-7, it should be good
-        elif tzname == 'UTC-07:00':
+        elif dt.utcoffset().total_seconds() / 60 / 60 == -7:
             pass
         else:
-            msg = f'tz not UTC-6 or UTC-7: {tzname}'
+            msg = f'tz not UTC-6 or UTC-7: {dt.tz}'
             raise ValueError(msg)
 
         # Convert to UTC
@@ -121,13 +106,13 @@ class PhotosLibrary:
         """Geotag single photo
 
         Args:
-            - photo: osxphotos.PhotoInfo instance
+            - photo: pandas Series
             - points: GeoDataFrame of watch GPS points with timestamps
 
         Returns:
             - shapely.geometry.Point
         """
-        dt = self._get_photo_date(photo)
+        dt = photo.date
 
         # Find closest point previous in time
         idx = points.index.get_loc(dt, method='pad')
@@ -148,7 +133,8 @@ class PhotosLibrary:
 
         return interp
 
-    def find_photos(self, albums=None, start_date=None, end_date=None, exif=False):
+    def find_photos(
+            self, albums=None, start_date=None, end_date=None, exif=False):
         """Recursively find photos that were taken between dates
 
         Args:
@@ -156,6 +142,7 @@ class PhotosLibrary:
             - album: name of album
             - start_date: first day to include photos
             - end_date: last day to include photos
+            - exif: if True, joins with metadata from exiftool
 
         Returns:
             List of osxphotos.PhotoInfo
@@ -192,12 +179,33 @@ class PhotosLibrary:
         if end_date is not None:
             photos = [photo for photo in photos if photo.date <= end_date]
 
+        # Turn photos into pandas DataFrame
+        # Currently there's a bug in osxphotos and one photo gives an error
+        data = []
+        for p in photos:
+            try:
+                data.append(json.loads(p.json()))
+            except NameError:
+                continue
+        photos = pd.DataFrame.from_records(data)
+
+        if exif:
+            meta = self.get_photos_metadata()
+            meta = pd.DataFrame.from_records(meta)
+
+            # Rename FileName to filename so that merge works
+            meta = meta.rename(columns={'FileName': 'filename'})
+
+            # Merge photos with EXIF metadata from exiftool
+            photos = pd.merge(photos, meta, on='filename', indicator=True)
+
+            msg = 'Some photos not merged with EXIF metadata'
+            assert photos['_merge'].value_counts()['left_only'] == 0, msg
+
         return photos
 
     def get_photos_metadata(self, overwrite=False):
-        """
-        Deprecated: used with exiftool but osxphotos seems to be good enough for
-        my needs
+        """Get EXIF data from photos library using Exiftool
         """
         metadata_path = self.photos_dir / 'metadata.json'
         if overwrite or (not metadata_path.exists()):
@@ -238,4 +246,3 @@ class PhotosLibrary:
         cmd = ['exiftool', '-j', '-n', *[str(x) for x in paths]]
         res = run(cmd, capture_output=True)
         return json.loads(res.stdout)
-        res.stderr
