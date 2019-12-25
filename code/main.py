@@ -156,23 +156,34 @@ def package_tiles(
     required=False,
     type=str,
     multiple=True,
-    default='nst-guide-web',
+    default=None,
     help='Photos.app album to use for photos geocoding.')
 @click.option(
-    '-b',
-    '--bucket',
-    required=False,
-    type=str,
-    default='tiles.nst.guide',
-    help='S3 bucket to upload to.')
+    '--exif',
+    is_flag=True,
+    default=False,
+    help='Include metadata from exiftool')
 @click.option(
-    '-x',
-    '--xw-path',
+    '--all-cols',
+    is_flag=True,
+    default=False,
+    help="Don't select minimal columns")
+@click.option(
+    '-o',
+    '--out-path',
     required=True,
     type=click.Path(
         exists=False, file_okay=True, dir_okay=False, resolve_path=True),
     help='Output path for UUID-photo path crosswalk')
-def geotag_photos(album, bucket, xw_path):
+@click.option(
+    '-x',
+    '--xw-path',
+    required=False,
+    default=None,
+    type=click.Path(
+        exists=False, file_okay=True, dir_okay=False, resolve_path=True),
+    help='Output path for UUID-photo path crosswalk')
+def geotag_photos(album, exif, all_cols, out_path, xw_path):
     """Geotag photos from album using watch's GPS tracks
     """
     # Instantiate Photos and GPSTracks classes
@@ -183,38 +194,38 @@ def geotag_photos(album, bucket, xw_path):
     points = tracks.points_df()
 
     # Get photos in given album
-    photos = photos_library.find_photos(albums=album)
+    photos = photos_library.find_photos(albums=album, exif=exif)
 
     # Geotag those photos
     gdf = photos_library.geotag_photos(photos, points)
-
-    # Generate features and uuid-path crosswalk
-    gdf['date'] = gdf['date'].apply(lambda x: x.isoformat())
-    cols = [
-        'uuid', 'favorite', 'keywords', 'title', 'description', 'date',
-        'geometry'
-    ]
-    fc = gdf[cols].to_json()
-    minified = json.dumps(fc, separators=(',', ':'))
 
     # If path_edited exists, replace path with the edited path
     gdf.loc[gdf['path_edited'].notna(
     ), 'path'] = gdf.loc[gdf['path_edited'].notna(), 'path_edited']
 
-    uuid_xw = gdf[['path', 'uuid']].set_index('path')['uuid'].to_dict()
+    # Generate features and uuid-path crosswalk
+    gdf['date'] = gdf['date'].apply(lambda x: x.isoformat())
+    if all_cols:
+        cols = gdf.columns
+    else:
+        cols = [
+            'uuid', 'favorite', 'keywords', 'title', 'description', 'date',
+            'geometry'
+        ]
+    fc = gdf[cols].to_json()
+    minified = json.dumps(fc, separators=(',', ':'))
 
-    # Write UUID-photo path crosswalk to disk
-    Path(xw_path).resolve().parents[0].mkdir(exist_ok=True, parents=True)
-    with open(xw_path, 'w') as f:
-        json.dump(uuid_xw, f)
+    Path(out_path).resolve().parents[0].mkdir(exist_ok=True, parents=True)
+    with open(out_path, 'w') as f:
+        json.dump(minified, f)
 
-    # Upload to S3
-    s3 = boto3.resource('s3')
-    obj = s3.Object(bucket, 'photos/index.geojson')
-    res = obj.put(
-        Body=minified, ContentType='application/geo+json', ACL='public-read')
-    Log.info(res)
+    # Generate UUID-file path xw and write to disk
+    if xw_path is not None:
+        uuid_xw = gdf[['path', 'uuid']].set_index('path')['uuid'].to_dict()
 
+        Path(xw_path).resolve().parents[0].mkdir(exist_ok=True, parents=True)
+        with open(xw_path, 'w') as f:
+            json.dump(uuid_xw, f)
 
 if __name__ == '__main__':
     main()
