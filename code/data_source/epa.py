@@ -34,9 +34,10 @@ class EPAAirNow(DataSource):
         fmt = '%Y-%m-%dT%H'
         time_str = (time - timedelta(hours=3)).strftime(fmt)
 
-        # TODO: Fix this bbox. Right now it's only a part of central CA
+        # This is a huge bounding box for all 50 US States, from here:
+        # https://gist.github.com/graydon/11198540
         if bbox is None:
-            bbox = (-121.923904, 36.903504, -117.924881, 40.268781)
+            bbox = (-171.791110603, 18.91619, -66.96466, 71.3577635769)
         bbox_str = [str(x) for x in bbox]
 
         # You can choose between just PM2.5, Ozone, and Combined
