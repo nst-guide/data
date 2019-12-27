@@ -1,7 +1,6 @@
 import os
 from datetime import datetime, timedelta
 
-import geojson
 import geopandas as gpd
 import requests
 from dotenv import load_dotenv
@@ -61,12 +60,24 @@ class EPAAirNow(DataSource):
         """Parse KML response
 
         Not sure why, but must be _bytes_ not _text_.
+
+        Args:
+            - content: KML string
+
+        Returns:
+            GeoDataFrame with columns:
+            - style_id
+            - color
+            - fill
+            - outline
+            - geometry
         """
         k = kml.KML()
         k.from_string(content)
 
         # Loop over kml objects and create a feature collection
-        fc = []
+        geometries = []
+        properties = []
         for document in k.features():
             all_styles = {}
             styles = list(document.styles())
@@ -85,17 +96,17 @@ class EPAAirNow(DataSource):
                     style_id = placemark.styleUrl.replace('#', '')
                     style = all_styles.get(style_id)
 
-                    properties = {'style_id': style_id}
-                    properties.update(style)
+                    props = {'style_id': style_id}
+                    props.update(style)
 
-                    json_feature = geojson.Feature(
-                        geometry=placemark.geometry, properties=properties)
-                    fc.append(json_feature)
+                    geometries.append(placemark.geometry)
+                    properties.append(props)
 
-        return fc
+        return gpd.GeoDataFrame(properties, geometry=geometries)
 
-    def features_to_gdf(self, fc):
-        """
+    def parse_color(self, gdf):
+        """Parse KML colors and convert to AQI levels
+
         EPA AirNow Color scheme:
 
         | AQI                            | Color  | RGB        |
@@ -110,10 +121,16 @@ class EPAAirNow(DataSource):
         Ref:
         https://docs.airnowapi.org/docs/AirNowMappingFactSheet.pdf?docs%2FAirNowMappingFactSheet.pdf=
 
-        """
-        # Turn that feature collection into a GeoDataFrame
-        gdf = gpd.GeoDataFrame.from_features(fc)
+        Args:
+            - gdf: GeoDataFrame
 
+        Returns:
+            GeoDataFrame with columns:
+            - geometry
+            - rgb (string of format '255,255,0')
+            - aqi (one of good, moderate, usg, unhealthy, very_unhealthy, and
+              hazardous)
+        """
         # RGB to AQI level
         # https://docs.airnowapi.org/docs/AirNowMappingFactSheet.pdf?
         # docs%2FAirNowMappingFactSheet.pdf=
