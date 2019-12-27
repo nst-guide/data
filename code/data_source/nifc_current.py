@@ -1,9 +1,11 @@
 from datetime import datetime
+from io import BytesIO
+from zipfile import ZipFile
 
-import fiona
 import geojson
 import pyproj
 import requests
+import shapefile
 from shapely.geometry import asShape, box, shape
 from shapely.ops import transform
 
@@ -18,37 +20,60 @@ class NIFCCurrent:
     def geojson(self):
         url = 'https://opendata.arcgis.com/datasets/5da472c6d27b4b67970acc7b5044c862_0.zip'
         r = requests.get(url)
+        buf = BytesIO(r.content)
 
-        with fiona.BytesCollection(r.content,
-                                   layer='Wildfire_Perimeters') as col:
-            gj = self.parse_features(col)
-
+        geometries, properties, prj = self.load_shapefile(buf)
+        gj = self.parse_features(geometries, properties, prj)
         return gj
 
+    def load_shapefile(self, buf):
+        with ZipFile(buf) as zf:
+            shp = BytesIO(zf.read('Wildfire_Perimeters.shp'))
+            dbf = BytesIO(zf.read('Wildfire_Perimeters.dbf'))
+            shx = BytesIO(zf.read('Wildfire_Perimeters.shx'))
 
-    def parse_features(self, col):
-        """
-        """
+            # The .prj file is the projection encoded as Well-Known Text
+            prj = pyproj.Proj(
+                zf.read('Wildfire_Perimeters.prj').decode('utf-8'))
+
+            with shapefile.Reader(shp=shp, dbf=dbf, shx=shx) as r:
+                geometries, properties = self._read_shape_records(r)
+                return geometries, properties, prj
+
+    def _read_shape_records(self, r):
+        # Load shapes and records at the same time
+        # Returns a list of custom shapeRecord objects
+        shape_records = r.shapeRecords()
+
+        # Note that pyshp raises an Exception when coercing to GeoJSON if the
+        # geometry is NULL. So pass the records that are null, and coerce the
+        # others.
         geometries = []
         properties = []
-        for feature in col:
-            # Append shapely object to geometries
-            # Note that occasionally rows have null geometry
-            try:
-                geometries.append(shape(feature['geometry']))
-            except:
+        for shape_record in shape_records:
+            if shape_record.shape.shapeTypeName == 'NULL':
                 continue
 
-            # Append properties to properties
-            properties.append(feature['properties'])
+            # __geo_interface__ seems to be a standard way to coerce to GeoJSON
+            # It doesn't look like there's another more-public method to do this
+            geometries.append(shape_record.shape.__geo_interface__)
+            properties.append(shape_record.record.as_dict())
 
         msg = 'geometries and properties have different lengths'
         assert len(geometries) == len(properties), msg
 
-        # Reproject to WGS84
-        if col.crs != {'init': 'epsg:4326'}:
+        # Coerce geometries to shapely objects
+        geometries = [shape(g) for g in geometries]
+
+        return geometries, properties
+
+    def parse_features(self, geometries, properties, prj):
+        """
+        """
+        # Reproject to WGS84 if necessary
+        if prj != pyproj.Proj(init='epsg:4326'):
             project = pyproj.Transformer.from_proj(
-                pyproj.Proj(col.crs), pyproj.Proj(init='epsg:4326'))
+                prj, pyproj.Proj(init='epsg:4326'))
             geometries = [transform(project.transform, g) for g in geometries]
 
         # Keep features in BBOX
