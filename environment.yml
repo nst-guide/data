@@ -4,6 +4,7 @@ channels:
 dependencies:
   - beautifulsoup4
   - demquery
+  - fastkml
   - fiona
   - gdal # needed?
   - geojson
@@ -20,16 +21,21 @@ dependencies:
   - pip
   - pyproj
   - pyshp
+  - python-chromedriver-binary
+  - python-dateutil
   - python-dotenv
-  - python=3
+  - python>=3.6
+  - pytz
   - rasterio
   - requests
   - scipy
+  - selenium
   - shapely
   - supermercado
+  - wikipedia
   - xlrd
   - pip:
-    - fastkml
     - keplergl_quickvis
+    - opencage
     - osxphotos
     - python-language-server[all]
