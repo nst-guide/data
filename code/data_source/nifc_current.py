@@ -15,7 +15,7 @@ class NIFCCurrent:
     def __init__(self):
         super(NIFCCurrent, self).__init__()
 
-    def current(self):
+    def geojson(self):
         url = 'https://opendata.arcgis.com/datasets/5da472c6d27b4b67970acc7b5044c862_0.zip'
         r = requests.get(url)
 
