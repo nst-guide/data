@@ -19,6 +19,7 @@ dependencies:
   - pint
   - pip
   - pyproj
+  - pyshp
   - python-dotenv
   - python=3
   - rasterio
@@ -30,4 +31,5 @@ dependencies:
   - pip:
     - fastkml
     - keplergl_quickvis
+    - osxphotos
     - python-language-server[all]
