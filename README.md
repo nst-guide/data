@@ -98,6 +98,144 @@ This repository contains code for data pipelines to generate map waypoints and l
 - `trail.py`: This holds the meat of taking the data sources and assembling them into a useful dataset.
 - `util.py`: Small non-geometric utilities
 
+## Auto-updating layers
+
+There are a few layers that are designed to auto-update:
+
+- National Weather Service forecasts
+- EPA AirNow air quality polygons
+- National Interagency Fire Center (NIFC) current wildfire polygons
+
+The first is handled in a separate repository:
+[nst-guide/ndfd_current](https://github.com/nst-guide/ndfd_current). The second
+two are defined within this repository. All three are designed to be run with
+AWS Lambda.
+
+### AWS Lambda
+
+From Wikipedia:
+
+> AWS Lambda is an event-driven, serverless computing platform provided by
+> Amazon as a part of Amazon Web Services. It is a computing service that runs
+> code in response to events and automatically manages the computing resources
+> required by that code.
+
+Basically, AWS Lambda is a (somewhat) easy, very cheap way to run small pieces
+of code regularly or in response to events. For all of my use cases above, I can
+set AWS Lambda to run every few hours.
+
+In my testing of my code to update wildfire perimeters from NIFC, it used 244 MB
+of memory and took 8178.56 ms to run. From the [AWS Lambda pricing
+page](https://aws.amazon.com/lambda/pricing/), it's roughly $0.0000005 for each
+100ms when 320MB of memory is allocated. That means the 8100ms job cost
+$0.0000405, and running it every 4 hours would cost $0.00729 every 30 days. Aka
+basically free.
+
+
+#### AWS Lambda Downsides
+
+The biggest downsides of AWS Lambda by far are the hard
+[limits](https://docs.aws.amazon.com/lambda/latest/dg/limits.html) on how big
+your Deployment Package (aka all unzipped code, including all dependencies) can
+be: **250MB**. When some of your dependencies are GDAL, GeoPandas -> pandas ->
+numpy, that limit is really easy to surpass. I've been unable to include _either_ GeoPandas or Fiona (on their own, not together) inside the deployment package.
+
+This means that rewriting code to avoid dependencies on any large library, such
+as GeoPandas and Fiona, is inevitable.
+
+#### AWS Lambda Dependencies
+
+You can't just `pip install gdal`, or use `conda`, or even use Docker in AWS
+Lambda. All your code and dependencies must be pre-built and provided as a Zip
+file.
+
+Luckily, AWS Lambda has the concept of _Lambda Layers_. These are code packages created
+by you or by others that you can point to and use, without having to package the
+code yourself. So you can include a layer for, say, `GDAL`, and then run code
+that depends on GDAL libraries without an issue.
+
+You can only use a **maximum of five** with any given function. In practice,
+this shouldn't be as bad as it sounds because you could zip multiple
+dependencies into a single layer. The bigger problem in practice is hitting
+Lambda's 250MB hard limit on repository size.
+
+To use a layer, the easiest way is to include its Amazon Resource Number (ARN).
+So, for example, to include `geolambda`, I can go to
+```
+{my function} > Layers > Add a layer > Provide a layer version ARN
+```
+and paste
+```
+arn:aws:lambda:us-east-1:552188055668:layer:geolambda:4
+```
+the unique identifier for that specific version of `geolambda` that I use. Note
+that layers are specific to an AWS region, so the layer referenced by this
+specific ARN will only work in US-East-1. Sometimes layers will be pre-built in
+multiple regions. For example, `geolambda` is pre-built in US-East-1, US-West-2,
+and EU-Central-1. To use the layer in any other AWS region, you'd have to build
+and upload the layer yourself to that region.
+
+I use several layers:
+
+- [`geolambda` and
+  `geolambda-python`](https://github.com/developmentseed/geolambda/). These are
+  immensely helpful layers that provide geospatial libraries within Lambda.
+  `geolambda` provides PROJ.5, GEOS, GeoTIFF, HDF4/5, SZIP, NetCDF, OpenJPEG,
+  WEBP, ZSTD, and GDAL. `geolambda-python` additionally provides GDAL (the
+  Python bindings), rasterio, shapely, pyproj, and numpy. Note that if you want
+  to use the Python bindings, you must provide _both_, not just
+  `geolambda-python`.
+
+  It is possible to build both `geolambda` and `geolambda-python` layers
+  yourself. Their Github READMEs have pretty good documentation, and I was able
+  to build `geolambda-python` myself (as you would need to if you wanted to
+  modify the package list.)
+
+- `Klayers-python37-requests`.
+  [Klayers](https://github.com/keithrozario/Klayers) is a project to provide
+  many common Python libraries as lambda layers. This is just an easy way to
+  access `requests`, though in this case it would be easy to build yourself.
+
+And a couple packaged by me:
+
+- `nst-guide-fastkml-python37`: provides the
+  [`fastkml`](https://github.com/cleder/fastkml) package
+- `nst-guide-geojson-python37`: provides the
+  [`geojson`](https://github.com/jazzband/geojson) package
+- `nst-guide-pyshp-python37`: provides the
+  [`pyshp`](https://github.com/GeospatialPython/pyshp) package. Because Fiona
+  was too big to be packaged on AWS Lambda, and I needed to read Shapefiles for
+  the wildfire perimeters updating, I had to find an alternative. Luckily,
+  `pyshp` is able to read shapefiles and is only ~200KB of code.
+
+#### Packaging dependencies for AWS Lambda
+
+As mentioned above, sometimes you'll need to build lambda layers yourself. [This
+article](https://dev.to/vealkind/getting-started-with-aws-lambda-layers-4ipk)
+was pretty helpful. The general gist is:
+```
+mkdir -p layer/python
+pip install {package_list} -t layer/python
+cd layer
+zip -r aws-layer.zip python
+```
+Then go to the AWS Lambda console, choose Layers from the side pane, and upload
+the Zip archive as a new layer.
+
+**Python packages must be within a `python/` directory in the Zip archive.** You
+won't be able to load the library without the top-level `python` directory.
+
+Also, if the Python packages have any (or depend on any) native code, you should
+run the above packaging steps on a Linux machine, so that the layer will work on
+Amazon's linux-based architecture. For pure-Python packages, you should be able
+build the Zip archive on any OS.
+
+#### AWS Lambda IAM Role
+
+Each of my AWS Lambda functions upload files to AWS S3 in order to be served to
+users. This means that the function must be associated with a valid IAM role to
+be permitted to access and modify files in my S3 bucket.
+
 ## CLI API
 
 ### `package_tiles`
