@@ -16,6 +16,11 @@ def lambda_handler(event, context):
     # Eventually also set to Ozone, Combined
     air_measure = 'PM25'
     gj = airnow.current_air_quality(air_measure=air_measure)
+
+    # If HTTP response is not 200, None is returned
+    if gj is None:
+        return
+
     minified = json.dumps(json.loads(str(gj)), separators=(',', ':'))
 
     # Write individual GeoJSON file to S3

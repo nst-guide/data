@@ -4,6 +4,7 @@ from datetime import datetime, timedelta
 import geojson
 import requests
 from fastkml import kml
+from shapely.geometry import asShape, shape
 
 
 class EPAAirNow:
@@ -69,6 +70,14 @@ class EPAAirNow:
 
         # Convert KML properties into rgb, aqi properties
         properties = self.parse_properties(properties)
+
+        # Simplify geometries
+        geometries = [g.simplify(0.001) for g in geometries]
+
+        # Reduce coordinate precision
+        # 5 digits is still around 1m precision
+        # https://en.wikipedia.org/wiki/Decimal_degrees
+        geometries = [round_geometry(geom=g, digits=5) for g in geometries]
 
         # Coerce to GeoJSON FeatureCollection
         features = [
@@ -191,3 +200,92 @@ def kmlcolor_to_rgb(s):
     g = int(s[4:6], 16)
     r = int(s[6:8], 16)
     return f'{r},{g},{b}'
+
+
+def round_geometry(geom, digits):
+    """Round coordinates of geometry to desired digits
+
+    Args:
+        - geom: geometry to round coordinates of
+        - digits: number of decimal places to round
+
+    Returns:
+        geometry of same type as provided
+    """
+    gj = [geojson.Feature(geometry=geom)]
+    truncated = list(coord_precision(gj, precision=digits))
+    return shape(truncated[0].geometry)
+
+
+def coord_precision(features, precision, validate=True):
+    """Truncate precision of GeoJSON features
+
+    Taken from geojson-precision:
+    https://github.com/perrygeo/geojson-precision
+
+    The MIT License (MIT)
+
+    Copyright (c) 2016 Matthew Perry
+
+    Permission is hereby granted, free of charge, to any person obtaining a copy
+    of this software and associated documentation files (the "Software"), to
+    deal in the Software without restriction, including without limitation the
+    rights to use, copy, modify, merge, publish, distribute, sublicense, and/or
+    sell copies of the Software, and to permit persons to whom the Software is
+    furnished to do so, subject to the following conditions:
+
+    The above copyright notice and this permission notice shall be included in
+    all copies or substantial portions of the Software.
+
+    THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+    IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+    FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+    AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+    LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+    FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
+    IN THE SOFTWARE.
+    """
+    for feature in features:
+        coords = _set_precision(feature['geometry']['coordinates'], precision)
+        feature['geometry']['coordinates'] = coords
+        if validate:
+            geom = asShape(feature['geometry'])
+            geom.is_valid
+        yield feature
+
+
+def _set_precision(coords, precision):
+    """Truncate precision of coordinates
+
+    Taken from geojson-precision:
+    https://github.com/perrygeo/geojson-precision
+
+    The MIT License (MIT)
+
+    Copyright (c) 2016 Matthew Perry
+
+    Permission is hereby granted, free of charge, to any person obtaining a copy
+    of this software and associated documentation files (the "Software"), to
+    deal in the Software without restriction, including without limitation the
+    rights to use, copy, modify, merge, publish, distribute, sublicense, and/or
+    sell copies of the Software, and to permit persons to whom the Software is
+    furnished to do so, subject to the following conditions:
+
+    The above copyright notice and this permission notice shall be included in
+    all copies or substantial portions of the Software.
+
+    THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+    IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+    FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+    AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+    LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+    FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
+    IN THE SOFTWARE.
+    """
+    result = []
+    try:
+        return round(coords, int(precision))
+    except TypeError:
+        for coord in coords:
+            result.append(_set_precision(coord, precision))
+    return result
