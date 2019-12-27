@@ -1,7 +1,7 @@
 import os
 from datetime import datetime, timedelta
 
-import geopandas as gpd
+import geojson
 import requests
 from fastkml import kml
 
@@ -24,10 +24,13 @@ class EPAAirNow:
         """Get current air pollution conditions from EPA AirNow
 
         Args:
-            bbox: Bounding box for API request. You can only do 5 requests per
+            - bbox: Bounding box for API request. You can only do 5 requests per
                 hour with your API key, so choose a large bounding box, i.e.
                 probably entire US.
-            air_measure: either 'PM25', 'Combined', or 'Ozone'
+            - air_measure: either 'PM25', 'Combined', or 'Ozone'
+
+        Returns:
+            geojson.FeatureCollection
         """
         # Date string (yyyy-mm-ddTHH)
         # January 1, 2012 at 1PM would be sent as: 2012-01-01T13
@@ -55,9 +58,25 @@ class EPAAirNow:
             'API_KEY': self.api_key,
             'SRS': 'EPSG:4326'
         }
+
+        # Send GET request
         r = requests.get(url, params=params)
-        fc = self.parse_kml(r.content)
-        return self.features_to_gdf(fc)
+        if r.status_code != 200:
+            return None
+
+        # Parse KML response
+        geometries, properties = self.parse_kml(r.content)
+
+        # Convert KML properties into rgb, aqi properties
+        properties = self.parse_properties(properties)
+
+        # Coerce to GeoJSON FeatureCollection
+        features = [
+            geojson.Feature(geometry=g, properties=p)
+            for g, p in zip(geometries, properties)
+        ]
+        fc = geojson.FeatureCollection(features)
+        return fc
 
     def parse_kml(self, content):
         """Parse KML response
@@ -68,12 +87,10 @@ class EPAAirNow:
             - content: KML string
 
         Returns:
-            GeoDataFrame with columns:
-            - style_id
-            - color
-            - fill
-            - outline
-            - geometry
+            [List[Polygon], List[dict]]
+
+            - list of shapely geometries;
+            - list of dicts containing properties from KML file
         """
         k = kml.KML()
         k.from_string(content)
@@ -105,9 +122,9 @@ class EPAAirNow:
                     geometries.append(placemark.geometry)
                     properties.append(props)
 
-        return gpd.GeoDataFrame(properties, geometry=geometries)
+        return geometries, properties
 
-    def parse_color(self, gdf):
+    def parse_properties(self, properties):
         """Parse KML colors and convert to AQI levels
 
         EPA AirNow Color scheme:
@@ -125,14 +142,11 @@ class EPAAirNow:
         https://docs.airnowapi.org/docs/AirNowMappingFactSheet.pdf?docs%2FAirNowMappingFactSheet.pdf=
 
         Args:
-            - gdf: GeoDataFrame
+            - properties: List[dict] of properties from KML file
 
         Returns:
-            GeoDataFrame with columns:
-            - geometry
-            - rgb (string of format '255,255,0')
-            - aqi (one of good, moderate, usg, unhealthy, very_unhealthy, and
-              hazardous)
+            List[dict] with structure:
+            {'aqi': AQI_LEVEL, 'rgb': 'r,g,b'}
         """
         # RGB to AQI level
         # https://docs.airnowapi.org/docs/AirNowMappingFactSheet.pdf?
@@ -146,14 +160,17 @@ class EPAAirNow:
             '126,0,35': 'hazardous',
         }
 
-        # Turn color column to rgb numbers
-        gdf['rgb'] = gdf['color'].apply(lambda s: kmlcolor_to_rgb(s))
+        # Turn color property to rgb
+        rgb_colors = [kmlcolor_to_rgb(p['color']) for p in properties]
 
-        # Run on aqi mapping
-        gdf['aqi'] = gdf['rgb'].map(aqi_mapping)
-        gdf = gdf[['geometry', 'rgb', 'aqi']]
+        # Map using aqi_mapping
+        aqi_values = [aqi_mapping[c] for c in rgb_colors]
 
-        return gdf
+        # Create properties dicts with only `aqi` and `rgb` keys
+        return [{
+            'aqi': aqi,
+            'rgb': rgb
+        } for aqi, rgb in zip(aqi_values, rgb_colors)]
 
 
 def kmlcolor_to_rgb(s):
