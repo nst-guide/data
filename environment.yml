@@ -6,7 +6,7 @@ dependencies:
   - demquery
   - fastkml
   - fiona
-  - gdal # needed?
+  - gdal
   - geojson
   - geopandas
   - gpxpy
