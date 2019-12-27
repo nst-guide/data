@@ -3,17 +3,20 @@ from datetime import datetime, timedelta
 
 import geopandas as gpd
 import requests
-from dotenv import load_dotenv
 from fastkml import kml
 
-from .base import DataSource
 
+class EPAAirNow:
+    """Retrieve air quality contours from EPA AirNow API
 
-class EPAAirNow(DataSource):
+    This assumes that EPA_AIRNOW_API_KEY is already in the environment. If
+    needed, call `dotenv.load_dotenv` _before_ instantiating this class. This is
+    so that this file does not have a dependency on dotenv, and can be copied to
+    AWS Lambda more easily.
+    """
     def __init__(self):
         super(EPAAirNow, self).__init__()
 
-        load_dotenv()
         self.api_key = os.getenv('EPA_AIRNOW_API_KEY')
         assert self.api_key is not None, 'EPA AIRNOW key missing'
 
