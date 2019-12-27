@@ -20,4 +20,8 @@ def lambda_handler(event, context):
 
     # Write individual GeoJSON file to S3
     obj = s3.Object('tiles.nst.guide', f'airnow/{air_measure}.geojson')
-    obj.put(Body=minified, ContentType='application/geo+json')
+    # 2-hour cache plus 24-hour stale-while-revalidate
+    obj.put(
+        Body=minified,
+        ContentType='application/geo+json',
+        CacheControl='public, max-age=7200, stale-while-revalidate=86400')
