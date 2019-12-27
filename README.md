@@ -50,7 +50,7 @@ This repository contains code for data pipelines to generate map waypoints and l
   [NOAA](https://www.ncdc.noaa.gov/data-access/severe-weather/lightning-products-and-services).
   Note that the raw data of where every lightning strike hits is closed source
   and must be purchased, but a NOAA contract lets daily extracts be made public.
-- Transit: I get transit data from the [Transitland](transit.land) database.
+- Transit: I get transit data from the [Transitland](https://transit.land) database.
   This is a bit easier than working with raw GTFS (General Transit Feed
   Specification) data, and they've done a bit of work to deduplicate data and
   connect the same stops in different data extracts from different providers.
