@@ -1,7 +1,7 @@
+import json
+from pathlib import Path
 from subprocess import run
 from tempfile import TemporaryDirectory
-
-from pipeline import geojson_to_tiles
 
 
 def upload_geojson_to_s3(
@@ -25,6 +25,7 @@ def upload_geojson_to_s3(
             bucket_path=bucket_path,
             content_type='x-protobuf',
             content_encoding='gzip')
+
 
 def upload_directory_to_s3(
         local_path,
@@ -59,3 +60,34 @@ def upload_directory_to_s3(
         cmd.extend(['--content-encoding', content_encoding])
 
     run(cmd, capture_output=True, check=True, encoding='utf-8')
+
+
+def geojson_to_tiles(geojson_data: str, folder: str):
+    """
+    Args:
+        - geojson_data: geojson as string
+        - folder: path to directory (usually temporary) to write geojson and
+            tiles to
+
+    Returns:
+        - path to top of folder structure where tiles are kept
+    """
+
+    # write GeoJSON to directory
+    folder = Path(folder)
+    geojson_path = folder / 'data.geojson'
+    tiles_path = folder / 'tiles'
+    with open(geojson_path, 'w') as f:
+        json.dump(geojson_data, f)
+
+    # run tippecanoe
+    cmd = [
+        'tippecanoe',
+        '-zg',
+        '--force',
+        '-e',
+        str(tiles_path),
+        str(geojson_path),
+    ]
+    run(cmd, capture_output=True, check=True, encoding='utf-8')
+    return tiles_path
