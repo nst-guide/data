@@ -1,3 +1,12 @@
+"""
+nifc_current.py: Retrieve current wildfire perimeters from the National
+Interagency Fire Center.
+
+This script is designed to be run on AWS Lambda. As such, dependencies are kept
+to a minimum. Essentially no more dependencies can be added. Special work has
+been made to avoid both GeoPandas and Fiona.
+"""
+
 from datetime import datetime
 from io import BytesIO
 from zipfile import ZipFile
@@ -18,6 +27,7 @@ class NIFCCurrent:
         super(NIFCCurrent, self).__init__()
 
     def geojson(self):
+        """Retrieve NIFC Shapefile and convert into well-formatted GeoJSON"""
         url = 'https://opendata.arcgis.com/datasets/5da472c6d27b4b67970acc7b5044c862_0.zip'
         r = requests.get(url)
         buf = BytesIO(r.content)
@@ -27,6 +37,22 @@ class NIFCCurrent:
         return gj
 
     def load_shapefile(self, buf):
+        """Load shapefile from BytesIO buffer using pyshp
+
+        Args:
+            - buf (BytesIO): a buffer containing a Zip archive of a Shapefile.
+              The names within the Shapefile are expected to be
+              `Wildfire_Perimeters.*`. At least the `.shp`, `.dbf`, and `.shx`
+              files are expected to exist.
+
+        Returns:
+            (List[shapely geometry], List[dict], pyproj.Proj)
+
+            - a list of Shapely geometries
+            - a list of dictionary records that correspond to the geometries (in
+              the same order)
+            - the projection of the data as a pyproj.Proj instance
+        """
         with ZipFile(buf) as zf:
             shp = BytesIO(zf.read('Wildfire_Perimeters.shp'))
             dbf = BytesIO(zf.read('Wildfire_Perimeters.dbf'))
@@ -41,6 +67,18 @@ class NIFCCurrent:
                 return geometries, properties, prj
 
     def _read_shape_records(self, r):
+        """Read Shapefile records into list of Shapely geometries and dicts
+
+        Args:
+            - r (shapefile.Reader): an open pyshp reader object
+
+        Returns:
+            (List[shapely geometry], List[dict])
+
+            - a list of Shapely geometries
+            - a list of dictionary records that correspond to the geometries (in
+              the same order)
+        """
         # Load shapes and records at the same time
         # Returns a list of custom shapeRecord objects
         shape_records = r.shapeRecords()
@@ -68,7 +106,19 @@ class NIFCCurrent:
         return geometries, properties
 
     def parse_features(self, geometries, properties, prj):
-        """
+        """Parse and simplify features
+
+        Create cleaned, simplified geometries with only the minimum number of
+        properties necessary.
+
+        Args:
+            - geometries (List[shapely geometry]): a list of Shapely geometries
+            - properties (List[dict]): a list of dictionary records that
+              correspond to the geometries (in the same order)
+            - prj (pyproj.Proj): the projection of the input data
+
+        Returns:
+            (geojson.FeatureCollection)
         """
         # Reproject to WGS84 if necessary
         if prj != pyproj.Proj(init='epsg:4326'):

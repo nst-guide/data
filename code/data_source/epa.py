@@ -1,3 +1,10 @@
+"""
+epa.py: Retrieve air quality contours from EPA AirNow API
+
+This script is designed to be run on AWS Lambda. As such, dependencies are kept
+to a minimum. Essentially no more dependencies can be added.
+"""
+
 import os
 from datetime import datetime, timedelta
 
