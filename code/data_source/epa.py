@@ -2,6 +2,7 @@ import os
 from datetime import datetime, timedelta
 
 import geojson
+import geopandas as gpd
 import requests
 from dotenv import load_dotenv
 from fastkml import kml
@@ -17,7 +18,7 @@ class EPAAirNow(DataSource):
         self.api_key = os.getenv('EPA_AIRNOW_API_KEY')
         assert self.api_key is not None, 'EPA AIRNOW key missing'
 
-    def download(self, bbox=None, air_measure='PM25'):
+    def current_air_quality(self, bbox=None, air_measure='PM25'):
         """Get current air pollution conditions from EPA AirNow
 
         Args:
@@ -44,6 +45,7 @@ class EPAAirNow(DataSource):
         air_measure_valid_values = ['PM25', 'Combined', 'Ozone']
         msg = 'air_measure must be one of {air_measure_valid_values}'
         assert air_measure in air_measure_valid_values, msg
+
         url = f'http://www.airnowapi.org/aq/kml/{air_measure}/'
         params = {
             'DATE': time_str,
@@ -52,10 +54,19 @@ class EPAAirNow(DataSource):
             'SRS': 'EPSG:4326'
         }
         r = requests.get(url, params=params)
-        k = kml.KML()
-        k.from_string(r.content)
+        fc = self.parse_kml(r.content)
+        return self.features_to_gdf(fc)
 
-        featurecollection = []
+    def parse_kml(self, content):
+        """Parse KML response
+
+        Not sure why, but must be _bytes_ not _text_.
+        """
+        k = kml.KML()
+        k.from_string(content)
+
+        # Loop over kml objects and create a feature collection
+        fc = []
         for document in k.features():
             all_styles = {}
             styles = list(document.styles())
@@ -79,6 +90,67 @@ class EPAAirNow(DataSource):
 
                     json_feature = geojson.Feature(
                         geometry=placemark.geometry, properties=properties)
-                    featurecollection.append(json_feature)
+                    fc.append(json_feature)
 
-        return geojson.FeatureCollection(features=featurecollection)
+        return fc
+
+    def features_to_gdf(self, fc):
+        """
+        EPA AirNow Color scheme:
+
+        | AQI                            | Color  | RGB        |
+        |--------------------------------|--------|------------|
+        | Good                           | Green  | 0,228,0    |
+        | Moderate                       | Yellow | 255,255,0  |
+        | Unhealthy for Sensitive Groups | Orange | 255,126,0  |
+        | Unhealthy                      | Red    | 255,0,0    |
+        | Very Unhealthy                 | Purple | 143,63,151 |
+        | Hazardous                      | Maroon | 126,0,35   |
+
+        Ref:
+        https://docs.airnowapi.org/docs/AirNowMappingFactSheet.pdf?docs%2FAirNowMappingFactSheet.pdf=
+
+        """
+        # Turn that feature collection into a GeoDataFrame
+        gdf = gpd.GeoDataFrame.from_features(fc)
+
+        # RGB to AQI level
+        # https://docs.airnowapi.org/docs/AirNowMappingFactSheet.pdf?
+        # docs%2FAirNowMappingFactSheet.pdf=
+        aqi_mapping = {
+            '0,228,0': 'good',
+            '255,255,0': 'moderate',
+            '255,126,0': 'usg',
+            '255,0,0': 'unhealthy',
+            '143,63,151': 'very_unhealthy',
+            '126,0,35': 'hazardous',
+        }
+
+        # Turn color column to rgb numbers
+        gdf['rgb'] = gdf['color'].apply(lambda s: kmlcolor_to_rgb(s))
+
+        # Run on aqi mapping
+        gdf['aqi'] = gdf['rgb'].map(aqi_mapping)
+        gdf = gdf[['geometry', 'rgb', 'aqi']]
+
+        return gdf
+
+
+def kmlcolor_to_rgb(s):
+    """
+    KML colors are in aabbggrr order!! So if the color is FF00FFFF then:
+    - opacity FF (255)
+    - blue 00 (0)
+    - green FF (255)
+    - red FF (255)
+
+    Ref: https://stackoverflow.com/a/13036015
+
+    Args:
+        - s: kml color string
+    """
+    s = s.upper()
+    b = int(s[2:4], 16)
+    g = int(s[4:6], 16)
+    r = int(s[6:8], 16)
+    return f'{r},{g},{b}'
