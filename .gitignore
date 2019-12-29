@@ -1,3 +1,7 @@
+*.arw
+*.jpg
+*.geojson
+
 # In the future, I'll include the data/ folder in Git, but for now, data's changing too often
 meta/
 /data/*

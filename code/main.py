@@ -3,6 +3,7 @@ import logging
 import re
 import sys
 from pathlib import Path
+from shutil import copyfile
 
 import click
 
@@ -246,6 +247,43 @@ def geotag_photos(
         Path(xw_path).resolve().parents[0].mkdir(exist_ok=True, parents=True)
         with open(xw_path, 'w') as f:
             json.dump(uuid_xw, f)
+
+
+@main.command()
+@click.option(
+    '-o',
+    '--out-dir',
+    required=True,
+    type=click.Path(
+        exists=False, file_okay=True, dir_okay=False, resolve_path=True),
+    help='Output path for UUID-photo path crosswalk')
+@click.argument(
+    'file',
+    type=click.Path(
+        exists=True, file_okay=True, dir_okay=False, resolve_path=True),
+    nargs=1)
+def copy_using_xw(file, out_dir):
+    """Copy files to out_dir using JSON crosswalk
+    """
+    # Load JSON crosswalk
+    with open(file) as f:
+        xw = json.load(f)
+
+    # Keys should be existing paths to photos; values are UUIDs, i.e. stubs
+    # without extensions for file names
+
+    # First, make sure all keys exist
+    for key in xw.keys():
+        assert Path(key).exists(), f'Key does not exist:\n{key}'
+
+    # Make out_dir
+    out_dir = Path(out_dir)
+    out_dir.mkdir(exist_ok=True, parents=True)
+
+    # Iterate over values; copying files
+    for existing_file, new_stub in xw.items():
+        new_file = out_dir / (new_stub + Path(existing_file).suffix)
+        copyfile(existing_file, new_file)
 
 
 if __name__ == '__main__':
