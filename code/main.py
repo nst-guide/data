@@ -219,14 +219,22 @@ def geotag_photos(
     gdf.loc[gdf['path_edited'].notna(
     ), 'path'] = gdf.loc[gdf['path_edited'].notna(), 'path_edited']
 
+    # Check for duplicates
+    # If there are duplicates on date (at the second level), try to keep the one
+    # with original_filename ending in JPG
+    # Singe my photos end in either .ARW, .JPG, or .HEIC, I'll just sort on date
+    # and then original_filename, and the one ending in JPG will be last.
+    #
+    # Sort based on date and original_filename
+    gdf = gdf.sort_values(['date', 'original_filename'])
+    # Group by date, and then keep the last one
+    gdf = gdf.groupby('date').tail(1)
+
     # Generate features and uuid-path crosswalk
     gdf['date'] = gdf['date'].apply(lambda x: x.isoformat())
-    cols = [
-        'uuid', 'favorite', 'keywords', 'title', 'description', 'date',
-        'geometry'
-    ]
-    # Manually add a few more columns
+    cols = ['uuid', 'favorite', 'keywords', 'description', 'date', 'geometry']
     if all_cols:
+        # Manually add a few more columns
         other_cols = [
             'path', 'GPSAltitude', 'GPSDateTime', 'GPSLatitude', 'GPSLongitude',
             'GPSSpeedRef', 'GPSSpeed', 'GPSImgDirectionRef', 'GPSImgDirection',
