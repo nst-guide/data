@@ -4,6 +4,7 @@ import re
 import sys
 from pathlib import Path
 from shutil import copyfile
+from subprocess import run
 
 import click
 
@@ -272,6 +273,8 @@ def geotag_photos(
     nargs=1)
 def copy_using_xw(file, out_dir):
     """Copy files to out_dir using JSON crosswalk
+
+    For any non-JPEG files, this calls `sips` (mac-cli) to convert them to JPEG.
     """
     # Load JSON crosswalk
     with open(file) as f:
@@ -290,8 +293,19 @@ def copy_using_xw(file, out_dir):
 
     # Iterate over values; copying files
     for existing_file, new_stub in xw.items():
-        new_file = out_dir / (new_stub + Path(existing_file).suffix)
-        copyfile(existing_file, new_file)
+        # If the existing file extension is already jpeg, just copy the file and
+        # don't run `sips`
+        new_file = out_dir / (new_stub + '.jpeg')
+        if Path(existing_file).suffix == '.jpeg':
+            copyfile(existing_file, new_file)
+        # If the file extension is not jpeg, convert it to jpeg using `sips`
+        else:
+            cmd = [
+                'sips',
+                str(existing_file), '-s', 'format', 'jpeg', '--out',
+                str(new_file)
+            ]
+            run(cmd, check=True)
 
 
 if __name__ == '__main__':
