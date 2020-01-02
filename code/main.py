@@ -242,7 +242,7 @@ def geotag_photos(
         ]
         cols.extend(other_cols)
 
-    fc = gdf[cols].to_json()
+    fc = gdf[cols].set_index('uuid').to_json()
 
     Path(out_path).resolve().parents[0].mkdir(exist_ok=True, parents=True)
     with open(out_path, 'w') as f:
