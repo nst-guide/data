@@ -236,6 +236,10 @@ Each of my AWS Lambda functions upload files to AWS S3 in order to be served to
 users. This means that the function must be associated with a valid IAM role to
 be permitted to access and modify files in my S3 bucket.
 
+Note that in order to use the `ACL='public-read'` option, the IAM role running
+the Lambda function [must also have the `S3:putObjectAcl`
+permission](https://stackoverflow.com/questions/36272286/getting-access-denied-when-calling-the-putobject-operation-with-bucket-level-per).
+
 ## CLI API
 
 ### `package_tiles`
