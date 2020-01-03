@@ -10,6 +10,7 @@ Layers used:
 - nst-guide-geojson-python37: arn:aws:lambda:us-east-1:961053664803:layer:nst-guide-geojson-python37:1
 """
 
+import gzip
 import json
 
 import boto3
@@ -30,12 +31,18 @@ def lambda_handler(event, context):
     if gj is None:
         return
 
+    # Set separators so that there are no useless spaces in the GeoJSON file
     minified = json.dumps(json.loads(str(gj)), separators=(',', ':'))
 
+    # Compress using gzip
+    compressed = gzip.compress(minified.encode('utf-8'))
+
     # Write individual GeoJSON file to S3
-    obj = s3.Object('tiles.nst.guide', f'airnow/{air_measure}.geojson')
     # 2-hour cache plus 24-hour stale-while-revalidate
+    obj = s3.Object('tiles.nst.guide', f'airnow/{air_measure}.geojson')
     obj.put(
-        Body=minified,
+        Body=compressed,
         ContentType='application/geo+json',
+        ACL='public-read',
+        ContentEncoding='gzip',
         CacheControl='public, max-age=7200, stale-while-revalidate=86400')
