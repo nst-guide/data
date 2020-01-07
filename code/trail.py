@@ -26,7 +26,7 @@ class Trail:
     Args:
         route:
     """
-    def __init__(self):
+    def __init__(self, trail_code='pct'):
         """
 
         Args:
@@ -35,6 +35,10 @@ class Trail:
             buffer
         """
         super(Trail, self).__init__()
+
+        if trail_code != 'pct':
+            raise ValueError('invalid trail_code')
+
         self.osm = OpenStreetMap()
         self.hm = Halfmile()
 
@@ -43,6 +47,9 @@ class Trail:
 
         - mile length inside park
         - linestrings inside park
+
+        Returns:
+            GeoDataFrame
         """
 
         # Get trail track as a single geometric line
@@ -119,6 +126,9 @@ class Trail:
             nps_api_df,
             left_index=True,
             right_on='parkCode')
+
+        # Reproject back to EPSG 4326
+        gdf = gdf.to_crs(epsg=4326)
 
         return gdf
 
