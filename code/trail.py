@@ -7,7 +7,7 @@ import requests
 from geopandas.tools import sjoin
 from keplergl_quickvis import Visualize as Vis
 from shapely.geometry import GeometryCollection, LineString, Point, Polygon
-from shapely.ops import linemerge, polygonize
+from shapely.ops import linemerge, nearest_points, polygonize
 
 import data_source
 import geom
@@ -16,7 +16,7 @@ from constants import (
     TRAIL_HM_XW, TRAIL_TOWNS_XW, VALID_TRAIL_CODES, VALID_TRAIL_SECTIONS)
 from data_source import (
     Halfmile, NationalElevationDataset, OpenStreetMap, Towns)
-from geom import buffer, reproject
+from geom import buffer, reproject, to_2d
 
 class Trail:
     """
@@ -624,3 +624,46 @@ def towns_for_trail(trail_code, trail_section):
         gdf = Towns().boundaries()
         towns_in_section = TRAIL_TOWNS_XW[trail_section]
         return gdf[gdf['id'].isin(towns_in_section)]
+
+
+def milemarker_for_points(points, trail_code='pct'):
+    """Find mile marker for point
+
+    Args:
+        point: list of shapely point in EPSG 4326
+        trail_code: which trail
+    """
+    if trail_code != 'pct':
+        raise ValueError('invalid trail_code')
+
+    # For now, since I don't have the original Halfmile data with full accuracy,
+    # I take the two nearest half-mile waypoints and interpolate between them.
+    hm = Halfmile()
+    # Load waypoints into GeoDataFrame
+    gdf = hm.wpt_full()
+
+    # Select only mile marker waypoints
+    gdf = gdf[gdf['symbol'] == 'Triangle, Red']
+
+    # Some mile marker waypoints exist in multiple sections; deduplicate on name
+    gdf = gdf.drop_duplicates('name')
+
+    # Coerce the name to a decimal number
+    gdf['mi'] = pd.to_numeric(gdf['name'].str.replace('-', '.'))
+
+    wpts_geom = gdf.geometry.unary_union
+    mile_markers = []
+    for point in points:
+        # Find the nearest point in waypoint dataset
+        nearest = to_2d(gdf).geometry == nearest_points(point, wpts_geom)[1]
+        assert nearest.sum() == 1, 'Should be one nearest point'
+
+        # Find row that belongs to
+        # (matching is based on the geometry)
+        row = gdf[nearest]
+
+        # Get mile marker of that row
+        mm = row['mi'].values[0]
+        mile_markers.append(mm)
+
+    return mile_markers
