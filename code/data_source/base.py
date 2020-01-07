@@ -10,7 +10,8 @@ from bs4 import BeautifulSoup
 from dotenv import load_dotenv
 from geopandas.tools import sjoin
 from selenium import webdriver
-from selenium.common.exceptions import ElementNotVisibleException
+from selenium.common.exceptions import (
+    ElementNotVisibleException, NoSuchElementException)
 
 try:
     import geom
@@ -158,6 +159,6 @@ class Scraper:
                     sleep(1)
                     self.wait_for(css_selector)
 
-        except ElementNotVisibleException:
+        except (ElementNotVisibleException, NoSuchElementException):
             sleep(1)
             self.wait_for(css_selector)
