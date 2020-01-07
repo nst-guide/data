@@ -133,6 +133,7 @@ class Scraper:
 
     def get(self, url):
         self.driver.get(url)
+        self.wait_for_count = 0
 
     def html(self):
         return BeautifulSoup(self.driver.page_source, 'lxml')
@@ -141,13 +142,18 @@ class Scraper:
         field = self.driver.find_element_by_css_selector(css_selector)
         field.send_keys(text)
 
-    def wait_for(self, css_selector, children=True):
+    def wait_for(self, css_selector, children=True, timeout=10):
         """Wait for page to load
 
         Args:
             - css_selector
             - children: if True, wait for children to exist
         """
+        # Occasionally a css_selector doesn't exist, so I want to include a
+        # timeout
+        if self.wait_for_count >= timeout:
+            raise NoSuchElementException('timeout reached')
+
         try:
             self.driver.find_element_by_css_selector(css_selector)
 
@@ -157,8 +163,10 @@ class Scraper:
                 div = soup.select(css_selector)
                 if list(div[0].children) == []:
                     sleep(1)
+                    self.wait_for_count += 1
                     self.wait_for(css_selector)
 
         except (ElementNotVisibleException, NoSuchElementException):
             sleep(1)
+            self.wait_for_count += 1
             self.wait_for(css_selector)

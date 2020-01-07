@@ -1,3 +1,5 @@
+from selenium.common.exceptions import NoSuchElementException
+
 from .base import PolygonSource, Scraper
 
 
@@ -39,9 +41,15 @@ class WildernessConnectScraper(Scraper):
         # Load regulations page
         self.get(url + '#area-management')
 
+        # Reload page
+        self.driver.refresh()
+
         # Wait for page to load
         regulations_selector = '#regulations'
-        self.wait_for(regulations_selector, children=True)
+        try:
+            self.wait_for(regulations_selector, children=True)
+        except NoSuchElementException:
+            return
 
         # Get HTML, return desired selector
         soup = self.html()
@@ -60,15 +68,23 @@ class WildernessConnectScraper(Scraper):
         # Load overview page
         self.get(url + '#general')
 
+        # Reload page
+        self.driver.refresh()
+
         # Wait for page to load
         selector = '#general'
-        self.wait_for(selector)
+        try:
+            self.wait_for(selector, children=True)
+        except NoSuchElementException:
+            return
 
         # Get HTML
         soup = self.html()
 
         # There's no CSS selector to get just the regulations text
         # Find the h2 labeled Description and take its next sibling
-        desc_header = [x for x in soup.find_all('h2') if x.text == 'Description'][0]
+        desc_header = [
+            x for x in soup.find_all('h2') if x.text == 'Description'
+        ][0]
         description = desc_header.next_sibling
         return description
