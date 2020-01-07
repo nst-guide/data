@@ -34,11 +34,41 @@ class WildernessConnectScraper(Scraper):
             - url: url to wilderness.net page on given Wilderness area. Should
               be sourced from wilderness.net boundaries file. E.g.:
 
-              https://wilderness.net/visit-wilderness/?ID=382#area-management
+              https://wilderness.net/visit-wilderness/?ID=382
         """
-        self.get(url)
+        # Load regulations page
+        self.get(url + '#area-management')
+
+        # Wait for page to load
         regulations_selector = '#regulations'
-        self.wait_for(regulations_selector)
+        self.wait_for(regulations_selector, children=True)
+
+        # Get HTML, return desired selector
         soup = self.html()
         regulations = soup.select(regulations_selector)
         return regulations
+
+    def get_description(self, url):
+        """Get description for wilderness area from wilderness.net
+
+        Args:
+            - url: url to wilderness.net page on given Wilderness area. Should
+              be sourced from wilderness.net boundaries file. E.g.:
+
+              https://wilderness.net/visit-wilderness/?ID=382
+        """
+        # Load overview page
+        self.get(url + '#general')
+
+        # Wait for page to load
+        selector = '#general'
+        self.wait_for(selector)
+
+        # Get HTML
+        soup = self.html()
+
+        # There's no CSS selector to get just the regulations text
+        # Find the h2 labeled Description and take its next sibling
+        desc_header = [x for x in soup.find_all('h2') if x.text == 'Description'][0]
+        description = desc_header.next_sibling
+        return description

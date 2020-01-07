@@ -17,4 +17,4 @@ from .usfs import USFS, NationalForestBoundaries
 from .usgs import (MapIndices, NationalElevationDataset, NationalMapAPI,
                    USGSHydrography)
 from .wikimedia import Wikipedia
-from .wilderness_net import WildernessBoundaries
+from .wilderness_net import WildernessBoundaries, WildernessConnectScraper

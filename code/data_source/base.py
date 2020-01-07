@@ -140,9 +140,24 @@ class Scraper:
         field = self.driver.find_element_by_css_selector(css_selector)
         field.send_keys(text)
 
-    def wait_for(self, css_selector):
+    def wait_for(self, css_selector, children=True):
+        """Wait for page to load
+
+        Args:
+            - css_selector
+            - children: if True, wait for children to exist
+        """
         try:
             self.driver.find_element_by_css_selector(css_selector)
+
+            # If desired, wait until children exist
+            if children:
+                soup = self.html()
+                div = soup.select(css_selector)
+                if list(div[0].children) == []:
+                    sleep(1)
+                    self.wait_for(css_selector)
+
         except ElementNotVisibleException:
             sleep(1)
             self.wait_for(css_selector)
