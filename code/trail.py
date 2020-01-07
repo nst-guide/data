@@ -6,7 +6,8 @@ import pandas as pd
 import requests
 from geopandas.tools import sjoin
 from keplergl_quickvis import Visualize as Vis
-from shapely.geometry import GeometryCollection, LineString, Point, Polygon
+from shapely.geometry import (
+    GeometryCollection, LineString, MultiLineString, Point, Polygon)
 from shapely.ops import linemerge, nearest_points, polygonize
 
 import data_source
@@ -37,8 +38,8 @@ class Trail:
         self.osm = OpenStreetMap()
         self.hm = Halfmile()
 
-    def handle_national_parks(self):
-        """Generate information cards for each National Park
+    def national_parks(self):
+        """Generate information for each National Park
 
         - mile length inside park
         - linestrings inside park
@@ -51,12 +52,19 @@ class Trail:
 
         # Get NPS boundaries
         nps_bounds = data_source.NationalParkBoundaries().polygon()
-        # Reproject to EPSG 3488
+
+        # Reproject to EPSG 3488 for calculations in meters
         nps_bounds = nps_bounds.to_crs(epsg=3488)
         nps_bounds['UNIT_CODE'] = nps_bounds['UNIT_CODE'].str.lower()
 
         # Find portions of the trail that intersect with these boundaries
-        d = intersect_trail_with_polygons(projected, nps_bounds, 'UNIT_CODE')
+        park_trail_intersections = intersect_trail_with_polygons(
+            projected, nps_bounds, 'UNIT_CODE')
+
+        # Coerce to GeoDataFrame
+        park_trail_intersections = gpd.GeoDataFrame.from_dict(
+            park_trail_intersections, orient='index')
+        park_trail_intersections.crs = {'init': 'epsg:3488'}
 
         # Search NPS names in wikipedia
         wiki = data_source.Wikipedia()
@@ -67,7 +75,8 @@ class Trail:
 
         nps_bounds['wiki_url'] = wikipedia_urls
 
-        # Some unit codes in the
+        # Some unit codes in the data are non-standard, e.g. modern codes should
+        # work with `https://nps.gov/${unit_code}`
         nps_url_xw = {
             'sequ': 'seki',
             'kica': 'seki',
@@ -87,16 +96,31 @@ class Trail:
 
             redirected_urls.append(r.url)
 
+        # Set the nps_url to the redirected url. Generally this just appends
+        # `index.htm` to the previous url
         nps_bounds['nps_url'] = redirected_urls
 
         # Get blurb about each park from NPS API
         nps_api = data_source.NationalParksAPI()
-        park_codes = list(set(nps_bounds['url_code']))
+        park_codes = list(nps_bounds['url_code'].unique())
         r = nps_api.query(park_codes=park_codes, endpoint='parks')
-        r = nps_api.query(park_codes=park_codes, endpoint='alerts')
 
-        # TODO: Join NPS API data with geometry data
-        return d
+        # Coerce JSON response to DataFrame
+        nps_api_dfs = []
+        for park_code, res in r.items():
+            df = pd.DataFrame.from_records(res)
+            nps_api_dfs.append(df)
+
+        nps_api_df = pd.concat(nps_api_dfs)
+
+        # Merge trail geometry data with NPS API data
+        gdf = pd.merge(
+            park_trail_intersections,
+            nps_api_df,
+            left_index=True,
+            right_on='parkCode')
+
+        return gdf
 
     def handle_wilderness_areas(self):
         # Get trail track as a single geometric line
