@@ -222,12 +222,13 @@ def find_circles_that_tile_polygon(polygon,
 
     Args:
         - polygon: polygon in WGS84
-        - radius: radius in meters
+        - radius: max radius of circle in meters
 
     Returns:
         - list of (circle Polygons, circle radius)
     """
-    # Find box radius (for a square box)
+    # Find box diameter for a square box circumscribed within a circle of given
+    # radius
     box_diameter = (radius / sqrt(2)) * 2
 
     # First, reproject polygon so that I can work in meters
@@ -255,7 +256,7 @@ def find_circles_that_tile_polygon(polygon,
 
 
 def katana(geometry, threshold, count=0):
-    """Split a Polygon into two parts across it's shortest dimension
+    """Split a Polygon into parts across its shortest dimension
 
     Args:
         - geometry: _projected_ geometry to split
