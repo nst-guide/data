@@ -1,5 +1,5 @@
 """
-Might be a good idea to merge all the land ownership files into a single vector tile dataset, with different layers
+Note: Might be a good idea to merge all the land ownership files into a single vector tile dataset, with different layers
 """
 import click
 import pandas as pd

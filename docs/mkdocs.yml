@@ -7,10 +7,10 @@ docs_dir: "src"
 site_dir: "build"
 
 # Repository
-repo_name: "nst-guide/docs"
-repo_url: "https://github.com/nst-guide/docs"
-edit_uri: "blob/master/docs/src/"
-site_url: "https://nst-guide.github.io/docs/"
+repo_name: "nst-guide/create-database"
+repo_url: "https://github.com/nst-guide/create-database"
+edit_uri: "blob/master/create-database/src/"
+site_url: "https://nst-guide.github.io/create-database/"
 
 # Social links
 extra:
@@ -21,8 +21,11 @@ extra:
 # Layout
 nav:
   - Home: "index.md"
-  - Getting Started: "getting_started.md"
-  - Contributing: "CONTRIBUTING.md"
+  - CLI:
+      - Quickstart: 'cli/index.md'
+      - API:
+        - Tiles: 'cli/api/tiles.md'
+
 
 # Theme
 theme:

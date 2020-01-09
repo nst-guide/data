@@ -45,6 +45,11 @@ def tiles_for_polygon(polygon: Polygon, zoom_levels,
 def geojson_from_tiles(tile_tuples: List[Tuple[int]], scheme='xyz') -> str:
     """Generate GeoJSON for list of map tile tuples
 
+    Equivalent to
+    ```bash
+    <x, y, z> stream | mercantile shapes | fio collect
+    ```
+
     Args:
         - tile_tuples: list of (x, y, z) tuples
         - scheme: scheme of input tuples, either "xyz" or "tms"
