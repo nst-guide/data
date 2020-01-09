@@ -221,6 +221,14 @@ class Trail:
             - title: Title of the page
             - url: URL of the page
         """
+        # Make sure desired attributes are valid
+        valid_attrs = [
+            'categories', 'content', 'html', 'images', 'links',
+            'original_title', 'pageid', 'parent_id', 'references',
+            'revision_id', 'sections', 'summary', 'title', 'url'
+        ]
+        assert (all(attr) in valid_attrs for attr in attrs), 'Invalid attrs'
+
         # Get trail track as a single geometric line
         trail = self.hm.trail_full(alternates=False)
         buf = geom.buffer(
