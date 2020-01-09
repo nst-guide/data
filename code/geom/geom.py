@@ -10,7 +10,7 @@ from shapely.geometry import (
     GeometryCollection, MultiPolygon, Point, Polygon, asShape, box, shape)
 from shapely.ops import transform
 
-from smallest_enclosing_circle import make_circle
+from .smallest_enclosing_circle import make_circle
 
 ureg = pint.UnitRegistry()
 

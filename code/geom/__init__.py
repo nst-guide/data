@@ -1,1 +1,1 @@
-from geom import *
+from .geom import *
