@@ -10,9 +10,9 @@ for how to separate a click CLI into subfiles
 """
 import click
 
-from cli.data_export import national_parks
+from cli.data_export import national_parks, wikipedia_for_trail
 from cli.photos import copy_using_xw, geotag_photos
-from cli.tiles import package_tiles
+from cli.tiles import package_tiles, tiles_for_trail
 
 
 @click.group()
@@ -34,6 +34,7 @@ def export():
     pass
 
 
+export.add_command(wikipedia_for_trail)
 export.add_command(national_parks)
 
 
@@ -41,7 +42,7 @@ export.add_command(national_parks)
 def tiles():
     pass
 
-
+tiles.add_command(tiles_for_trail)
 tiles.add_command(package_tiles)
 
 if __name__ == '__main__':
