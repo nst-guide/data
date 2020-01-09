@@ -3,11 +3,92 @@ import re
 import sys
 
 import click
+import geopandas as gpd
+import pandas as pd
 
+import geom
 from package_tiles import package_tiles as _package_tiles
+from tiles import tiles_for_polygon
+from trail import Trail
 
 logging.basicConfig(stream=sys.stdout, level=logging.INFO)
 Log = logging.getLogger()
+
+
+@click.command()
+@click.option(
+    '-t',
+    '--trail_code',
+    required=True,
+    type=str,
+    help='Trail code, e.g. `pct`')
+@click.option(
+    '-s',
+    '--trail_section',
+    required=False,
+    default=None,
+    show_default=True,
+    type=str,
+    help='Trail section, e.g. `ca_south`')
+@click.option(
+    '-z', '--min-zoom', required=True, type=int, help='Min zoom level')
+@click.option(
+    '-Z', '--max-zoom', required=True, type=int, help='Max zoom level')
+@click.option(
+    '-b',
+    '--trail_buffer',
+    required=False,
+    default=0,
+    show_default=True,
+    type=float,
+    help='Distance in miles for trail buffer')
+@click.option(
+    '--town_buffer',
+    required=False,
+    default=0,
+    show_default=True,
+    type=float,
+    help='Distance in miles for town buffer')
+@click.option(
+    '--alternates/--no-alternates',
+    default=True,
+    show_default=True,
+    help='Include trail alternates')
+@click.option(
+    '--tms/--no-tms',
+    default=False,
+    show_default=True,
+    help='Invert y coordinate (for tms)')
+def tiles_for_trail(
+        trail_code, trail_section, alternates, trail_buffer, town_buffer,
+        min_zoom, max_zoom, tms):
+    """Get map tile coordinates for trail
+    """
+    # Load geometries
+    trail = Trail(trail_code=trail_code)
+    track = trail.track(trail_section=trail_section, alternates=alternates)
+    towns = trail.towns(trail_section=trail_section)
+
+    # Create buffers
+    if trail_buffer > 0:
+        track.geometry = geom.buffer(track, distance=trail_buffer, unit='mile')
+
+    if town_buffer > 0:
+        towns.geometry = geom.buffer(towns, distance=town_buffer, unit='mile')
+
+    # Combine into single polygon
+    gdf = gpd.GeoDataFrame(pd.concat([track, towns], sort=False, axis=0))
+    polygon = gdf.unary_union
+
+    # Find tiles
+    scheme = 'tms' if tms else 'xyz'
+    zoom_levels = range(min_zoom, max_zoom + 1)
+    tiles = tiles_for_polygon(polygon, zoom_levels=zoom_levels, scheme=scheme)
+
+    # Coerce to strings like
+    # [x, y, z]
+    s = '\n'.join([f'[{t[0]}, {t[1]}, {t[2]}]' for t in tiles])
+    click.echo(s)
 
 
 @click.command()
