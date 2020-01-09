@@ -18,6 +18,7 @@ from data_source import (
     Halfmile, NationalElevationDataset, OpenStreetMap, Towns)
 from geom import buffer, reproject, to_2d
 
+
 class Trail:
     """
     Combine multiple data sources to create all necessary data for trail.
@@ -134,7 +135,9 @@ class Trail:
 
         return gdf
 
-    def handle_wilderness_areas(self):
+    def wildernesses(self):
+        """Generate information for wilderness areas
+        """
         # Get trail track as a single geometric line
         trail = self.hm.trail_full(alternates=False)
         merged = linemerge([*trail.geometry])
@@ -146,10 +149,36 @@ class Trail:
         wild_bounds = wild_bounds.to_crs(epsg=3488)
 
         # Find portions of the trail that intersect with these boundaries
-        d = intersect_trail_with_polygons(projected, wild_bounds, 'WID')
-        return d
+        intersection = intersect_trail_with_polygons(
+            projected, wild_bounds, 'WID')
 
-    def handle_national_forests(self):
+        # Coerce to GeoDataFrame
+        gdf = gpd.GeoDataFrame.from_dict(intersection, orient='index')
+        gdf.crs = {'init': 'epsg:3488'}
+
+        # The Description column doesn't contain the full description for the
+        # park from Wilderness.net, so scrape Wilderness.net
+        scraper = data_source.WildernessConnectScraper()
+        all_regs = []
+        all_descs = []
+        for url in wild_bounds['URL']:
+            # Note, you need to navigate away or manually reload between the
+            # regulations and description pages, or else Chromedriver will
+            # stall. I think this is because the pages on the website are all
+            # HTML fragments, i.e. `#general`, and not actually pages.
+            #
+            # I actually still find that sometimes it gets stuck. If it seems
+            # like it's taking a while, try clicking "Management & Regulation"
+            # in the Chromedriver window, and that might fix it
+            regs = scraper.get_regulations(url)
+            desc = scraper.get_description(url)
+
+            all_regs.append(regs)
+            all_descs.append(desc)
+
+        # return d
+
+    def national_forests(self):
         # Get trail track as a single geometric line
         trail = self.hm.trail_full(alternates=False)
         merged = linemerge([*trail.geometry])
