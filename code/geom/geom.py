@@ -7,8 +7,10 @@ import pint
 import pyproj
 from geojson import Feature
 from shapely.geometry import (
-    GeometryCollection, MultiPolygon, Polygon, asShape, box, shape)
+    GeometryCollection, MultiPolygon, Point, Polygon, asShape, box, shape)
 from shapely.ops import transform
+
+from smallest_enclosing_circle import make_circle
 
 ureg = pint.UnitRegistry()
 
@@ -234,25 +236,33 @@ def find_circles_that_tile_polygon(polygon,
     # First, reproject polygon so that I can work in meters
     polygon = reproject(polygon, WGS84, CA_ALBERS)
 
-    # Split polygon
+    # Split polygon into distinct pieces with max height or width `box_diameter`
+    # These pieces tile the original geometry
     res = katana(polygon, threshold=box_diameter)
 
-    # For each polygon, find the centroid and then find the max distance from
-    # the centroid back to the polygon
-    circles = []
-    distances = []
-    for poly in res:
-        centroid = poly.centroid
-        max_dist = centroid.hausdorff_distance(poly)
-        circle = centroid.buffer(max_dist)
-        circles.append(circle)
-        distances.append(max_dist)
+    # Get minimum bounding circles for pieces of geometry
+    #
+    # You _can't_ just find the centroid and the distance from the centroid
+    # because the centroid is _not_ the point in the polygon closest from every
+    # point on the exterior. Rather, it's the center of mass. You could imagine
+    # a big circle of mass around (0, 0) with a very small sliver that extends
+    # to (20000, 0). That sliver would have small mass, so the centroid would
+    # still be near (0, 0), but wouldn't be the point with minimum distance to
+    # the exterior.
+    #
+    # Instead, you need to get the _minimum bounding circle_, i.e. the smallest
+    # circle that fully encloses your polygon.
+    # Ref:
+    # https://stackoverflow.com/a/41776277
+    circles = [make_circle(g.exterior.coords) for g in res]
+    points = [Point(x, y) for x, y, r in circles]
+    radii = [x[2] for x in circles]
 
     # Reproject back to WGS84
-    reprojected_circles = [
-        reproject(circle, CA_ALBERS, WGS84) for circle in circles
+    reprojected_points = [
+        reproject(point, CA_ALBERS, WGS84) for point in points
     ]
-    return zip(reprojected_circles, distances)
+    return reprojected_points, radii
 
 
 def katana(geometry, threshold, count=0):
