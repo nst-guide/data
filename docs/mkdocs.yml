@@ -1,0 +1,75 @@
+# Project Information
+site_name: "National Scenic Trails Guide documentation"
+site_description: "General project documentation for National Scenic Trails Guide"
+site_author: "Kyle Barron"
+
+docs_dir: "src"
+site_dir: "build"
+
+# Repository
+repo_name: "nst-guide/docs"
+repo_url: "https://github.com/nst-guide/docs"
+edit_uri: "blob/master/docs/src/"
+site_url: "https://nst-guide.github.io/docs/"
+
+# Social links
+extra:
+  social:
+    - type: "github"
+      link: "https://github.com/nst-guide"
+
+# Layout
+nav:
+  - Home: "index.md"
+  - Getting Started: "getting_started.md"
+  - Contributing: "CONTRIBUTING.md"
+
+# Theme
+theme:
+  feature:
+    tabs: false
+  logo:
+    icon: "home"
+  name: "material"
+  language: "en"
+  palette:
+    primary: "blue"
+    accent: "light blue"
+  font:
+    text: "Nunito Sans"
+    code: "Fira Code"
+
+# Uncomment if I use math in the docs in the future
+# extra_javascript:
+#     - helpers/helpers.js
+#     - https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.4/MathJax.js?config=TeX-AMS-MML_HTMLorMML
+
+# These extensions are chosen to be a superset of Pandoc's Markdown.
+# This way, I can write in Pandoc's Markdown and have it be supported here.
+# https://pandoc.org/MANUAL.html
+markdown_extensions:
+  - admonition
+  - attr_list
+  - codehilite:
+      guess_lang: false
+  - def_list
+  - footnotes
+  - pymdownx.arithmatex
+  - pymdownx.betterem
+  - pymdownx.caret:
+      insert: false
+  - pymdownx.details
+  - pymdownx.emoji
+  - pymdownx.escapeall:
+      hardbreak: true
+      nbsp: true
+  - pymdownx.magiclink:
+      hide_protocol: true
+      repo_url_shortener: true
+  - pymdownx.smartsymbols
+  - pymdownx.superfences
+  - pymdownx.tasklist:
+      custom_checkbox: true
+  - pymdownx.tilde
+  - toc:
+      permalink: true
