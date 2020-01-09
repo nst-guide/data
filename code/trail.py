@@ -36,8 +36,8 @@ class Trail:
         """
         super(Trail, self).__init__()
 
-        if trail_code != 'pct':
-            raise ValueError('invalid trail_code')
+        assert trail_code in VALID_TRAIL_CODES, 'Invalid trail_code'
+        self.trail_code = trail_code
 
         self.osm = OpenStreetMap()
         self.hm = Halfmile()
@@ -248,6 +248,21 @@ class Trail:
             data.append(d)
 
         gdf = gpd.GeoDataFrame(data, crs={'init': 'epsg:4326'})
+        return gdf
+
+
+    def track(self, trail_section=None, alternates=False):
+        """Load LineStrings of trail as GeoDataFrame
+        """
+        if trail_section is None:
+            gdf = self.hm.trail_full(alternates=alternates)
+        else:
+            msg = 'Invalid trail_section'
+            assert trail_section in VALID_TRAIL_SECTIONS[self.trail_code], msg
+            hm_sections = TRAIL_HM_XW[trail_section]
+            gdf = self.hm.trail_section(
+                section_names=hm_sections, alternates=alternates)
+
         return gdf
 
     def handle_sections(self, use_cache: bool = True):
