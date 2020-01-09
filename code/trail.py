@@ -13,8 +13,7 @@ from shapely.ops import linemerge, nearest_points, polygonize
 import data_source
 import geom
 import osmnx as ox
-from constants import (
-    TRAIL_HM_XW, TRAIL_TOWNS_XW, VALID_TRAIL_CODES, VALID_TRAIL_SECTIONS)
+from constants import TRAIL_HM_XW, VALID_TRAIL_CODES, VALID_TRAIL_SECTIONS
 from data_source import (
     Halfmile, NationalElevationDataset, OpenStreetMap, Towns)
 from geom import buffer, reproject, to_2d
@@ -36,7 +35,10 @@ class Trail:
         """
         super(Trail, self).__init__()
 
-        assert trail_code in VALID_TRAIL_CODES, 'Invalid trail_code'
+        if trail_code not in VALID_TRAIL_CODES:
+            msg = f'Invalid trail_code. Valid values are: {VALID_TRAIL_CODES}'
+            raise ValueError(msg)
+
         self.trail_code = trail_code
 
         self.osm = OpenStreetMap()
@@ -262,6 +264,20 @@ class Trail:
             hm_sections = TRAIL_HM_XW[trail_section]
             gdf = self.hm.trail_section(
                 section_names=hm_sections, alternates=alternates)
+
+        return gdf
+
+    def towns(self, trail_section=None):
+        """Load polygons of towns as GeoDataFrame
+        """
+        msg = f'Invalid trail_section. Valid values are: {VALID_TRAIL_SECTIONS}'
+        if trail_section is not None:
+            assert trail_section in VALID_TRAIL_SECTIONS[self.trail_code], msg
+
+        gdf = Towns().boundaries()
+        if trail_section is not None:
+            hm_sections = TRAIL_HM_XW[trail_section]
+            gdf = gdf[gdf['section'].str.lower().isin(hm_sections)]
 
         return gdf
 
@@ -724,24 +740,6 @@ def approx_trail(
 
         hm_sections = TRAIL_HM_XW.get(trail_section)
         return hm.trail_section(hm_sections, alternates=alternates)
-
-
-def towns_for_trail(trail_code, trail_section):
-    """A mapping from trail section to town boundaries
-    """
-    if trail_code not in VALID_TRAIL_CODES:
-        msg = f'Invalid trail_code. Valid values are: {VALID_TRAIL_CODES}'
-        raise ValueError(msg)
-
-    if trail_section != True:
-        if trail_section not in VALID_TRAIL_SECTIONS.get(trail_code):
-            msg = f'Invalid trail_section. Valid values are: {VALID_TRAIL_SECTIONS}'
-            raise ValueError(msg)
-
-    if trail_code == 'pct':
-        gdf = Towns().boundaries()
-        towns_in_section = TRAIL_TOWNS_XW[trail_section]
-        return gdf[gdf['id'].isin(towns_in_section)]
 
 
 def milemarker_for_points(points, trail_code='pct'):

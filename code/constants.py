@@ -9,11 +9,13 @@ TRAIL_HM_XW = {
     'or': ['or_b', 'or_c', 'or_d', 'or_e', 'or_f', 'or_g'],
     'wa': ['wa_h', 'wa_i', 'wa_j', 'wa_k', 'wa_l'],
 }
+# Note, I'm not currently using this, but rather getting towns from HM section
+# names
 TRAIL_TOWNS_XW = {
     'ca_south': [
         'acton', 'agua_dulce', 'big_bear_lake', 'cabazon', 'cajon_pass',
         'campo', 'hikertown', 'idyllwild', 'julian', 'lake_morena',
-        'mount_laguna', 'tehachapi', 'warner_springs'
+        'mount_laguna', 'tehachapi', 'warner_springs', 'wrightwood'
     ],
     'ca_central': [
         'bishop', 'donner_pass', 'independence', 'inyokern',
