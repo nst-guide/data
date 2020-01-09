@@ -172,11 +172,14 @@ class Wikipedia(DataSource):
         this, I first find a collection of circles that together tile the
         polygon, then for each circle I call the geosearch API.
         """
-        circles = geom.find_circles_that_tile_polygon(polygon, radius=10000)
+        # When set to radius=10000, I got an error from the wikipedia API
+        points, radii = geom.find_circles_that_tile_polygon(
+            polygon, radius=10000)
+
         titles = set()
-        for circle, radius in circles:
-            res = self.find_page_titles_around_point(
-                point=circle.centroid, radius=math.ceil(radius))
+        for point, radius in zip(points, radii):
+            radius = math.ceil(radius)
+            res = self.find_page_titles_around_point(point=point, radius=radius)
             titles.update(res)
 
         pages = [wikipedia.page(title) for title in titles]
