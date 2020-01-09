@@ -182,7 +182,17 @@ class Wikipedia(DataSource):
             res = self.find_page_titles_around_point(point=point, radius=radius)
             titles.update(res)
 
-        pages = [wikipedia.page(title) for title in titles]
+        # Get wikipedia page metadata for each of the titles I've found above
+        # Occasionally you get a disambiguation error, because the search is by
+        # title?
+        pages = []
+        for title in titles:
+            try:
+                pages.append(wikipedia.page(title))
+            except wikipedia.DisambiguationError:
+                pass
+
+        # Make sure that all returned articles are within the original polygon
         # [::-1] because returned as lat, lon. Point requires lon, lat
         # "To test one polygon containment against a large batch of points, one
         # should first use the prepared.prep() function"
@@ -191,4 +201,13 @@ class Wikipedia(DataSource):
             page for page in pages
             if prepared_polygon.contains(Point(page.coordinates[::-1]))
         ]
-        return pages
+        new_pages = []
+        for page in pages:
+            try:
+                if prepared_polygon.contains(Point(page.coordinates[::-1])):
+                    new_pages.append(page)
+            # Occasionally the page won't have a coordinates attribute
+            except KeyError:
+                pass
+
+        return new_pages
