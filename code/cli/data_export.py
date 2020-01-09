@@ -15,6 +15,42 @@ from trail import Trail
     required=True,
     type=str,
     help='Code for desired trail, .e.g "pct"')
+@click.option(
+    '-b',
+    '--buffer',
+    required=True,
+    type=float,
+    help='Distance in miles for buffer around trail')
+@click.option(
+    '-a',
+    '--attr',
+    required=True,
+    type=str,
+    multiple=True,
+    help=
+    'Wikipedia page attributes to keep. Options are: categories, content, html, images, links, original_title, pageid, parent_id, references, revision_id, sections, summary, title, url'
+)
+def wikipedia_for_trail(trail_code, buffer, attrs):
+    """Get geotagged wikipedia articles near trail
+    """
+    # Instantiate trail class
+    trail = Trail()
+
+    # Get wikipedia articles
+    gdf = trail.wikipedia_articles(
+        buffer_dist=buffer, buffer_unit='mile', attrs=attrs)
+
+    # Write to stdout
+    click.echo(gdf.to_json())
+
+
+@click.command()
+@click.option(
+    '-t',
+    '--trail-code',
+    required=True,
+    type=str,
+    help='Code for desired trail, .e.g "pct"')
 def national_parks(trail_code):
     """Get national parks info for trail
     """
@@ -48,9 +84,7 @@ def national_parks(trail_code):
         lambda x: nps_url_xw.get(x, x))
 
     # Keep desired columns
-    cols = [
-        'UNIT_CODE', 'geometry'
-    ]
+    cols = ['UNIT_CODE', 'geometry']
     nps_bounds = nps_bounds[cols]
 
     # Merge the two datasets

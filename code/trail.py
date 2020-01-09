@@ -189,6 +189,59 @@ class Trail:
          for x, name in zip(results, fs_bounds['FORESTNAME'])]
         return d
 
+    def wikipedia_articles(
+            self, buffer_dist=2, buffer_unit='mile', attrs=['title', 'url']):
+        """Get wikipedia articles for trail
+
+        Args:
+
+        - buffer_dist: numerical distance for buffer around trail
+        - buffer_unit: units for buffer_dist, can be 'mile', 'meter', 'kilometer'
+        - attrs: list of wikipedia page attributes to keep. Geometry is always
+          kept. Options are:
+
+            - categories: List of categories of a page. I.e. names of subsections within article
+            - content: Plain text content of the page, excluding images, tables, and other data.
+            - html: Get full page HTML. Warning: this can be slow for large
+              pages.
+            - images: List of URLs of images on the page.
+            - links: List of titles of Wikipedia page links on a page.
+            - original_title:
+            - pageid:
+            - parent_id: Revision ID of the parent version of the current revision of this page. See revision_id for more information.
+            - references: List of URLs of external links on a page. May include external links within page that aren’t technically cited anywhere.
+            - revision_id: Revision ID of the page.
+
+              The revision ID is a number that uniquely identifies the current
+              version of the page. It can be used to create the permalink or for
+              other direct API calls. See Help:Page history for more
+              information.
+            - sections: List of section titles from the table of contents on the page.
+            - summary: Plain text summary of the page.
+            - title: Title of the page
+            - url: URL of the page
+        """
+        # Get trail track as a single geometric line
+        trail = self.hm.trail_full(alternates=False)
+        buf = geom.buffer(
+            trail, distance=buffer_dist, unit=buffer_unit).unary_union
+        wiki = data_source.Wikipedia()
+        pages = wiki.find_pages_for_polygon(buf)
+
+        data = []
+        for page in pages:
+            d = {}
+            for attr in attrs:
+                d[attr] = getattr(page, attr)
+
+            # Page coordinates are in lat, lon order
+            d['geometry'] = Point(page.coordinates[::-1])
+
+            data.append(d)
+
+        gdf = gpd.GeoDataFrame(data, crs={'init': 'epsg:4326'})
+        return gdf
+
     def handle_sections(self, use_cache: bool = True):
         hm = Halfmile()
         for (section_name, trk), (_, wpt) in zip(hm.trail_iter(),
