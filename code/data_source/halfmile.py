@@ -212,3 +212,26 @@ class Halfmile(DataSource):
             gdfs.append(gdf)
 
         return pd.concat(gdfs).to_crs(epsg=4326)
+
+    def wpt_section(self, section_names):
+        """
+        Args:
+            - section_names: list of str, of type ca_a, ca_b, or_c, etc
+        """
+
+        # I.e. ca_a -> CA_Sec_A
+        extended_names = [
+            s[:2].upper() + '_Sec_' + s[3:].upper() for s in section_names
+        ]
+        fnames = [
+            self.point_dir / f'{name}_waypoints.geojson'
+            for name in extended_names
+        ]
+        gdfs = []
+        for fname in fnames:
+            gdf = gpd.read_file(fname)
+            gdf = self._add_section_to_gdf(gdf, fname)
+            gdfs.append(gdf)
+
+        gdf = pd.concat(gdfs)
+        return gdf.to_crs(epsg=4326)
