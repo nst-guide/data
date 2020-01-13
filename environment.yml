@@ -14,11 +14,14 @@ dependencies:
   - jupyter
   - lxml
   - mercantile
+  - mkdocs
+  - mkdocs-material
   - numpy
   - osmnx
   - pandas
   - pint
   - pip
+  - pygments
   - pyproj
   - pyshp
   - python-chromedriver-binary
