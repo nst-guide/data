@@ -1,0 +1,17 @@
+sudo: false
+language: python
+before_install:
+  - if ! git diff --name-only $TRAVIS_COMMIT_RANGE | grep -q '^docs'; then
+      echo "No docs updates"
+      exit
+    fi
+install:
+  - pip install pygments mkdocs mkdocs-material
+script:
+  - git clean -f -d -x
+after_success:
+  - git config user.name "Kyle Barron"
+  - git config user.email "kylebarron2@gmail.com"
+  - git remote add gh-token "https://${GH_TOKEN}@github.com/nst-guide/data.git";
+  - git fetch gh-token && git fetch gh-token gh-pages:gh-pages;
+  - mkdocs gh-deploy -v --clean --remote-name gh-token;
