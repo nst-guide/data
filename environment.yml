@@ -1,4 +1,4 @@
-name: create-database
+name: nst-data
 channels:
   - conda-forge
 dependencies:
