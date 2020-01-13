@@ -133,7 +133,7 @@ class PhotosLibrary:
         return interp
 
     def find_photos(
-            self, albums=None, start_date=None, end_date=None, exif=False):
+            self, albums=None, start_date=None, end_date=None, exif=False, tz='America/Los_Angeles'):
         """Recursively find photos that were taken between dates
 
         Args:
@@ -142,6 +142,8 @@ class PhotosLibrary:
             - start_date: first day to include photos
             - end_date: last day to include photos
             - exif: if True, joins with metadata from exiftool
+            - tz: timezone for start_date and end_date, usually either 'UTC' or
+              'America/Los_Angeles'
 
         Returns:
             List of osxphotos.PhotoInfo
@@ -156,7 +158,7 @@ class PhotosLibrary:
         # Find photos
         photos = photosdb.photos(**args)
 
-        tz = pytz.timezone('America/Los_Angeles')
+        tz = pytz.timezone(tz)
         if start_date is not None:
             if not isinstance(start_date, datetime):
                 start_date = parse(start_date)
@@ -170,9 +172,6 @@ class PhotosLibrary:
 
             # Assign tz
             end_date = tz.localize(end_date)
-
-            # Add one day to end_date to include last day
-            end_date += pd.DateOffset(days=1)
 
         # Select photos between dates
         if start_date is not None:
