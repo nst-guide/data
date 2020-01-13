@@ -4,7 +4,6 @@ This doc has overviews of the available CLI commands. For full options, check
 the API for each command, which is also available by appending `--help` to the
 command.
 
-
 ## Tiles
 
 ### Uploading newer versions of tiles near the PCT to AWS
