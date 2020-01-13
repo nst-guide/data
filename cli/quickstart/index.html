@@ -13,7 +13,7 @@
         <meta name="description" content="Data documentation for National Scenic Trails Guide">
       
       
-        <link rel="canonical" href="https://nst-guide.github.io/data/cli/">
+        <link rel="canonical" href="https://nst-guide.github.io/data/cli/quickstart/">
       
       
         <meta name="author" content="Kyle Barron">
@@ -37,8 +37,8 @@
       
         <meta name="lang:search.tokenizer" content="[\s\-]+">
       
-      <link rel="shortcut icon" href="../assets/images/favicon.png">
-      <meta name="generator" content="mkdocs-1.0.4, mkdocs-material-4.5.0">
+      <link rel="shortcut icon" href="../../assets/images/favicon.png">
+      <meta name="generator" content="mkdocs-1.0.4, mkdocs-material-4.6.0">
     
     
       
@@ -46,9 +46,9 @@
       
     
     
-      <link rel="stylesheet" href="../assets/stylesheets/application.1b62728e.css">
+      <link rel="stylesheet" href="../../assets/stylesheets/application.1b62728e.css">
       
-        <link rel="stylesheet" href="../assets/stylesheets/application-palette.a8b3c06d.css">
+        <link rel="stylesheet" href="../../assets/stylesheets/application-palette.a8b3c06d.css">
       
       
         
@@ -57,16 +57,16 @@
       
     
     
-      <script src="../assets/javascripts/modernizr.268332fc.js"></script>
+      <script src="../../assets/javascripts/modernizr.268332fc.js"></script>
     
     
       
         <link href="https://fonts.gstatic.com" rel="preconnect" crossorigin>
-        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Nunito+Sans:300,400,400i,700|Fira+Code&display=fallback">
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Nunito+Sans:300,400,400i,700%7CFira+Code&display=fallback">
         <style>body,input{font-family:"Nunito Sans","Helvetica Neue",Helvetica,Arial,sans-serif}code,kbd,pre{font-family:"Fira Code","Courier New",Courier,monospace}</style>
       
     
-    <link rel="stylesheet" href="../assets/fonts/material-icons.css">
+    <link rel="stylesheet" href="../../assets/fonts/material-icons.css">
     
     
     
@@ -228,7 +228,7 @@
 
 
   <li class="md-nav__item">
-    <a href=".." title="Home" class="md-nav__link">
+    <a href="../.." title="Home" class="md-nav__link">
       Home
     </a>
   </li>
@@ -343,7 +343,7 @@
 
 
   <li class="md-nav__item">
-    <a href="api/tiles/" title="Tiles" class="md-nav__link">
+    <a href="../api/tiles/" title="Tiles" class="md-nav__link">
       Tiles
     </a>
   </li>
@@ -415,7 +415,7 @@
             <article class="md-content__inner md-typeset">
               
                 
-                  <a href="https://github.com/nst-guide/data/blob/master/data/src/cli/index.md" title="Edit this page" class="md-icon md-content__icon">&#xE3C9;</a>
+                  <a href="https://github.com/nst-guide/data/blob/master/data/src/cli/quickstart.md" title="Edit this page" class="md-icon md-content__icon">&#xE3C9;</a>
                 
                 
                 <h1 id="quickstart">Quickstart<a class="headerlink" href="#quickstart" title="Permanent link">&para;</a></h1>
@@ -424,6 +424,20 @@ the API for each command, which is also available by appending <code>--help</cod
 command.</p>
 <h2 id="tiles">Tiles<a class="headerlink" href="#tiles" title="Permanent link">&para;</a></h2>
 <h3 id="uploading-newer-versions-of-tiles-near-the-pct-to-aws">Uploading newer versions of tiles near the PCT to AWS<a class="headerlink" href="#uploading-newer-versions-of-tiles-near-the-pct-to-aws" title="Permanent link">&para;</a></h3>
+<p>Since I'm trying to have an app for the PCT specifically, I care about having
+updated OpenStreetMap data near the PCT, but further away from the trail and
+from trail towns is not as important. It's simple to update tiles for any
+arbitrary Geofabrik extract region, aka easy to update for the state of
+Washington, as I can just run OpenMapTiles for that region. The drawback of
+that, however, is that map tiles as a directory are thousands and thousands of
+very tiny files, so the PUT requests to AWS S3 actually add up.</p>
+<p>For example, for zooms 0-14, the state of Oregon makes up 191306 tiles. Since
+it's $0.005 per 1000 put requests, it's just shy of $1 each time I update the
+tiles. I calculated that if I were to upload tiles for the entire continental
+US, it would likely be just shy of $100 for each set of PUT requests.</p>
+<p>The following instructions show how to update tiles for just a given buffer
+around the PCT, which is on the order of $0.07 for each upload for each fifth of
+the trail.</p>
 <ol>
 <li>Create new tiles from e.g. the <a href="https://github.com/nst-guide/openmaptiles">OpenMapTiles repository</a>.</li>
 <li>
@@ -457,7 +471,9 @@ much faster to run <code>aws s3 cp --recursive</code> on a directory, so the bes
 approach is to copy the desired tiles into a new directory, then <code>aws s3 cp</code>
 that directory to AWS.</p>
 <p>Remove the <code>[</code>, <code>,</code>, and <code>]</code> characters, and reorder <code>x,y,z</code> to <code>z,x,y</code>:</p>
-<div class="codehilite"><pre><span></span>&gt; <span class="nv">tiles</span><span class="o">=</span><span class="k">$(</span>cat tiles_ca_south.txt <span class="p">|</span> <span class="se">\</span>
+<div class="codehilite"><pre><span></span><span class="nv">fname</span><span class="o">=</span><span class="s2">&quot;tiles_ca_south.txt&quot;</span>
+<span class="c1"># Make sure to update .pbf to .png if you&#39;re working with non-vector tiles</span>
+<span class="nv">tiles</span><span class="o">=</span><span class="k">$(</span>cat <span class="nv">$fname</span> <span class="p">|</span> <span class="se">\</span>
     tr -d <span class="s1">&#39;[,]&#39;</span> <span class="p">|</span> <span class="se">\</span>
     awk <span class="s1">&#39;{print $3 &quot;/&quot; $1 &quot;/&quot; $2 &quot;.pbf&quot;}&#39;</span><span class="k">)</span>
 </pre></div>
@@ -473,7 +489,10 @@ that directory to AWS.</p>
 ...
 </pre></div>
 
-<p>Then copy the tiles that exist into a new directory:</p>
+<p>Then copy the tiles that exist into a new directory (note, you could
+probably make this faster by skipping the <code>if $tile</code> check, since <code>cp</code> will
+just print an error but not stop the loop. However, this might create empty
+directories if <code>$tile</code> doesn't actually exist.):</p>
 <div class="codehilite"><pre><span></span><span class="nv">new_dir</span><span class="o">=</span><span class="s2">&quot;../tiles_tmp&quot;</span>
 <span class="nb">echo</span> <span class="nv">$tiles</span> <span class="p">|</span> <span class="k">while</span> <span class="nb">read</span> tile<span class="p">;</span> <span class="k">do</span>
     <span class="k">if</span> <span class="o">[</span> -f <span class="nv">$tile</span> <span class="o">]</span><span class="p">;</span> <span class="k">then</span>
@@ -500,6 +519,7 @@ that directory to AWS.</p>
                 
                   
                 
+                
               
               
                 
@@ -517,7 +537,7 @@ that directory to AWS.</p>
     <div class="md-footer-nav">
       <nav class="md-footer-nav__inner md-grid">
         
-          <a href=".." title="Home" class="md-flex md-footer-nav__link md-footer-nav__link--prev" rel="prev">
+          <a href="../.." title="Home" class="md-flex md-footer-nav__link md-footer-nav__link--prev" rel="prev">
             <div class="md-flex__cell md-flex__cell--shrink">
               <i class="md-icon md-icon--arrow-back md-footer-nav__button"></i>
             </div>
@@ -532,7 +552,7 @@ that directory to AWS.</p>
           </a>
         
         
-          <a href="api/tiles/" title="Tiles" class="md-flex md-footer-nav__link md-footer-nav__link--next" rel="next">
+          <a href="../api/tiles/" title="Tiles" class="md-flex md-footer-nav__link md-footer-nav__link--next" rel="next">
             <div class="md-flex__cell md-flex__cell--stretch md-footer-nav__title">
               <span class="md-flex__ellipsis">
                 <span class="md-footer-nav__direction">
@@ -561,7 +581,7 @@ that directory to AWS.</p>
       </div>
       
   <div class="md-footer-social">
-    <link rel="stylesheet" href="../assets/fonts/font-awesome.css">
+    <link rel="stylesheet" href="../../assets/fonts/font-awesome.css">
     
       <a href="https://github.com/nst-guide" class="md-footer-social__link fa fa-github"></a>
     
@@ -573,9 +593,9 @@ that directory to AWS.</p>
       
     </div>
     
-      <script src="../assets/javascripts/application.a8b5e56f.js"></script>
+      <script src="../../assets/javascripts/application.808e90bb.js"></script>
       
-      <script>app.initialize({version:"1.0.4",url:{base:".."}})</script>
+      <script>app.initialize({version:"1.0.4",url:{base:"../.."}})</script>
       
     
   </body>
