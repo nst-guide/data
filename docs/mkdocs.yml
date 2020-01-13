@@ -22,7 +22,7 @@ extra:
 nav:
   - Home: "index.md"
   - CLI:
-      - Quickstart: 'cli/index.md'
+      - Quickstart: 'cli/quickstart.md'
       - API:
         - Tiles: 'cli/api/tiles.md'
 
