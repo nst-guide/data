@@ -8,6 +8,23 @@ command.
 
 ### Uploading newer versions of tiles near the PCT to AWS
 
+Since I'm trying to have an app for the PCT specifically, I care about having
+updated OpenStreetMap data near the PCT, but further away from the trail and
+from trail towns is not as important. It's simple to update tiles for any
+arbitrary Geofabrik extract region, aka easy to update for the state of
+Washington, as I can just run OpenMapTiles for that region. The drawback of
+that, however, is that map tiles as a directory are thousands and thousands of
+very tiny files, so the PUT requests to AWS S3 actually add up.
+
+For example, for zooms 0-14, the state of Oregon makes up 191306 tiles. Since
+it's $0.005 per 1000 put requests, it's just shy of $1 each time I update the
+tiles. I calculated that if I were to upload tiles for the entire continental
+US, it would likely be just shy of $100 for each set of PUT requests.
+
+The following instructions show how to update tiles for just a given buffer
+around the PCT, which is on the order of $0.01 for each upload for each fifth of
+the trail.
+
 1. Create new tiles from e.g. the [OpenMapTiles repository](https://github.com/nst-guide/openmaptiles).
 2. Export the `.mbtiles` file to a directory of tiles:
 
@@ -42,7 +59,9 @@ command.
     Remove the `[`, `,`, and `]` characters, and reorder `x,y,z` to `z,x,y`:
 
     ```bash
-    > tiles=$(cat tiles_ca_south.txt | \
+    fname="tiles_ca_south.txt"
+    # Make sure to update .pbf to .png if you're working with non-vector tiles
+    tiles=$(cat $fname | \
         tr -d '[,]' | \
         awk '{print $3 "/" $1 "/" $2 ".pbf"}')
     ```
@@ -60,7 +79,10 @@ command.
     ...
     ```
 
-    Then copy the tiles that exist into a new directory:
+    Then copy the tiles that exist into a new directory (note, you could
+    probably make this faster by skipping the `if $tile` check, since `cp` will
+    just print an error but not stop the loop. However, this might create empty
+    directories if `$tile` doesn't actually exist.):
 
     ```bash
     new_dir="../tiles_tmp"
