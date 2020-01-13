@@ -1,16 +1,16 @@
 # Project Information
-site_name: "National Scenic Trails Guide documentation"
-site_description: "General project documentation for National Scenic Trails Guide"
+site_name: "National Scenic Trails Guide: Data Documentation"
+site_description: "Data documentation for National Scenic Trails Guide"
 site_author: "Kyle Barron"
 
 docs_dir: "src"
 site_dir: "build"
 
 # Repository
-repo_name: "nst-guide/create-database"
-repo_url: "https://github.com/nst-guide/create-database"
-edit_uri: "blob/master/create-database/src/"
-site_url: "https://nst-guide.github.io/create-database/"
+repo_name: "nst-guide/data"
+repo_url: "https://github.com/nst-guide/data"
+edit_uri: "blob/master/data/src/"
+site_url: "https://nst-guide.github.io/data/"
 
 # Social links
 extra:
