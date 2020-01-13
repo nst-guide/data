@@ -22,7 +22,7 @@ tiles. I calculated that if I were to upload tiles for the entire continental
 US, it would likely be just shy of $100 for each set of PUT requests.
 
 The following instructions show how to update tiles for just a given buffer
-around the PCT, which is on the order of $0.01 for each upload for each fifth of
+around the PCT, which is on the order of $0.07 for each upload for each fifth of
 the trail.
 
 1. Create new tiles from e.g. the [OpenMapTiles repository](https://github.com/nst-guide/openmaptiles).
