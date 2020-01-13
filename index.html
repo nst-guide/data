@@ -1,0 +1,828 @@
+
+
+
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      <meta http-equiv="x-ua-compatible" content="ie=edge">
+      
+        <meta name="description" content="Data documentation for National Scenic Trails Guide">
+      
+      
+        <link rel="canonical" href="https://nst-guide.github.io/data/">
+      
+      
+        <meta name="author" content="Kyle Barron">
+      
+      
+        <meta name="lang:clipboard.copy" content="Copy to clipboard">
+      
+        <meta name="lang:clipboard.copied" content="Copied to clipboard">
+      
+        <meta name="lang:search.language" content="en">
+      
+        <meta name="lang:search.pipeline.stopwords" content="True">
+      
+        <meta name="lang:search.pipeline.trimmer" content="True">
+      
+        <meta name="lang:search.result.none" content="No matching documents">
+      
+        <meta name="lang:search.result.one" content="1 matching document">
+      
+        <meta name="lang:search.result.other" content="# matching documents">
+      
+        <meta name="lang:search.tokenizer" content="[\s\-]+">
+      
+      <link rel="shortcut icon" href="assets/images/favicon.png">
+      <meta name="generator" content="mkdocs-1.0.4, mkdocs-material-4.5.0">
+    
+    
+      
+        <title>National Scenic Trails Guide: Data Documentation</title>
+      
+    
+    
+      <link rel="stylesheet" href="assets/stylesheets/application.1b62728e.css">
+      
+        <link rel="stylesheet" href="assets/stylesheets/application-palette.a8b3c06d.css">
+      
+      
+        
+        
+        <meta name="theme-color" content="#2196f3">
+      
+    
+    
+      <script src="assets/javascripts/modernizr.268332fc.js"></script>
+    
+    
+      
+        <link href="https://fonts.gstatic.com" rel="preconnect" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Nunito+Sans:300,400,400i,700|Fira+Code&display=fallback">
+        <style>body,input{font-family:"Nunito Sans","Helvetica Neue",Helvetica,Arial,sans-serif}code,kbd,pre{font-family:"Fira Code","Courier New",Courier,monospace}</style>
+      
+    
+    <link rel="stylesheet" href="assets/fonts/material-icons.css">
+    
+    
+    
+      
+    
+    
+  </head>
+  
+    
+    
+    <body dir="ltr" data-md-color-primary="blue" data-md-color-accent="light-blue">
+  
+    <svg class="md-svg">
+      <defs>
+        
+        
+          <svg xmlns="http://www.w3.org/2000/svg" width="416" height="448" viewBox="0 0 416 448" id="__github"><path fill="currentColor" d="M160 304q0 10-3.125 20.5t-10.75 19T128 352t-18.125-8.5-10.75-19T96 304t3.125-20.5 10.75-19T128 256t18.125 8.5 10.75 19T160 304zm160 0q0 10-3.125 20.5t-10.75 19T288 352t-18.125-8.5-10.75-19T256 304t3.125-20.5 10.75-19T288 256t18.125 8.5 10.75 19T320 304zm40 0q0-30-17.25-51T296 232q-10.25 0-48.75 5.25Q229.5 240 208 240t-39.25-2.75Q130.75 232 120 232q-29.5 0-46.75 21T56 304q0 22 8 38.375t20.25 25.75 30.5 15 35 7.375 37.25 1.75h42q20.5 0 37.25-1.75t35-7.375 30.5-15 20.25-25.75T360 304zm56-44q0 51.75-15.25 82.75-9.5 19.25-26.375 33.25t-35.25 21.5-42.5 11.875-42.875 5.5T212 416q-19.5 0-35.5-.75t-36.875-3.125-38.125-7.5-34.25-12.875T37 371.5t-21.5-28.75Q0 312 0 260q0-59.25 34-99-6.75-20.5-6.75-42.5 0-29 12.75-54.5 27 0 47.5 9.875t47.25 30.875Q171.5 96 212 96q37 0 70 8 26.25-20.5 46.75-30.25T376 64q12.75 25.5 12.75 54.5 0 21.75-6.75 42 34 40 34 99.5z"/></svg>
+        
+      </defs>
+    </svg>
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" data-md-component="overlay" for="__drawer"></label>
+    
+      <a href="#create-database" tabindex="1" class="md-skip">
+        Skip to content
+      </a>
+    
+    
+      <header class="md-header" data-md-component="header">
+  <nav class="md-header-nav md-grid">
+    <div class="md-flex">
+      <div class="md-flex__cell md-flex__cell--shrink">
+        <a href="https://nst-guide.github.io/data/" title="National Scenic Trails Guide: Data Documentation" class="md-header-nav__button md-logo">
+          
+            <i class="md-icon">home</i>
+          
+        </a>
+      </div>
+      <div class="md-flex__cell md-flex__cell--shrink">
+        <label class="md-icon md-icon--menu md-header-nav__button" for="__drawer"></label>
+      </div>
+      <div class="md-flex__cell md-flex__cell--stretch">
+        <div class="md-flex__ellipsis md-header-nav__title" data-md-component="title">
+          
+            <span class="md-header-nav__topic">
+              National Scenic Trails Guide: Data Documentation
+            </span>
+            <span class="md-header-nav__topic">
+              
+                Home
+              
+            </span>
+          
+        </div>
+      </div>
+      <div class="md-flex__cell md-flex__cell--shrink">
+        
+          <label class="md-icon md-icon--search md-header-nav__button" for="__search"></label>
+          
+<div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="query" data-md-state="active">
+      <label class="md-icon md-search__icon" for="__search"></label>
+      <button type="reset" class="md-icon md-search__icon" data-md-component="reset" tabindex="-1">
+        &#xE5CD;
+      </button>
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="result">
+          <div class="md-search-result__meta">
+            Type to start searching
+          </div>
+          <ol class="md-search-result__list"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+        
+      </div>
+      
+        <div class="md-flex__cell md-flex__cell--shrink">
+          <div class="md-header-nav__source">
+            
+
+
+  
+
+<a href="https://github.com/nst-guide/data/" title="Go to repository" class="md-source" data-md-source="github">
+  
+    <div class="md-source__icon">
+      <svg viewBox="0 0 24 24" width="24" height="24">
+        <use xlink:href="#__github" width="24" height="24"></use>
+      </svg>
+    </div>
+  
+  <div class="md-source__repository">
+    nst-guide/data
+  </div>
+</a>
+          </div>
+        </div>
+      
+    </div>
+  </nav>
+</header>
+    
+    <div class="md-container">
+      
+        
+      
+      
+      <main class="md-main" role="main">
+        <div class="md-main__inner md-grid" data-md-component="container">
+          
+            
+              <div class="md-sidebar md-sidebar--primary" data-md-component="navigation">
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    <nav class="md-nav md-nav--primary" data-md-level="0">
+  <label class="md-nav__title md-nav__title--site" for="__drawer">
+    <a href="https://nst-guide.github.io/data/" title="National Scenic Trails Guide: Data Documentation" class="md-nav__button md-logo">
+      
+        <i class="md-icon">home</i>
+      
+    </a>
+    National Scenic Trails Guide: Data Documentation
+  </label>
+  
+    <div class="md-nav__source">
+      
+
+
+  
+
+<a href="https://github.com/nst-guide/data/" title="Go to repository" class="md-source" data-md-source="github">
+  
+    <div class="md-source__icon">
+      <svg viewBox="0 0 24 24" width="24" height="24">
+        <use xlink:href="#__github" width="24" height="24"></use>
+      </svg>
+    </div>
+  
+  <div class="md-source__repository">
+    nst-guide/data
+  </div>
+</a>
+    </div>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+      
+
+  
+
+
+  <li class="md-nav__item md-nav__item--active">
+    
+    <input class="md-toggle md-nav__toggle" data-md-toggle="toc" type="checkbox" id="__toc">
+    
+      
+    
+    
+      <label class="md-nav__link md-nav__link--active" for="__toc">
+        Home
+      </label>
+    
+    <a href="." title="Home" class="md-nav__link md-nav__link--active">
+      Home
+    </a>
+    
+      
+<nav class="md-nav md-nav--secondary">
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">Table of contents</label>
+    <ul class="md-nav__list" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#overview" class="md-nav__link">
+    Overview
+  </a>
+  
+    <nav class="md-nav">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#data-sources" class="md-nav__link">
+    Data Sources
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#repository-structure" class="md-nav__link">
+    Repository Structure
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#auto-updating-layers" class="md-nav__link">
+    Auto-updating layers
+  </a>
+  
+    <nav class="md-nav">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#aws-lambda" class="md-nav__link">
+    AWS Lambda
+  </a>
+  
+    <nav class="md-nav">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#aws-lambda-downsides" class="md-nav__link">
+    AWS Lambda Downsides
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#aws-lambda-dependencies" class="md-nav__link">
+    AWS Lambda Dependencies
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#packaging-dependencies-for-aws-lambda" class="md-nav__link">
+    Packaging dependencies for AWS Lambda
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#aws-lambda-iam-role" class="md-nav__link">
+    AWS Lambda IAM Role
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+      
+      
+      
+      
+    </ul>
+  
+</nav>
+    
+  </li>
+
+    
+      
+      
+      
+
+
+  <li class="md-nav__item md-nav__item--nested">
+    
+      <input class="md-toggle md-nav__toggle" data-md-toggle="nav-2" type="checkbox" id="nav-2">
+    
+    <label class="md-nav__link" for="nav-2">
+      CLI
+    </label>
+    <nav class="md-nav" data-md-component="collapsible" data-md-level="1">
+      <label class="md-nav__title" for="nav-2">
+        CLI
+      </label>
+      <ul class="md-nav__list" data-md-scrollfix>
+        
+        
+          
+          
+          
+
+
+  <li class="md-nav__item">
+    <a href="cli/" title="Quickstart" class="md-nav__link">
+      Quickstart
+    </a>
+  </li>
+
+        
+          
+          
+          
+
+
+  <li class="md-nav__item md-nav__item--nested">
+    
+      <input class="md-toggle md-nav__toggle" data-md-toggle="nav-2-2" type="checkbox" id="nav-2-2">
+    
+    <label class="md-nav__link" for="nav-2-2">
+      API
+    </label>
+    <nav class="md-nav" data-md-component="collapsible" data-md-level="2">
+      <label class="md-nav__title" for="nav-2-2">
+        API
+      </label>
+      <ul class="md-nav__list" data-md-scrollfix>
+        
+        
+          
+          
+          
+
+
+  <li class="md-nav__item">
+    <a href="cli/api/tiles/" title="Tiles" class="md-nav__link">
+      Tiles
+    </a>
+  </li>
+
+        
+      </ul>
+    </nav>
+  </li>
+
+        
+      </ul>
+    </nav>
+  </li>
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="toc">
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+<nav class="md-nav md-nav--secondary">
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">Table of contents</label>
+    <ul class="md-nav__list" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#overview" class="md-nav__link">
+    Overview
+  </a>
+  
+    <nav class="md-nav">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#data-sources" class="md-nav__link">
+    Data Sources
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#repository-structure" class="md-nav__link">
+    Repository Structure
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#auto-updating-layers" class="md-nav__link">
+    Auto-updating layers
+  </a>
+  
+    <nav class="md-nav">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#aws-lambda" class="md-nav__link">
+    AWS Lambda
+  </a>
+  
+    <nav class="md-nav">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#aws-lambda-downsides" class="md-nav__link">
+    AWS Lambda Downsides
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#aws-lambda-dependencies" class="md-nav__link">
+    AWS Lambda Dependencies
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#packaging-dependencies-for-aws-lambda" class="md-nav__link">
+    Packaging dependencies for AWS Lambda
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#aws-lambda-iam-role" class="md-nav__link">
+    AWS Lambda IAM Role
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+      
+      
+      
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          <div class="md-content">
+            <article class="md-content__inner md-typeset">
+              
+                
+                  <a href="https://github.com/nst-guide/data/blob/master/data/src/index.md" title="Edit this page" class="md-icon md-content__icon">&#xE3C9;</a>
+                
+                
+                <h1 id="create-database">create-database<a class="headerlink" href="#create-database" title="Permanent link">&para;</a></h1>
+<h2 id="overview">Overview<a class="headerlink" href="#overview" title="Permanent link">&para;</a></h2>
+<p>This repository contains code for data pipelines to generate map waypoints and layers of interest from open map data sources.</p>
+<h3 id="data-sources">Data Sources<a class="headerlink" href="#data-sources" title="Permanent link">&para;</a></h3>
+<ul>
+<li>Town Boundaries: for now, these are drawn by hand using local trail knowledge and <a href="https://geojson.io">geojson.io</a> and saved to <code>data/pct/polygon/bound/town/{ca,or,wa}/*.geojson</code>.</li>
+<li>
+<p><a href="openstreetmap.org">OpenStreetMap</a>: I use OSM for trail information and town
+  waypoints. Initially, I planned to download whole-state extracts from
+  <a href="https://www.geofabrik.de/data/download.html">Geofabrik</a>. After discovering
+  the <a href="https://github.com/gboeing/osmnx">osmnx</a> package for Python, I decided to
+  use that instead. That calls OSM's <a href="https://wiki.openstreetmap.org/wiki/Overpass_API">Overpass
+  API</a>, and then helpfully
+  manages the result in a graph. This has a few benefits:</p>
+<ul>
+<li>No need to download any large files. Using the Geofabrik extracts,
+  California is nearly 1GB of compressed data, and most of that is far from
+  the trail, and really not necessary for this project.</li>
+<li>Speed. Unsurprisingly, when you're working with 1GB of compressed data
+  just for california, computations aren't going to be super fast.</li>
+<li>Faster updates. Geofabrik extracts are updated around once a week I think,
+  while the Overpass API has near-instant updating. That means that if I fix
+  an issue with the data in OSM's editor, then I can get working with the
+  new data immediately.</li>
+</ul>
+</li>
+<li>
+<p><a href="pctmap.net">Halfmile</a>: Halfmile has accurate route information and a few
+  thousand waypoints for the trail. I have yet to hear final confirmation that
+  this is openly licensed, but I've seen other projects using this data, and am
+  optimistic that the use will be ok.</p>
+</li>
+<li>USFS: The US Forest Service is the US governmental body that officially
+  stewards the Pacific Crest Trail. As such, they keep an official centerline of
+  the trail, but it is much less accurate than the Halfmile or OpenStreetMap
+  centerlines. The PCT USFS page is here: <a href="https://www.fs.usda.gov/pct/">www.fs.usda.gov/pct/</a>.</li>
+<li>GPSTracks: On my hike of the PCT in 2019, I recorded my own GPS data,
+  generally at 5-second intervals. This raw data has been copied into
+  <code>data/raw/tracks</code>. While it's generally not accurate enough to use as an
+  official centerline for an app, it will be helpful to use to geocode photos,
+  and thus fill in waypoints that are missing from open data sources.</li>
+<li>Wilderness Boundaries: Wilderness boundaries are retrieved from <a href="https://wilderness.net">wilderness.net</a>.</li>
+<li>National Park Boundaries: National Park boundaries are retrieved from the <a href="https://public-nps.opendata.arcgis.com/datasets/b1598d3df2c047ef88251016af5b0f1e_0">NPS open data portal</a>.</li>
+<li>National Forest Boundaries: National Forest boundaries are retrieved from the <a href="https://data.fs.usda.gov/geodata/edw/datasets.php?dsetCategory=boundaries">USFS website</a>, under the heading <em>Administrative Forest Boundaries</em>.</li>
+<li>State Boundaries: State boundaries from the Census' <a href="https://www2.census.gov/geo/tiger/TIGER2017/STATE/">TIGER dataset</a>.</li>
+<li>Cell Towers: Cell tower data come from <a href="www.opencellid.org">OpenCellID</a>.
+  Ideally at some point I'll implement a simple line-of-sight algorithm and then
+  calculate where on the trail has cell service.</li>
+<li>Lightning Counts: daily lightning counts for 0.1-degree bins are available
+  since ~1986 from
+  <a href="https://www.ncdc.noaa.gov/data-access/severe-weather/lightning-products-and-services">NOAA</a>.
+  Note that the raw data of where every lightning strike hits is closed source
+  and must be purchased, but a NOAA contract lets daily extracts be made public.</li>
+<li>Transit: I get transit data from the <a href="https://transit.land">Transitland</a> database.
+  This is a bit easier than working with raw GTFS (General Transit Feed
+  Specification) data, and they've done a bit of work to deduplicate data and
+  connect the same stops in different data extracts from different providers.</li>
+<li>National Elevation Dataset: In the US, the most accurate elevation data comes from the USGS's <a href="https://www.usgs.gov/core-science-systems/ngp/3dep/data-tools">3D Elevation Program</a>. They have a seamless Digital Elevation Model (DEM) at &#8531; arc-second resolution, which is about 10 meters.</li>
+<li>USGS Hydrography: The USGS's <a href="https://www.usgs.gov/core-science-systems/ngp/national-hydrography/about-national-hydrography-products">National Hydrography products</a> are the premier water source datasets for the US. The Watershed Boundary dataset splits the US into a pyramid of smaller and smaller hydrologic regions. I first use the Watershed Boundary dataset to find the watersheds that the PCT passes through, then go to the National Hydrography dataset to find all streams, lakes, and springs near the trail.</li>
+<li><a href="pctwater.net">PCT Water Report</a>: The PCT water report is an openly-licensed set of spreadsheets with reports from hikers of which water sources are flowing.</li>
+<li>EPA AirNow: The EPA has an <a href="https://docs.airnowapi.org/">API</a> where you can access current air quality regions.</li>
+<li>NIFC: National Interagency Fire Center. GeoMAC is closing as of the end of
+  April 2020, and NIFC is the new place for retrieving wildfire boundaries.</li>
+<li>CalFire</li>
+<li>Recreation.gov: Recreation.gov has an API for accessing information about features in National Forests.</li>
+</ul>
+<h3 id="repository-structure">Repository Structure<a class="headerlink" href="#repository-structure" title="Permanent link">&para;</a></h3>
+<ul>
+<li><code>data_source/</code>: This folder contains wrappers for each individual data source.
+  Files are generally named by the organization that releases the data I use,
+  and there can be more than one loader in each file. These classes attempt to
+  abstract reading of the original data, though the classes do not all have the
+  same interface. These should hold only function/class definitions, and no code
+  should be evaluated when the script is run.</li>
+<li><code>geom.py</code>: This file holds geometric abstractions. Included are functions to
+  reproject data between CRS's, truncate precision of geometries, create buffers
+  at a given distance around a geometry, and project 3D coordinates onto the 2D
+  plane. Again, this file should only define functions and constants, and not
+  evaluate anything itself.</li>
+<li><code>grid.py</code>: Helpers for generating intersections with regularly spaced grids.
+  For example, USGS elevation files, or topo quads, are packaged for download in
+  a regular grid, and this helps to find which files intersect a provided
+  geometry. Note that for USGS data, it's probably easier to just use the USGS
+  National Map API.</li>
+<li><code>main.py</code>: This should handle delegating commands to other files. I.e. the
+  only file that should be run directly from the command line.</li>
+<li><code>parse.py</code>: This is a wrapper for uploading data to my <a href="https://docs.parseplatform.org/parse-server/guide/">Parse
+  Server</a> instance. It wraps
+  the <a href="https://docs.parseplatform.org/rest/guide/">Parse REST API</a> to upload
+  Parse's custom classes, like <code>GeoPoint</code>s. Also in this file (?) is where
+  schema-checking will take place, making sure data uploads conform to the <a href="https://github.com/nst-guide/schema">JSON
+  schemas defined here</a>.</li>
+<li><code>s3.py</code>: Wrapper for the AWS S3 CLI. This doesn't use <code>boto3</code> directly,
+  because I already knew the CLI commands I wanted to use, and didn't want to
+  spend the time figuring out boto3.</li>
+<li><code>tiles.py</code>: This holds functions to make working with tiled data easier. Like
+  supplying a Polygon and getting the <a href="https://wiki.openstreetmap.org/wiki/Slippy_map_tilenames">XYZ or TMS tile
+  coordinates</a>.</li>
+<li><code>trail.py</code>: This holds the meat of taking the data sources and assembling them into a useful dataset.</li>
+<li><code>util.py</code>: Small non-geometric utilities</li>
+</ul>
+<h2 id="auto-updating-layers">Auto-updating layers<a class="headerlink" href="#auto-updating-layers" title="Permanent link">&para;</a></h2>
+<p>There are a few layers that are designed to auto-update:</p>
+<ul>
+<li>National Weather Service forecasts</li>
+<li>EPA AirNow air quality polygons</li>
+<li>National Interagency Fire Center (NIFC) current wildfire polygons</li>
+</ul>
+<p>The first is handled in a separate repository:
+<a href="https://github.com/nst-guide/ndfd_current">nst-guide/ndfd_current</a>. The second
+two are defined within this repository. All three are designed to be run with
+AWS Lambda.</p>
+<h3 id="aws-lambda">AWS Lambda<a class="headerlink" href="#aws-lambda" title="Permanent link">&para;</a></h3>
+<p>From Wikipedia:</p>
+<blockquote>
+<p>AWS Lambda is an event-driven, serverless computing platform provided by
+Amazon as a part of Amazon Web Services. It is a computing service that runs
+code in response to events and automatically manages the computing resources
+required by that code.</p>
+</blockquote>
+<p>Basically, AWS Lambda is a (somewhat) easy, very cheap way to run small pieces
+of code regularly or in response to events. For all of my use cases above, I can
+set AWS Lambda to run every few hours.</p>
+<p>In my testing of my code to update wildfire perimeters from NIFC, it used 244 MB
+of memory and took 8178.56 ms to run. From the <a href="https://aws.amazon.com/lambda/pricing/">AWS Lambda pricing
+page</a>, it's roughly $0.0000005 for each
+100ms when 320MB of memory is allocated. That means the 8100ms job cost
+$0.0000405, and running it every 4 hours would cost $0.00729 every 30 days. Aka
+basically free.</p>
+<h4 id="aws-lambda-downsides">AWS Lambda Downsides<a class="headerlink" href="#aws-lambda-downsides" title="Permanent link">&para;</a></h4>
+<p>The biggest downsides of AWS Lambda by far are the hard
+<a href="https://docs.aws.amazon.com/lambda/latest/dg/limits.html">limits</a> on how big
+your Deployment Package (aka all unzipped code, including all dependencies) can
+be: <strong>250MB</strong>. When some of your dependencies are GDAL, GeoPandas -&gt; pandas -&gt;
+numpy, that limit is really easy to surpass. I've been unable to include <em>either</em> GeoPandas or Fiona (on their own, not together) inside the deployment package.</p>
+<p>This means that rewriting code to avoid dependencies on any large library, such
+as GeoPandas and Fiona, is inevitable.</p>
+<h4 id="aws-lambda-dependencies">AWS Lambda Dependencies<a class="headerlink" href="#aws-lambda-dependencies" title="Permanent link">&para;</a></h4>
+<p>You can't just <code>pip install gdal</code>, or use <code>conda</code>, or even use Docker in AWS
+Lambda. All your code and dependencies must be pre-built and provided as a Zip
+file.</p>
+<p>Luckily, AWS Lambda has the concept of <em>Lambda Layers</em>. These are code packages created
+by you or by others that you can point to and use, without having to package the
+code yourself. So you can include a layer for, say, <code>GDAL</code>, and then run code
+that depends on GDAL libraries without an issue.</p>
+<p>You can only use a <strong>maximum of five</strong> with any given function. In practice,
+this shouldn't be as bad as it sounds because you could zip multiple
+dependencies into a single layer. The bigger problem in practice is hitting
+Lambda's 250MB hard limit on repository size.</p>
+<p>To use a layer, the easiest way is to include its Amazon Resource Number (ARN).
+So, for example, to include <code>geolambda</code>, I can go to
+<div class="codehilite"><pre><span></span>{my function} &gt; Layers &gt; Add a layer &gt; Provide a layer version ARN
+</pre></div>
+and paste
+<div class="codehilite"><pre><span></span>arn:aws:lambda:us-east-1:552188055668:layer:geolambda:4
+</pre></div>
+the unique identifier for that specific version of <code>geolambda</code> that I use. Note
+that layers are specific to an AWS region, so the layer referenced by this
+specific ARN will only work in US-East-1. Sometimes layers will be pre-built in
+multiple regions. For example, <code>geolambda</code> is pre-built in US-East-1, US-West-2,
+and EU-Central-1. To use the layer in any other AWS region, you'd have to build
+and upload the layer yourself to that region.</p>
+<p>I use several layers:</p>
+<ul>
+<li><a href="https://github.com/developmentseed/geolambda/"><code>geolambda</code> and
+  <code>geolambda-python</code></a>. These are
+  immensely helpful layers that provide geospatial libraries within Lambda.
+  <code>geolambda</code> provides PROJ.5, GEOS, GeoTIFF, HDF&#8536;, SZIP, NetCDF, OpenJPEG,
+  WEBP, ZSTD, and GDAL. <code>geolambda-python</code> additionally provides GDAL (the
+  Python bindings), rasterio, shapely, pyproj, and numpy. Note that if you want
+  to use the Python bindings, you must provide <em>both</em>, not just
+  <code>geolambda-python</code>.</li>
+</ul>
+<p>It is possible to build both <code>geolambda</code> and <code>geolambda-python</code> layers
+  yourself. Their Github READMEs have pretty good documentation, and I was able
+  to build <code>geolambda-python</code> myself (as you would need to if you wanted to
+  modify the package list.)</p>
+<ul>
+<li><code>Klayers-python37-requests</code>.
+  <a href="https://github.com/keithrozario/Klayers">Klayers</a> is a project to provide
+  many common Python libraries as lambda layers. This is just an easy way to
+  access <code>requests</code>, though in this case it would be easy to build yourself.</li>
+</ul>
+<p>And a couple packaged by me:</p>
+<ul>
+<li><code>nst-guide-fastkml-python37</code>: provides the
+  <a href="https://github.com/cleder/fastkml"><code>fastkml</code></a> package</li>
+<li><code>nst-guide-geojson-python37</code>: provides the
+  <a href="https://github.com/jazzband/geojson"><code>geojson</code></a> package</li>
+<li><code>nst-guide-pyshp-python37</code>: provides the
+  <a href="https://github.com/GeospatialPython/pyshp"><code>pyshp</code></a> package. Because Fiona
+  was too big to be packaged on AWS Lambda, and I needed to read Shapefiles for
+  the wildfire perimeters updating, I had to find an alternative. Luckily,
+  <code>pyshp</code> is able to read shapefiles and is only ~200KB of code.</li>
+</ul>
+<h4 id="packaging-dependencies-for-aws-lambda">Packaging dependencies for AWS Lambda<a class="headerlink" href="#packaging-dependencies-for-aws-lambda" title="Permanent link">&para;</a></h4>
+<p>As mentioned above, sometimes you'll need to build lambda layers yourself. <a href="https://dev.to/vealkind/getting-started-with-aws-lambda-layers-4ipk">This
+article</a>
+was pretty helpful. The general gist is:
+<div class="codehilite"><pre><span></span>mkdir -p layer/python
+pip install {package_list} -t layer/python
+cd layer
+zip -r aws-layer.zip python
+</pre></div>
+Then go to the AWS Lambda console, choose Layers from the side pane, and upload
+the Zip archive as a new layer.</p>
+<p><strong>Python packages must be within a <code>python/</code> directory in the Zip archive.</strong> You
+won't be able to load the library without the top-level <code>python</code> directory.</p>
+<p>Also, if the Python packages have any (or depend on any) native code, you should
+run the above packaging steps on a Linux machine, so that the layer will work on
+Amazon's linux-based architecture. For pure-Python packages, you should be able
+build the Zip archive on any OS.</p>
+<h4 id="aws-lambda-iam-role">AWS Lambda IAM Role<a class="headerlink" href="#aws-lambda-iam-role" title="Permanent link">&para;</a></h4>
+<p>Each of my AWS Lambda functions upload files to AWS S3 in order to be served to
+users. This means that the function must be associated with a valid IAM role to
+be permitted to access and modify files in my S3 bucket.</p>
+<p>Note that in order to use the <code>ACL='public-read'</code> option, the IAM role running
+the Lambda function <a href="https://stackoverflow.com/questions/36272286/getting-access-denied-when-calling-the-putobject-operation-with-bucket-level-per">must also have the <code>S3:putObjectAcl</code>
+permission</a>.</p>
+                
+                  
+                
+              
+              
+                
+
+
+              
+            </article>
+          </div>
+        </div>
+      </main>
+      
+        
+<footer class="md-footer">
+  
+    <div class="md-footer-nav">
+      <nav class="md-footer-nav__inner md-grid">
+        
+        
+          <a href="cli/" title="Quickstart" class="md-flex md-footer-nav__link md-footer-nav__link--next" rel="next">
+            <div class="md-flex__cell md-flex__cell--stretch md-footer-nav__title">
+              <span class="md-flex__ellipsis">
+                <span class="md-footer-nav__direction">
+                  Next
+                </span>
+                Quickstart
+              </span>
+            </div>
+            <div class="md-flex__cell md-flex__cell--shrink">
+              <i class="md-icon md-icon--arrow-forward md-footer-nav__button"></i>
+            </div>
+          </a>
+        
+      </nav>
+    </div>
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-footer-copyright">
+        
+        powered by
+        <a href="https://www.mkdocs.org">MkDocs</a>
+        and
+        <a href="https://squidfunk.github.io/mkdocs-material/">
+          Material for MkDocs</a>
+      </div>
+      
+  <div class="md-footer-social">
+    <link rel="stylesheet" href="assets/fonts/font-awesome.css">
+    
+      <a href="https://github.com/nst-guide" class="md-footer-social__link fa fa-github"></a>
+    
+  </div>
+
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    
+      <script src="assets/javascripts/application.a8b5e56f.js"></script>
+      
+      <script>app.initialize({version:"1.0.4",url:{base:"."}})</script>
+      
+    
+  </body>
+</html>
