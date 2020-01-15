@@ -98,11 +98,13 @@ the trail.
 
 5. Upload to S3
 
+    Apply one-week caching plus one-year stale while revalidate.
+
     ```bash
     aws s3 cp \
         $new_dir s3://tiles.nst.guide/openmaptiles/ \
         --recursive \
         --content-type application/x-protobuf \
         --content-encoding gzip \
-        --cache-control "public, max-age=2592000, stale-while-revalidate=31536000"
+        --cache-control "public, max-age=604800, stale-while-revalidate=31536000"
     ```
