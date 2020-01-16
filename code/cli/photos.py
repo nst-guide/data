@@ -46,7 +46,7 @@ Log = logging.getLogger()
     required=True,
     type=click.Path(
         exists=False, file_okay=True, dir_okay=False, resolve_path=True),
-    help='Output path for UUID-photo path crosswalk')
+    help='Output path for photo metadata GeoJSON file')
 @click.option(
     '-s',
     '--start-date',
@@ -136,7 +136,7 @@ def geotag_photos(
     required=True,
     type=click.Path(
         exists=False, file_okay=True, dir_okay=False, resolve_path=True),
-    help='Output path for UUID-photo path crosswalk')
+    help='Output directory for copied photos')
 @click.argument(
     'file',
     type=click.Path(
