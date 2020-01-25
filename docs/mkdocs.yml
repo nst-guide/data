@@ -25,6 +25,7 @@ nav:
       - Quickstart: 'cli/quickstart.md'
       - API:
         - Tiles: 'cli/api/tiles.md'
+        - Photos: 'cli/api/photos.md'
 
 
 # Theme
