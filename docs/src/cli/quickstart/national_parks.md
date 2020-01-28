@@ -19,8 +19,16 @@ python code/main.py export national-parks \
 ```
 
 Run tippecanoe on the GeoJSON to create vector tiles
-```
-tippecanoe -zg -e tmp/nationalparks_tiles tmp/nationalparks.geojson
+```bash
+tippecanoe \
+    `# Guess appropriate max zoom` \
+    -zg \
+    `# Layer name` \
+    -l nationalparks \
+    `# Export tiles to directory` \
+    -e tmp/nationalparks_tiles \
+    `# Input geojson` \
+    tmp/nationalparks.geojson
 ```
 
 Convert the exported metadata.json to a JSON file conforming to the Tile JSON
