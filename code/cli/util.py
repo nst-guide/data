@@ -27,11 +27,19 @@ import click
     default=None,
     type=str,
     help='Attribution text')
+@click.option(
+    '-o',
+    '--out-file',
+    required=True,
+    type=click.Path(file_okay=True, dir_okay=False, writable=True),
+    help=
+    'Output path. This is required because I was having issues print the copyright symbol to stdout.'
+)
 @click.argument(
     'file',
     required=True,
     type=click.Path(exists=True, file_okay=True, dir_okay=False, readable=True))
-def metadata_json_to_tile_json(name, desc, url, attribution, file):
+def metadata_json_to_tile_json(name, desc, url, attribution, out_file, file):
     """Convert metadata.json from Tippecanoe to tile JSON
     """
     with open(file) as f:
@@ -58,4 +66,5 @@ def metadata_json_to_tile_json(name, desc, url, attribution, file):
     if attribution is not None:
         tj['attribution'] = attribution
 
-    click.echo(json.dumps(tj))
+    with open(out_file, 'w', encoding='utf8') as json_file:
+        json.dump(tj, json_file, ensure_ascii=False)
