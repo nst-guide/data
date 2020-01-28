@@ -66,6 +66,8 @@ aws s3 cp \
     --recursive \
     --content-type application/x-protobuf \
     --content-encoding gzip \
+    `# Set to public read access` \
+    --acl public-read \
     `# one day cache; one week swr` \
     --cache-control "public, max-age=86400, stale-while-revalidate=604800"
 aws s3 cp \

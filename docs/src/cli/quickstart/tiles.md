@@ -99,5 +99,7 @@ the trail.
         --recursive \
         --content-type application/x-protobuf \
         --content-encoding gzip \
+        `# Set to public read access` \
+        --acl public-read \
         --cache-control "public, max-age=604800, stale-while-revalidate=31536000"
     ```

@@ -33,6 +33,8 @@ aws s3 cp \
     tmp/wikipedia_compressed.geojson s3://tiles.nst.guide/pct/wikipedia.geojson \
     --content-type application/geo+json \
     --content-encoding br \
+    `# Set to public read access` \
+    --acl public-read \
     `# one day cache; one week swr` \
     --cache-control "public, max-age=86400, stale-while-revalidate=604800"
 ```
