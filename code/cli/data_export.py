@@ -28,9 +28,9 @@ from trail import Trail
     type=str,
     multiple=True,
     help=
-    'Wikipedia page attributes to keep. Options are: categories, content, html, images, links, original_title, pageid, parent_id, references, revision_id, sections, summary, title, url'
+    'Wikipedia page attributes to keep. Supply each value one at a time with multiple flags. Options are: categories, content, html, images, links, original_title, pageid, parent_id, references, revision_id, sections, summary, title, url'
 )
-def wikipedia_for_trail(trail_code, buffer, attrs):
+def wikipedia_for_trail(trail_code, buffer, attr):
     """Get geotagged wikipedia articles near trail
     """
     # Instantiate trail class
@@ -38,7 +38,7 @@ def wikipedia_for_trail(trail_code, buffer, attrs):
 
     # Get wikipedia articles
     gdf = trail.wikipedia_articles(
-        buffer_dist=buffer, buffer_unit='mile', attrs=attrs)
+        buffer_dist=buffer, buffer_unit='mile', attrs=attr)
 
     # Write to stdout
     click.echo(gdf.to_json())
