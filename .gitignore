@@ -1,3 +1,5 @@
+*.json
+*.mbtiles
 *.arw
 *.jpg
 *.jpeg
