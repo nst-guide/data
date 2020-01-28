@@ -461,6 +461,8 @@ python code/main.py <span class="nb">export</span> wikipedia-for-trail <span cla
     tmp/wikipedia_compressed.geojson s3://tiles.nst.guide/pct/wikipedia.geojson <span class="se">\</span>
     --content-type application/geo+json <span class="se">\</span>
     --content-encoding br <span class="se">\</span>
+    <span class="sb">`</span><span class="c1"># Set to public read access` \</span>
+    --acl public-read <span class="se">\</span>
     <span class="sb">`</span><span class="c1"># one day cache; one week swr` \</span>
     --cache-control <span class="s2">&quot;public, max-age=86400, stale-while-revalidate=604800&quot;</span>
 </pre></div></p>
