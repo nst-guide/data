@@ -1,0 +1,66 @@
+# National Parks layer
+
+Properties:
+
+- `description`: NPS description of park. A couple sentences
+- `directionsInfo`: NPS directions to park.
+- `directionsUrl`: URL to NPS website for more info on directions
+- `fullName`: full name of park, i.e. "Devils Postpile National Monument"
+- `length`: length in meters of PCT in park
+- `url`: URL to NPS webpage for park
+- `weatherInfo`: NPS weather info
+
+```bash
+# Make temp directory
+mkdir -p tmp
+python code/main.py export national-parks \
+    `# trail code, i.e. 'pct'` \
+    -t pct > tmp/nationalparks.geojson
+```
+
+Run tippecanoe on the GeoJSON to create vector tiles
+```
+tippecanoe -zg -e tmp/nationalparks_tiles tmp/nationalparks.geojson
+```
+
+Convert the exported metadata.json to a JSON file conforming to the Tile JSON
+spec
+```bash
+python code/main.py util metadata-json-to-tile-json \
+    `# Set tileset name` \
+    --name 'National Parks' \
+    `# Set attribution string` \
+    --attribution '<a href="https://www.nps.gov/" target="_blank">© NPS</a>' \
+    `# tile url paths` \
+    --url 'https://tiles.nst.guide/nationalpark/{z}/{x}/{y}.pbf' \
+    `# Output file path` \
+    -o tmp/nationalparks.json \
+    `# input JSON file` \
+    tmp/nationalparks_tiles/metadata.json
+```
+
+Remove the unneeded `metadata.json`
+```bash
+rm tmp/nationalparks_tiles/metadata.json
+```
+
+Remove existing vector tiles
+```bash
+aws s3 rm \
+    --recursive \
+    s3://tiles.nst.guide/nationalpark/
+```
+
+Add new vector tiles
+```bash
+aws s3 cp \
+    tmp/nationalparks_tiles s3://tiles.nst.guide/nationalpark/ \
+    --recursive \
+    --content-type application/x-protobuf \
+    --content-encoding gzip \
+    `# one day cache; one week swr` \
+    --cache-control "public, max-age=86400, stale-while-revalidate=604800"
+aws s3 cp \
+    tmp/nationalparks.json s3://tiles.nst.guide/nationalpark/tile.json \
+    --content-type application/geo+json
+```

@@ -11,25 +11,26 @@ The result of `wikipedia-for-trail` is a GeoJSON file where the geometries are
 flag.
 
 ```bash
+mkdir -p tmp
 # Entry point
 python code/main.py export wikipedia-for-trail \
     `# select the PCT; at this point the only valid option ` \
     --trail-code pct \
     `# provide buffer distance in miles` \
-    --buffer 1 \
+    --buffer 2 \
     `# Selected attributes` \
-    -a images -a summary -a title -a url > wikipedia.geojson
+    -a images -a summary -a title -a url > tmp/wikipedia.geojson
 ```
 
 Compress this GeoJSON with brotli compression.
 ```
-brotli -c wikipedia.geojson > wikipedia_compressed.geojson
+brotli -c tmp/wikipedia.geojson > tmp/wikipedia_compressed.geojson
 ```
 
 Then upload this to S3
 ```bash
 aws s3 cp \
-    wikipedia_compressed.geojson s3://tiles.nst.guide/pct/wikipedia.geojson \
+    tmp/wikipedia_compressed.geojson s3://tiles.nst.guide/pct/wikipedia.geojson \
     --content-type application/geo+json \
     --content-encoding br \
     `# one day cache; one week swr` \
