@@ -13,6 +13,7 @@ import click
 from cli.data_export import national_parks, wikipedia_for_trail
 from cli.photos import copy_using_xw, geotag_photos
 from cli.tiles import package_tiles, tiles_for_trail
+from cli.util import metadata_json_to_tile_json
 
 
 @click.group()
@@ -42,8 +43,17 @@ export.add_command(national_parks)
 def tiles():
     pass
 
+
 tiles.add_command(tiles_for_trail)
 tiles.add_command(package_tiles)
+
+
+@main.group()
+def util():
+    pass
+
+
+util.add_command(metadata_json_to_tile_json)
 
 if __name__ == '__main__':
     main()
