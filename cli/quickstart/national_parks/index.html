@@ -452,7 +452,15 @@ python code/main.py <span class="nb">export</span> national-parks <span class="s
 </pre></div>
 
 <p>Run tippecanoe on the GeoJSON to create vector tiles
-<div class="codehilite"><pre><span></span>tippecanoe -zg -e tmp/nationalparks_tiles tmp/nationalparks.geojson
+<div class="codehilite"><pre><span></span>tippecanoe <span class="se">\</span>
+    <span class="sb">`</span><span class="c1"># Guess appropriate max zoom` \</span>
+    -zg <span class="se">\</span>
+    <span class="sb">`</span><span class="c1"># Layer name` \</span>
+    -l nationalparks <span class="se">\</span>
+    <span class="sb">`</span><span class="c1"># Export tiles to directory` \</span>
+    -e tmp/nationalparks_tiles <span class="se">\</span>
+    <span class="sb">`</span><span class="c1"># Input geojson` \</span>
+    tmp/nationalparks.geojson
 </pre></div></p>
 <p>Convert the exported metadata.json to a JSON file conforming to the Tile JSON
 spec
