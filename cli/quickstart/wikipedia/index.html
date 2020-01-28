@@ -304,6 +304,18 @@
           
           
 
+
+  <li class="md-nav__item">
+    <a href="../national_parks/" title="National Parks" class="md-nav__link">
+      National Parks
+    </a>
+  </li>
+
+        
+          
+          
+          
+
   
 
 
@@ -430,22 +442,23 @@ that fully cover the trail with the provided buffer distance.</p>
 <p>The result of <code>wikipedia-for-trail</code> is a GeoJSON file where the geometries are
 <code>Point</code>s, and where the properties have the desired attributes from the <code>-a</code>
 flag.</p>
-<div class="codehilite"><pre><span></span><span class="c1"># Entry point</span>
+<div class="codehilite"><pre><span></span>mkdir -p tmp
+<span class="c1"># Entry point</span>
 python code/main.py <span class="nb">export</span> wikipedia-for-trail <span class="se">\</span>
     <span class="sb">`</span><span class="c1"># select the PCT; at this point the only valid option ` \</span>
     --trail-code pct <span class="se">\</span>
     <span class="sb">`</span><span class="c1"># provide buffer distance in miles` \</span>
-    --buffer <span class="m">1</span> <span class="se">\</span>
+    --buffer <span class="m">2</span> <span class="se">\</span>
     <span class="sb">`</span><span class="c1"># Selected attributes` \</span>
-    -a images -a summary -a title -a url &gt; wikipedia.geojson
+    -a images -a summary -a title -a url &gt; tmp/wikipedia.geojson
 </pre></div>
 
 <p>Compress this GeoJSON with brotli compression.
-<div class="codehilite"><pre><span></span>brotli -c wikipedia.geojson &gt; wikipedia_compressed.geojson
+<div class="codehilite"><pre><span></span>brotli -c tmp/wikipedia.geojson &gt; tmp/wikipedia_compressed.geojson
 </pre></div></p>
 <p>Then upload this to S3
 <div class="codehilite"><pre><span></span>aws s3 cp <span class="se">\</span>
-    wikipedia_compressed.geojson s3://tiles.nst.guide/pct/wikipedia.geojson <span class="se">\</span>
+    tmp/wikipedia_compressed.geojson s3://tiles.nst.guide/pct/wikipedia.geojson <span class="se">\</span>
     --content-type application/geo+json <span class="se">\</span>
     --content-encoding br <span class="se">\</span>
     <span class="sb">`</span><span class="c1"># one day cache; one week swr` \</span>
@@ -472,7 +485,7 @@ python code/main.py <span class="nb">export</span> wikipedia-for-trail <span cla
     <div class="md-footer-nav">
       <nav class="md-footer-nav__inner md-grid">
         
-          <a href="../tiles/" title="Tiles" class="md-flex md-footer-nav__link md-footer-nav__link--prev" rel="prev">
+          <a href="../national_parks/" title="National Parks" class="md-flex md-footer-nav__link md-footer-nav__link--prev" rel="prev">
             <div class="md-flex__cell md-flex__cell--shrink">
               <i class="md-icon md-icon--arrow-back md-footer-nav__button"></i>
             </div>
@@ -481,7 +494,7 @@ python code/main.py <span class="nb">export</span> wikipedia-for-trail <span cla
                 <span class="md-footer-nav__direction">
                   Previous
                 </span>
-                Tiles
+                National Parks
               </span>
             </div>
           </a>
