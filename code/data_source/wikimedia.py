@@ -197,10 +197,6 @@ class Wikipedia(DataSource):
         # "To test one polygon containment against a large batch of points, one
         # should first use the prepared.prep() function"
         prepared_polygon = prep(polygon)
-        pages = [
-            page for page in pages
-            if prepared_polygon.contains(Point(page.coordinates[::-1]))
-        ]
         new_pages = []
         for page in pages:
             try:
