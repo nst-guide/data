@@ -189,7 +189,7 @@ class Wikipedia(DataSource):
         for title in titles:
             try:
                 pages.append(wikipedia.page(title))
-            except wikipedia.DisambiguationError:
+            except wikipedia.WikipediaException:
                 pass
 
         # Make sure that all returned articles are within the original polygon
