@@ -3,10 +3,19 @@ import json
 import geojson
 import geopandas as gpd
 import requests
-from haversine import haversine
 from shapely.geometry import LineString, shape
 
+from haversine import haversine
+
 from .base import DataSource
+
+try:
+    import geom
+except ModuleNotFoundError:
+    # Development in IPython
+    import sys
+    sys.path.append('../')
+    import geom
 
 
 class Transit(DataSource):
@@ -84,12 +93,13 @@ class Transit(DataSource):
         return operators_on_trail
 
     def get_stops_near_trail(
-            self, trail_line: LineString, operator_id, distance=1000):
+            self, trail_line: LineString, operator_id, max_distance=1000):
         """Find all stops in Transitland database that are near trail
 
         Args:
-            operator_id: onestop operator id
-            distance: distance to trail in meters
+            - trail_line: trail as LineString
+            - operator_id: onestop operator id
+            - max_distance: max_distance to trail in meters
         """
         url = 'https://transit.land/api/v1/stops'
         params = {'served_by': operator_id, 'per_page': 10000}
@@ -102,9 +112,13 @@ class Transit(DataSource):
             nearest_trail_point = trail_line.interpolate(
                 trail_line.project(point))
 
+            # Haversine will raise an error if you pass a 3D point
+            point = geom.to_2d(point)
+            nearest_trail_point = geom.to_2d(nearest_trail_point)
+
             dist = haversine(
                 *point.coords, *nearest_trail_point.coords, unit='m')
-            if dist < distance:
+            if dist < max_distance:
                 stop['distance_to_trail'] = dist
                 stops_near_trail.append(stop)
 
