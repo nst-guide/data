@@ -783,8 +783,16 @@ def intersect_trail_with_polygons(
     intersections = {}
     # Iterate over GeoDataFrame
     for row in gdf.itertuples():
+        # Set geometry variable so that it can be updated if it needs to be made
+        # valid. You can't update a namedtuple
+        geometry = row.geometry
+
+        # Check if geometry is valid
+        if not geometry.is_valid:
+            geometry = geometry.buffer(0)
+
         # Compute intersection
-        int_line = trail.intersection(row.geometry)
+        int_line = trail.intersection(geometry)
 
         # Get key_col in dataset
         key = getattr(row, key_col)
@@ -796,12 +804,20 @@ def intersect_trail_with_polygons(
             intersections[key]['geometry'] = MultiLineString([int_line])
         elif int_line.type == 'MultiLineString':
             intersections[key]['geometry'] = int_line
+        elif int_line.type == 'GeometryCollection':
+            msg = 'If GeometryCollection should not have intersection'
+            assert len(int_line) == 0, msg
+            intersections[key]['geometry'] = None
         else:
             msg = 'intersection of Polygon, LineString should be LineString'
             raise ValueError(msg)
 
     # Add length in projected coordinates to dictionary
     for key, d in intersections.items():
+        if d['geometry'] is None:
+            intersections[key]['length'] = None
+            continue
+
         intersections[key]['length'] = d['geometry'].length
 
     return intersections
