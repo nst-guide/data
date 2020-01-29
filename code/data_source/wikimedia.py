@@ -79,14 +79,32 @@ class Wikipedia(DataSource):
         else:
             choice = 0
 
-        return wikipedia.page(res[choice])
+        # Here turn auto_suggest to False because I know the page name exists
+        # Otherwise sometimes the page names redirect from a name that exists to
+        # a name that does not. For example, searching
+        # ```
+        # wikipedia.page('Shasta-Trinity National Forest')
+        # ```
+        # raises `PageError: Page id "shasta trinity national forests" does not
+        # match any pages. Try another id!`, while the page does exist:
+        # https://en.wikipedia.org/wiki/Shasta%E2%80%93Trinity_National_Forest
+        # See also
+        # https://github.com/goldsmith/Wikipedia/issues/192
+        # https://github.com/goldsmith/Wikipedia/issues/176
+        return wikipedia.page(res[choice], auto_suggest=False)
 
-    def page(self, title):
-        """Simple page wrapper around wikipedia.page"""
+    def page(self, title, auto_suggest=False):
+        """Simple page wrapper around wikipedia.page
+
+        Args:
+            - title: page title
+            - auto_suggest: let Wikipedia find a valid page title for the query.
+              This should be False if you know the page title exists.
+        """
         if not isinstance(title, str):
             raise TypeError('title must be str')
 
-        return wikipedia.page(title)
+        return wikipedia.page(title, auto_suggest=auto_suggest)
 
     def get_html_for_page(self, page: wikipedia.WikipediaPage):
         """Construct HTML for page
@@ -185,10 +203,12 @@ class Wikipedia(DataSource):
         # Get wikipedia page metadata for each of the titles I've found above
         # Occasionally you get a disambiguation error, because the search is by
         # title?
+        # Note, since I've already found titles that I know exist, I should set
+        # auto_suggest=False
         pages = []
         for title in titles:
             try:
-                pages.append(wikipedia.page(title))
+                pages.append(wikipedia.page(title, auto_suggest=False))
             except wikipedia.WikipediaException:
                 pass
 
