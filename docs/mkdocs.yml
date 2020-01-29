@@ -27,6 +27,7 @@ nav:
         - Tiles: 'cli/quickstart/tiles.md'
         - National Parks: 'cli/quickstart/national_parks.md'
         - National Forests: 'cli/quickstart/national_forests.md'
+        - Historical Wildfires: 'cli/quickstart/wildfire_historical.md'
         - Wikipedia: 'cli/quickstart/wikipedia.md'
       - API:
         - Tiles: 'cli/api/tiles.md'

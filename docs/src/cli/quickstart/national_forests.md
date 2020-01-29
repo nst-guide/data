@@ -80,5 +80,5 @@ aws s3 cp \
     tmp/nationalforests.json s3://tiles.nst.guide/pct/nationalforest/tile.json \
     `# Set to public read access` \
     --acl public-read \
-    --content-type application/geo+json
+    --content-type application/json
 ```
