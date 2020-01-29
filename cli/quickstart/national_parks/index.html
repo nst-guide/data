@@ -452,7 +452,8 @@ python code/main.py <span class="nb">export</span> national-parks <span class="s
 </pre></div>
 
 <p>Run tippecanoe on the GeoJSON to create vector tiles
-<div class="codehilite"><pre><span></span>tippecanoe <span class="se">\</span>
+<div class="codehilite"><pre><span></span>rm -rf tmp/nationalparks_tiles
+tippecanoe <span class="se">\</span>
     <span class="sb">`</span><span class="c1"># Guess appropriate max zoom` \</span>
     -zg <span class="se">\</span>
     <span class="sb">`</span><span class="c1"># Layer name` \</span>
@@ -496,6 +497,8 @@ spec
     --cache-control <span class="s2">&quot;public, max-age=86400, stale-while-revalidate=604800&quot;</span>
 aws s3 cp <span class="se">\</span>
     tmp/nationalparks.json s3://tiles.nst.guide/nationalpark/tile.json <span class="se">\</span>
+    <span class="sb">`</span><span class="c1"># Set to public read access` \</span>
+    --acl public-read <span class="se">\</span>
     --content-type application/geo+json
 </pre></div></p>
                 
