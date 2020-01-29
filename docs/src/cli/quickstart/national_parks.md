@@ -20,6 +20,7 @@ python code/main.py export national-parks \
 
 Run tippecanoe on the GeoJSON to create vector tiles
 ```bash
+rm -rf tmp/nationalparks_tiles
 tippecanoe \
     `# Guess appropriate max zoom` \
     -zg \
@@ -72,5 +73,7 @@ aws s3 cp \
     --cache-control "public, max-age=86400, stale-while-revalidate=604800"
 aws s3 cp \
     tmp/nationalparks.json s3://tiles.nst.guide/nationalpark/tile.json \
+    `# Set to public read access` \
+    --acl public-read \
     --content-type application/geo+json
 ```
