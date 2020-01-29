@@ -287,6 +287,9 @@ class Trail:
             fs_bounds), 'Incorrect # of results from API'
         fs_bounds['official_url'] = official_links
 
+        # Reproject back to EPSG 4326
+        fs_bounds = fs_bounds.to_crs(epsg=4326)
+
         return fs_bounds
 
     def wikipedia_articles(
