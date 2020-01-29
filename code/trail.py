@@ -16,7 +16,7 @@ import osmnx as ox
 from constants import TRAIL_HM_XW, VALID_TRAIL_CODES, VALID_TRAIL_SECTIONS
 from data_source import (
     Halfmile, NationalElevationDataset, OpenStreetMap, Towns)
-from geom import buffer, reproject, to_2d
+from geom import reproject, to_2d
 
 
 class Trail:
@@ -204,7 +204,41 @@ class Trail:
         fs_bounds = fs_bounds.to_crs(epsg=3488)
 
         # Find portions of the trail that intersect with these boundaries
-        d = intersect_trail_with_polygons(projected, fs_bounds, 'FORESTORGC')
+        intersection_dict = intersect_trail_with_polygons(
+            projected, fs_bounds, 'FORESTORGC')
+
+        # Merge this back onto fs_bounds
+        # Here I discard the linestring intersection of where the trail is
+        # inside the polygons
+        intersection_df = pd.DataFrame(
+            gpd.GeoDataFrame.from_dict(intersection_dict,
+                                       orient='index')['length'])
+        fs_bounds = pd.merge(
+            fs_bounds,
+            intersection_df,
+            how='left',
+            left_on='FORESTORGC',
+            right_index=True,
+        )
+
+        # Search names in wikipedia
+        wiki = data_source.Wikipedia()
+        wikipedia_pages = []
+        for name in fs_bounds['FORESTNAME']:
+            page = wiki.find_page_by_name(name)
+            wikipedia_pages.append(page)
+
+        assert len(wikipedia_pages) == len(fs_bounds), 'Incorrect # from API'
+
+        wiki_images = [
+            wiki.best_image_on_page(page) for page in wikipedia_pages
+        ]
+        wiki_urls = [page.url for page in wikipedia_pages]
+        wiki_summaries = [page.summary for page in wikipedia_pages]
+
+        fs_bounds['wiki_image'] = wiki_images
+        fs_bounds['wiki_url'] = wiki_urls
+        fs_bounds['wiki_summary'] = wiki_summaries
 
         # Ping RIDB searching by Forest Name
         # NOTE: if you end up splitting National Forest MultiPolygons into
@@ -230,9 +264,30 @@ class Trail:
             else:
                 results.append({})
 
-        [(name, x.get('RecAreaName'), x.get('RecAreaID'))
-         for x, name in zip(results, fs_bounds['FORESTNAME'])]
-        return d
+        # For each forest that is found, also get the official link and any
+        # images
+        official_links = []
+        for ridb_result in results:
+            if ridb_result == {}:
+                official_links.append(None)
+                continue
+
+            rec_area_id = ridb_result['RecAreaID']
+            official_link = ridb_api.official_link(rec_area_id)
+
+            official_links.append(official_link)
+
+        # For visual inspection
+        # [(name, x.get('RecAreaName'), x.get('RecAreaID'))
+        #  for x, name in zip(results, fs_bounds['FORESTNAME'])]
+
+        # Merge API results
+        # They should be in order, so I just add the column
+        assert len(official_links) == len(
+            fs_bounds), 'Incorrect # of results from API'
+        fs_bounds['official_url'] = official_links
+
+        return fs_bounds
 
     def wikipedia_articles(
             self, buffer_dist=2, buffer_unit='mile', attrs=['title', 'url']):
