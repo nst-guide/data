@@ -462,7 +462,7 @@ python code/main.py <span class="nb">export</span> wikipedia-for-trail <span cla
     <span class="sb">`</span><span class="c1"># provide buffer distance in miles` \</span>
     --buffer <span class="m">2</span> <span class="se">\</span>
     <span class="sb">`</span><span class="c1"># Selected attributes` \</span>
-    -a images -a summary -a title -a url &gt; tmp/wikipedia.geojson
+    -a best_image -a summary -a title -a url &gt; tmp/wikipedia.geojson
 </pre></div>
 
 <p>Compress this GeoJSON with brotli compression.
@@ -475,8 +475,8 @@ python code/main.py <span class="nb">export</span> wikipedia-for-trail <span cla
     --content-encoding br <span class="se">\</span>
     <span class="sb">`</span><span class="c1"># Set to public read access` \</span>
     --acl public-read <span class="se">\</span>
-    <span class="sb">`</span><span class="c1"># one day cache; one week swr` \</span>
-    --cache-control <span class="s2">&quot;public, max-age=86400, stale-while-revalidate=604800&quot;</span>
+    <span class="sb">`</span><span class="c1"># two hour cache; one day swr` \</span>
+    --cache-control <span class="s2">&quot;public, max-age=7200, stale-while-revalidate=86400&quot;</span>
 </pre></div></p>
                 
                   
