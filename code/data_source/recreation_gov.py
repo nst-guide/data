@@ -115,3 +115,50 @@ class RecreationGov(DataSource):
         headers = {'accept': 'application/json', 'apikey': self.api_key}
         r = requests.get(url, params=params, headers=headers)
         return r.json()
+
+    def official_link(self, rec_area_id):
+        """Get official area link given rec area ID
+        """
+        endpoint = f'recareas/{rec_area_id}/links'
+        url = f'{self.base_url}/{endpoint}'
+        headers = {'accept': 'application/json', 'apikey': self.api_key}
+        r = requests.get(url, headers=headers)
+        d = r.json()
+
+        # Select the official web site link
+        links = [
+            x for x in d['RECDATA'] if x['LinkType'] == 'Official Web Site'
+        ]
+        assert len(links) == 1, 'Not 1 official website'
+        link = links[0]
+
+        return link['URL']
+
+    def image(self, rec_area_id):
+        """Get best image from RIDB API given rec area ID
+        """
+        endpoint = f'recareas/{rec_area_id}/media'
+        url = f'{self.base_url}/{endpoint}'
+        headers = {'accept': 'application/json', 'apikey': self.api_key}
+        r = requests.get(url, headers=headers)
+        d = r.json()
+
+        # Select the official web site link
+        preview_images = [
+            x for x in d['RECDATA'] if x['IsPreview'] == True
+        ]
+        assert len(preview_images) == 1, 'Not 1 preview link'
+        image = preview_images[0]
+
+        # Return dict with only specified keys, and lower case
+        keep_keys = ['Title', 'Description', 'URL', 'Credits']
+        return {k.lower(): v for k, v in image.items() if k in keep_keys}
+
+    def facilities(self, rec_area_id):
+        """Get facilities from RIDB API given rec area ID
+        """
+        endpoint = f'recareas/{rec_area_id}/facilities'
+        url = f'{self.base_url}/{endpoint}'
+        headers = {'accept': 'application/json', 'apikey': self.api_key}
+        r = requests.get(url, headers=headers)
+        return r.json()
