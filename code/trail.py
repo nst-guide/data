@@ -852,11 +852,13 @@ def approx_trail(
         return hm.trail_section(hm_sections, alternates=alternates)
 
 
-def milemarker_for_points(points, trail_code='pct'):
+def milemarker_for_points(
+        points: List[Point], method: List[str], trail_code='pct'):
     """Find mile marker for point
 
     Args:
-        point: list of shapely point in EPSG 4326
+        points: list of shapely point in EPSG 4326
+        method: 'line', 'waypoint'
         trail_code: which trail
     """
     if trail_code != 'pct':
