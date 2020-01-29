@@ -26,6 +26,11 @@
      <changefreq>daily</changefreq>
     </url>
     <url>
+     <loc>https://nst-guide.github.io/data/cli/quickstart/wildfire_historical/</loc>
+     <lastmod>2020-01-29</lastmod>
+     <changefreq>daily</changefreq>
+    </url>
+    <url>
      <loc>https://nst-guide.github.io/data/cli/quickstart/wikipedia/</loc>
      <lastmod>2020-01-29</lastmod>
      <changefreq>daily</changefreq>
