@@ -505,8 +505,8 @@ spec
     --content-encoding gzip <span class="se">\</span>
     <span class="sb">`</span><span class="c1"># Set to public read access` \</span>
     --acl public-read <span class="se">\</span>
-    <span class="sb">`</span><span class="c1"># one day cache; one week swr` \</span>
-    --cache-control <span class="s2">&quot;public, max-age=86400, stale-while-revalidate=604800&quot;</span>
+    <span class="sb">`</span><span class="c1"># two hour cache; one day swr` \</span>
+    --cache-control <span class="s2">&quot;public, max-age=7200, stale-while-revalidate=86400&quot;</span>
 aws s3 cp <span class="se">\</span>
     tmp/nationalparks.json s3://tiles.nst.guide/nationalpark/tile.json <span class="se">\</span>
     <span class="sb">`</span><span class="c1"># Set to public read access` \</span>
