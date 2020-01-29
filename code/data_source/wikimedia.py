@@ -269,7 +269,11 @@ class Wikipedia(DataSource):
                     page.images[0])
 
         # Find image url of first image
+        # Note that it's possible there could be more than one element in
+        # first_image_url, if multiple images have `name` inside them, but at
+        # this point it's best to just take the first matched.
         first_image_url = [x for x in page.images if name in x]
-        assert len(first_image_url) == 1, 'error finding first image on page'
-
-        return first_image_url[0]
+        if len(first_image_url) == 0:
+            return page.images[0]
+        else:
+            return first_image_url[0]
