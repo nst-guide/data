@@ -252,6 +252,9 @@ class Wikipedia(DataSource):
         else:
             first_img = soup.find('img')
 
+        if not first_img:
+            return None
+
         # The alt text should be the same as the stub of an image url
         img_src = first_img.attrs['src']
 
