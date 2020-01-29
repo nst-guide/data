@@ -66,32 +66,10 @@ def national_parks(trail_code):
     # Keep desired columns
     cols = [
         'length', 'directionsInfo', 'directionsUrl', 'url', 'weatherInfo',
-        'name', 'description', 'parkCode', 'fullName'
+        'name', 'description', 'parkCode', 'fullName', 'images', 'wiki_url',
+        'geometry'
     ]
-    df = gdf[cols]
-
-    # Load boundaries to attach this metadata to the polygons themselves
-    nps_bounds = data_source.NationalParkBoundaries().polygon()
-
-    # The metadata uses a newer version of unit codes
-    nps_url_xw = {
-        'sequ': 'seki',
-        'kica': 'seki',
-        'lach': 'noca',
-    }
-    # If the row is one of the above codes, apply the mapping
-    nps_bounds['UNIT_CODE'] = nps_bounds['UNIT_CODE'].str.lower().apply(
-        lambda x: nps_url_xw.get(x, x))
-
-    # Keep desired columns
-    cols = ['UNIT_CODE', 'geometry']
-    nps_bounds = nps_bounds[cols]
-
-    # Merge the two datasets
-    gdf = pd.merge(nps_bounds, df, left_on='UNIT_CODE', right_on='parkCode')
-
-    # Drop the extra unit code column from the merge
-    gdf = gdf.drop('UNIT_CODE', axis=1)
+    gdf = gdf[cols]
 
     # Print GeoJSON to stdout
     click.echo(gdf.to_json())

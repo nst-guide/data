@@ -55,6 +55,13 @@ class Trail:
             GeoDataFrame
         """
 
+        # df keys to url keys
+        nps_url_xw = {
+            'sequ': 'seki',
+            'kica': 'seki',
+            'lach': 'noca',
+        }
+
         # Get trail track as a single geometric line
         trail = self.hm.trail_full(alternates=False)
         merged = linemerge([*trail.geometry])
@@ -76,6 +83,11 @@ class Trail:
             park_trail_intersections, orient='index')
         park_trail_intersections.crs = {'init': 'epsg:3488'}
 
+        # Apply xw to index
+        idx = park_trail_intersections.index
+        park_trail_intersections['parkCode'] = list(
+            map(lambda x: nps_url_xw.get(x, x), idx))
+
         # Search NPS names in wikipedia
         wiki = data_source.Wikipedia()
         wikipedia_urls = []
@@ -87,11 +99,6 @@ class Trail:
 
         # Some unit codes in the data are non-standard, e.g. modern codes should
         # work with `https://nps.gov/${unit_code}`
-        nps_url_xw = {
-            'sequ': 'seki',
-            'kica': 'seki',
-            'lach': 'noca',
-        }
         nps_bounds['url_code'] = nps_bounds['UNIT_CODE'].apply(
             lambda code: nps_url_xw.get(code, code))
         nps_bounds['nps_url'] = nps_bounds['url_code'].apply(
@@ -124,11 +131,18 @@ class Trail:
         nps_api_df = pd.concat(nps_api_dfs)
 
         # Merge trail geometry data with NPS API data
+        gdf = pd.merge(park_trail_intersections, nps_api_df, on='parkCode')
+        # Remove geometry column, which will be overwritten by nat parks
+        # polygons in next merge
+        gdf = gdf.drop('geometry', axis=1)
+
+        # Merge on wikipedia url
         gdf = pd.merge(
-            park_trail_intersections,
-            nps_api_df,
-            left_index=True,
-            right_on='parkCode')
+            gdf,
+            nps_bounds[['geometry', 'wiki_url', 'url_code']],
+            how='right',
+            left_on='parkCode',
+            right_on='url_code')
 
         # Reproject back to EPSG 4326
         gdf = gdf.to_crs(epsg=4326)
