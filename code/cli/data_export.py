@@ -2,9 +2,7 @@
 Note: Might be a good idea to merge all the land ownership files into a single vector tile dataset, with different layers
 """
 import click
-import pandas as pd
 
-import data_source
 from trail import Trail
 
 
@@ -68,6 +66,39 @@ def national_parks(trail_code):
         'length', 'directionsInfo', 'directionsUrl', 'url', 'weatherInfo',
         'name', 'description', 'parkCode', 'fullName', 'images', 'wiki_url',
         'geometry'
+    ]
+    gdf = gdf[cols]
+
+    # Print GeoJSON to stdout
+    click.echo(gdf.to_json())
+
+
+@click.command()
+@click.option(
+    '-t',
+    '--trail-code',
+    required=True,
+    type=str,
+    help='Code for desired trail, .e.g "pct"')
+def national_forests(trail_code):
+    """Get national parks info for trail
+    """
+    if trail_code != 'pct':
+        raise ValueError('invalid trail_code')
+
+    # Instantiate trail class
+    trail = Trail()
+
+    # Generate information for national parks the trail passes through
+    gdf = trail.national_forests()
+
+    # Make column names lower case
+    gdf.columns = gdf.columns.str.lower()
+
+    # Keep desired columns
+    cols = [
+        'forestname', 'gis_acres', 'geometry', 'length', 'wiki_image',
+        'wiki_url', 'wiki_summary', 'official_url'
     ]
     gdf = gdf[cols]
 

@@ -26,6 +26,7 @@ nav:
         - Overview: 'cli/quickstart/index.md'
         - Tiles: 'cli/quickstart/tiles.md'
         - National Parks: 'cli/quickstart/national_parks.md'
+        - National Forests: 'cli/quickstart/national_forests.md'
         - Wikipedia: 'cli/quickstart/wikipedia.md'
       - API:
         - Tiles: 'cli/api/tiles.md'
