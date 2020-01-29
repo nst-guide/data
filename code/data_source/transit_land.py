@@ -39,7 +39,7 @@ class Transit(DataSource):
         for operator in operators_near_trail:
             # First, see if this operator actually has stops near the trail
             stops = self.get_stops_near_trail(
-                operator['onestop_id'], distance=1000)
+                trail_line, operator['onestop_id'], max_distance=1000)
             if len(stops) == 0:
                 continue
 
@@ -180,4 +180,4 @@ class Transit(DataSource):
             feature = geojson.Feature(
                 geometry=route['geometry'], properties=properties)
             features.append(feature)
-        geojson.FeatureCollection(features)
+        return geojson.FeatureCollection(features)
