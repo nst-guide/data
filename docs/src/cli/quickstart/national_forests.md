@@ -74,8 +74,8 @@ aws s3 cp \
     --content-encoding gzip \
     `# Set to public read access` \
     --acl public-read \
-    `# one day cache; one week swr` \
-    --cache-control "public, max-age=86400, stale-while-revalidate=604800"
+    `# two hour cache; one day swr` \
+    --cache-control "public, max-age=7200, stale-while-revalidate=86400"
 aws s3 cp \
     tmp/nationalforests.json s3://tiles.nst.guide/pct/nationalforest/tile.json \
     `# Set to public read access` \
