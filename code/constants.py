@@ -41,3 +41,27 @@ TRAIL_TOWNS_XW = {
         'trout_lake', 'white_pass', 'winthrop'
     ],
 }
+
+# A mapping from fire names to wikipedia page titles
+FIRE_NAME_WIKIPEDIA_XW = {
+    'Norse Peak': '2017 Washington wildfires',
+    'Eagle Creek': 'Eagle Creek Fire',
+    'Indian Creek': 'Eagle Creek Fire',
+    'Whitewater': 'Whitewater Fire',
+    'White': 'White Fire',
+    'Happy Camp Complex': 'Happy Camp Complex Fire',
+    'Wallow': 'Wallow Fire',
+    'Nash': 'Nash Fire',
+    'Powerhouse': 'Powerhouse Fire',
+    'Bluecut': 'Blue Cut Fire',
+    'Lake': 'Lake Fire',
+    'Pilot': 'Pilot Fire',
+    'Holcomb': 'Holcomb Fire',
+    'Mountain': 'Mountain Fire',
+    'Cranston': 'Cranston Fire',
+    'Silver': 'Silver Fire',
+    'Spruce Lake': 'High Cascades Complex fires',
+    'Blanket Creek': 'High Cascades Complex fires',
+    'Meadow': 'Meadow Fire',
+    'Butte': 'Butte Fire'
+}

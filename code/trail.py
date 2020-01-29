@@ -13,7 +13,9 @@ from shapely.ops import linemerge, nearest_points, polygonize
 import data_source
 import geom
 import osmnx as ox
-from constants import TRAIL_HM_XW, VALID_TRAIL_CODES, VALID_TRAIL_SECTIONS
+from constants import (
+    FIRE_NAME_WIKIPEDIA_XW, TRAIL_HM_XW, VALID_TRAIL_CODES,
+    VALID_TRAIL_SECTIONS)
 from data_source import (
     Halfmile, NationalElevationDataset, OpenStreetMap, Towns)
 from geom import reproject, to_2d
@@ -361,6 +363,76 @@ class Trail:
 
         gdf = gpd.GeoDataFrame(data, crs={'init': 'epsg:4326'})
         return gdf
+
+    def wildfire_historical(self):
+        # Get trail track as a single geometric line
+        trail_alt = self.hm.trail_full(alternates=True)
+        trail_no_alt = self.hm.trail_full(alternates=False)
+        merged = linemerge([*trail_no_alt.geometry])
+        projected = reproject(merged, geom.WGS84, geom.CA_ALBERS)
+
+        # Get historical wildfire boundaries
+        # I use trail_alt for the geometry to keep wildfires that intersect
+        # alternates
+        bounds = data_source.NIFC().perimeters(
+            geometry=trail_alt, start_year=2010)
+        # Reproject to EPSG 3488
+        bounds = bounds.to_crs(epsg=3488)
+
+        # Find portions of the trail that intersect with these boundaries
+        intersection_dict = intersect_trail_with_polygons(
+            projected, bounds, 'firecode')
+
+        # Merge this back onto bounds
+        # Here I discard the linestring intersection of where the trail is
+        # inside the polygons
+        intersection_df = pd.DataFrame(
+            gpd.GeoDataFrame.from_dict(intersection_dict,
+                                       orient='index')['length'])
+        bounds = pd.merge(
+            bounds,
+            intersection_df,
+            how='left',
+            left_on='firecode',
+            right_index=True,
+        )
+
+        # Reproject back to epsg 4326
+        bounds = bounds.to_crs(epsg=4326)
+
+        # Get titles from predefined crosswalk
+        wiki = data_source.Wikipedia()
+        wiki_titles = bounds['name'].apply(
+            lambda x: FIRE_NAME_WIKIPEDIA_XW.get(x, None))
+        wiki_pages = []
+        for title in wiki_titles:
+            if title is None:
+                wiki_pages.append(None)
+                continue
+
+            wiki_pages.append(wiki.page(title))
+
+        assert len(wiki_pages) == len(bounds), 'Incorrect # of results'
+
+        wiki_images = []
+        wiki_urls = []
+        wiki_summaries = []
+        for page in wiki_pages:
+            if page is None:
+                wiki_images.append(None)
+                wiki_urls.append(None)
+                wiki_summaries.append(None)
+                continue
+
+            wiki_images.append(wiki.best_image_on_page(page))
+            wiki_urls.append(page.url)
+            wiki_summaries.append(page.summary)
+
+        bounds['wiki_image'] = wiki_images
+        bounds['wiki_url'] = wiki_urls
+        bounds['wiki_summary'] = wiki_summaries
+
+        return bounds
 
 
     def track(self, trail_section=None, alternates=False):
