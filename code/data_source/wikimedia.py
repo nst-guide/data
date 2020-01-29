@@ -4,6 +4,7 @@ from urllib.parse import urlparse
 from urllib.request import urlretrieve
 
 import wikipedia
+from bs4 import BeautifulSoup
 from shapely.geometry import Point
 from shapely.prepared import prep
 
@@ -227,3 +228,43 @@ class Wikipedia(DataSource):
                 pass
 
         return new_pages
+
+    def best_image_on_page(self, page):
+        """Try to find best image on wikipedia page
+        """
+        # If page has no images, return None
+        if len(page.images) == 0:
+            return None
+
+        # Get page html
+        html = page.html()
+        soup = BeautifulSoup(html, 'lxml')
+
+        # Try to find best image
+        # If an info box exists, get the first image inside the infobox
+        # Otherwise get the first image on page
+        # Just getting the first image on page isn't ideal because the first
+        # image can be inside the "This article needs additional citations for
+        # verification" box
+        table = soup.find('table', attrs={'class': 'infobox'})
+        if table:
+            first_img = table.find('img')
+        else:
+            first_img = soup.find('img')
+
+        # The alt text should be the same as the stub of an image url
+        img_src = first_img.attrs['src']
+
+        # Split into sections by / and get first section that ends in jpg, png
+        # or svg
+        # If none is found, return the first image from list
+        name = next((
+            x for x in img_src.split('/') if any(
+                x.lower().endswith(ext) for ext in ['.jpg', '.png', '.svg'])),
+                    page.images[0])
+
+        # Find image url of first image
+        first_image_url = [x for x in page.images if name in x]
+        assert len(first_image_url) == 1, 'error finding first image on page'
+
+        return first_image_url[0]
