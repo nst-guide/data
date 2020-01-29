@@ -307,6 +307,7 @@ class Trail:
             - content: Plain text content of the page, excluding images, tables, and other data.
             - html: Get full page HTML. Warning: this can be slow for large
               pages.
+            - best_image: My attempt to get the single best image url.
             - images: List of URLs of images on the page.
             - links: List of titles of Wikipedia page links on a page.
             - original_title:
@@ -324,6 +325,11 @@ class Trail:
             - title: Title of the page
             - url: URL of the page
         """
+        # is best_image asked for
+        best_image = 'best_image' in attrs
+        # Make sure it's not left in attrs list
+        attrs = [attr for attr in attrs if attr != 'best_image']
+
         # Make sure desired attributes are valid
         valid_attrs = [
             'categories', 'content', 'html', 'images', 'links',
@@ -342,6 +348,9 @@ class Trail:
         data = []
         for page in pages:
             d = {}
+            if best_image:
+                d['best_image'] = wiki.best_image_on_page(page)
+
             for attr in attrs:
                 d[attr] = getattr(page, attr)
 
