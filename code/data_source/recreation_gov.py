@@ -143,11 +143,14 @@ class RecreationGov(DataSource):
         r = requests.get(url, headers=headers)
         d = r.json()
 
+        if d['METADATA']['RESULTS']['TOTAL_COUNT'] == 0:
+            return None
+
         # Select the official web site link
         preview_images = [
             x for x in d['RECDATA'] if x['IsPreview'] == True
         ]
-        assert len(preview_images) == 1, 'Not 1 preview link'
+        assert len(preview_images) == 1, 'Not 1 preview image'
         image = preview_images[0]
 
         # Return dict with only specified keys, and lower case
