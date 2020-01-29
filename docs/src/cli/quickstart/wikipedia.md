@@ -19,7 +19,7 @@ python code/main.py export wikipedia-for-trail \
     `# provide buffer distance in miles` \
     --buffer 2 \
     `# Selected attributes` \
-    -a images -a summary -a title -a url > tmp/wikipedia.geojson
+    -a best_image -a summary -a title -a url > tmp/wikipedia.geojson
 ```
 
 Compress this GeoJSON with brotli compression.
@@ -35,6 +35,6 @@ aws s3 cp \
     --content-encoding br \
     `# Set to public read access` \
     --acl public-read \
-    `# one day cache; one week swr` \
-    --cache-control "public, max-age=86400, stale-while-revalidate=604800"
+    `# two hour cache; one day swr` \
+    --cache-control "public, max-age=7200, stale-while-revalidate=86400"
 ```
