@@ -6,7 +6,6 @@ gdal
 geojson
 geopandas
 gpxpy
-haversine
 jupyter
 lxml
 mercantile
