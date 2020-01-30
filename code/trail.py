@@ -183,6 +183,9 @@ class Trail:
             right_index=True,
         )
 
+        # Reproject back to epsg 4326
+        wild_bounds = wild_bounds.to_crs(epsg=4326)
+
         # Search names in wikipedia
         wiki = data_source.Wikipedia()
         wiki_pages = []

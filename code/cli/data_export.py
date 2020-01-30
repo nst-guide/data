@@ -1,6 +1,3 @@
-"""
-Note: Might be a good idea to merge all the land ownership files into a single vector tile dataset, with different layers
-"""
 import click
 
 from trail import Trail
@@ -113,7 +110,7 @@ def national_forests(trail_code):
     required=True,
     type=str,
     help='Code for desired trail, .e.g "pct"')
-def wildernesses(trail_code):
+def wilderness(trail_code):
     """Get wilderness info for trail
     """
     if trail_code != 'pct':
