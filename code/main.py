@@ -12,6 +12,7 @@ import click
 
 from cli.data_export import (
     national_forests, national_parks, wikipedia_for_trail, wildfire_historical)
+from cli.geom import polylabel
 from cli.photos import copy_using_xw, geotag_photos
 from cli.tiles import package_tiles, tiles_for_trail
 from cli.util import metadata_json_to_tile_json
@@ -49,6 +50,14 @@ def tiles():
 
 tiles.add_command(tiles_for_trail)
 tiles.add_command(package_tiles)
+
+
+@main.group()
+def geom():
+    pass
+
+
+geom.add_command(polylabel)
 
 
 @main.group()

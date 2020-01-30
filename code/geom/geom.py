@@ -2,11 +2,13 @@ from functools import partial
 from math import sqrt
 from typing import List, Tuple
 
+import geojson
 import geopandas as gpd
 import pyproj
 from geojson import Feature
 from shapely.geometry import (
-    GeometryCollection, MultiPolygon, Point, Polygon, asShape, box, shape)
+    GeometryCollection, MultiPolygon, Point, Polygon, asShape, box, mapping,
+    shape)
 from shapely.ops import transform
 
 import pint
@@ -157,6 +159,16 @@ def validate_geom(geom):
         return geom
 
     return geom.buffer(0)
+
+
+def validate_geojson(gj):
+    """Make sure all geometries in GeoJSON are valid
+
+    Args:
+        - gj: must be geojson object!
+    """
+    return geojson.utils.map_geometries(
+        lambda g: mapping(validate_geom(shape(g))), gj)
 
 
 def to_2d(obj):
