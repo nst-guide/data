@@ -34,12 +34,12 @@ class Transit(DataSource):
 
         # For each operator, see if there are actually transit stops that
         # intersect the provided geometry
-        intersecting_stops = []
+        _intersecting_stops = []
         for operator in operators_intersecting_geom:
             stops = self.get_stops_intersecting_geometry(
                 geometry=geometry, operator_id=operator['onestop_id'])
             if len(stops) > 0:
-                intersecting_stops.extend(stops)
+                _intersecting_stops.extend(stops)
 
         # For each stop that intersects the geometry, add it to the nearby_stops
         # dict
@@ -47,7 +47,7 @@ class Transit(DataSource):
         # the route and add it to the routes dict
         nearby_stops = {}
         routes = {}
-        for stop in intersecting_stops:
+        for stop in _intersecting_stops:
             # Add stop to the self.nearby_stops dict
             nearby_stops[stop['onestop_id']] = stop
 
@@ -68,9 +68,9 @@ class Transit(DataSource):
                     stop_id=route_stop_id)
 
         nearby_stops = self.update_stop_info(nearby_stops)
-        stops = self.update_stop_info(stops)
+        all_stops = self.update_stop_info(all_stops)
 
-        return intersecting_stops, nearby_stops, routes
+        return nearby_stops, all_stops, routes
 
     def get_operators_intersecting_geometry(self, geometry):
         """Find transit operators with service area crossing provided geometry
