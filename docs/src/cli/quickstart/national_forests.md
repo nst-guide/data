@@ -58,10 +58,7 @@ python code/main.py util metadata-json-to-tile-json \
     -o tmp/nationalforests.json \
     `# input JSON file` \
     tmp/nationalforests_tiles/metadata.json
-```
-
-Remove the unneeded `metadata.json`
-```bash
+# Remove the unneeded `metadata.json`
 rm tmp/nationalforests_tiles/metadata.json
 ```
 

@@ -64,10 +64,7 @@ python code/main.py util metadata-json-to-tile-json \
     -o tmp/wildfire_historical.json \
     `# input JSON file` \
     tmp/wildfire_historical_tiles/metadata.json
-```
-
-Remove the unneeded `metadata.json`
-```bash
+# remove unneeded metadata.json
 rm tmp/wildfire_historical_tiles/metadata.json
 ```
 
