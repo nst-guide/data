@@ -3,12 +3,13 @@ from math import sqrt
 from typing import List, Tuple
 
 import geopandas as gpd
-import pint
 import pyproj
 from geojson import Feature
 from shapely.geometry import (
     GeometryCollection, MultiPolygon, Point, Polygon, asShape, box, shape)
 from shapely.ops import transform
+
+import pint
 
 from .smallest_enclosing_circle import make_circle
 
