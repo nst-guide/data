@@ -57,7 +57,7 @@ python code/main.py util metadata-json-to-tile-json \
     `# Set tileset name` \
     --name 'Historical Wildfires' \
     `# Set attribution string` \
-    --attribution '<a href="https://www.nifc.gov/" target="_blank">© National Interagency Fire Center</a>' \
+    --attribution '<a href="https://www.nifc.gov/" target="_blank">© NIFC</a>' \
     `# tile url paths` \
     --url 'https://tiles.nst.guide/pct/wildfire_historical/{z}/{x}/{y}.pbf' \
     `# Output file path` \
