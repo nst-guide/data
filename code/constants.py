@@ -49,7 +49,6 @@ FIRE_NAME_WIKIPEDIA_XW = {
     'Indian Creek': 'Eagle Creek Fire',
     'Whitewater': 'Whitewater Fire',
     'Happy Camp Complex': 'Happy Camp Complex Fire',
-    'Wallow': 'Wallow Fire',
     'Nash': 'Nash Fire',
     'Powerhouse': 'Powerhouse Fire',
     'Bluecut': 'Blue Cut Fire',
