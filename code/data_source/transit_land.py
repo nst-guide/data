@@ -156,12 +156,11 @@ class Transit(DataSource):
                 continue
 
             url = f'https://transit.land/api/v1/onestop_id/{stop_id}'
-            d = self.request_transit_land(url)
-            stops[stop_id] = d
+            stops[stop_id] = self.request_transit_land(url)
 
         return stops
 
-    def get_schedules(self):
+    def get_schedules(self, routes):
         """Get schedules to add to route and stop data
 
         TODO figure out the best way to collect and store this
@@ -169,14 +168,13 @@ class Transit(DataSource):
         url = 'https://transit.land/api/v1/schedule_stop_pairs'
         for route_id in self.routes.keys():
             params = {'route_onestop_id': route_id, 'per_page': 10000}
-            r = requests.get(url, params=params)
-            d = r.json()
+            d = self.request_transit_land(url, params=params)
 
     def get_geojson_for_routes(self, routes):
         """Create FeatureCollection from self.routes for inspection
         """
         features = []
-        for route_id, route in self.routes.items():
+        for route_id, route in routes.items():
             properties = {
                 'onestop_id': route['onestop_id'],
                 'name': route['name'],
