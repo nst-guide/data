@@ -13,7 +13,7 @@
         <meta name="description" content="Data documentation for National Scenic Trails Guide">
       
       
-        <link rel="canonical" href="https://nst-guide.github.io/data/cli/quickstart/tiles/">
+        <link rel="canonical" href="https://nst-guide.github.io/data/cli/quickstart/wilderness/">
       
       
         <meta name="author" content="Kyle Barron">
@@ -42,7 +42,7 @@
     
     
       
-        <title>Tiles - National Scenic Trails Guide: Data Documentation</title>
+        <title>Designated Wilderness - National Scenic Trails Guide: Data Documentation</title>
       
     
     
@@ -91,7 +91,7 @@
     <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
     <label class="md-overlay" data-md-component="overlay" for="__drawer"></label>
     
-      <a href="#tiles" tabindex="1" class="md-skip">
+      <a href="#wilderness-layer" tabindex="1" class="md-skip">
         Skip to content
       </a>
     
@@ -117,7 +117,7 @@
             </span>
             <span class="md-header-nav__topic">
               
-                Tiles
+                Designated Wilderness
               
             </span>
           
@@ -292,49 +292,11 @@
           
           
 
-  
 
-
-  <li class="md-nav__item md-nav__item--active">
-    
-    <input class="md-toggle md-nav__toggle" data-md-toggle="toc" type="checkbox" id="__toc">
-    
-      
-    
-    
-      <label class="md-nav__link md-nav__link--active" for="__toc">
-        Tiles
-      </label>
-    
-    <a href="./" title="Tiles" class="md-nav__link md-nav__link--active">
+  <li class="md-nav__item">
+    <a href="../tiles/" title="Tiles" class="md-nav__link">
       Tiles
     </a>
-    
-      
-<nav class="md-nav md-nav--secondary">
-  
-  
-    
-  
-  
-    <label class="md-nav__title" for="__toc">Table of contents</label>
-    <ul class="md-nav__list" data-md-scrollfix>
-      
-        <li class="md-nav__item">
-  <a href="#uploading-newer-versions-of-tiles-near-the-pct-to-aws" class="md-nav__link">
-    Uploading newer versions of tiles near the PCT to AWS
-  </a>
-  
-</li>
-      
-      
-      
-      
-      
-    </ul>
-  
-</nav>
-    
   </li>
 
         
@@ -378,11 +340,20 @@
           
           
 
+  
 
-  <li class="md-nav__item">
-    <a href="../wilderness/" title="Designated Wilderness" class="md-nav__link">
+
+  <li class="md-nav__item md-nav__item--active">
+    
+    <input class="md-toggle md-nav__toggle" data-md-toggle="toc" type="checkbox" id="__toc">
+    
+      
+    
+    
+    <a href="./" title="Designated Wilderness" class="md-nav__link md-nav__link--active">
       Designated Wilderness
     </a>
+    
   </li>
 
         
@@ -485,22 +456,6 @@
     
   
   
-    <label class="md-nav__title" for="__toc">Table of contents</label>
-    <ul class="md-nav__list" data-md-scrollfix>
-      
-        <li class="md-nav__item">
-  <a href="#uploading-newer-versions-of-tiles-near-the-pct-to-aws" class="md-nav__link">
-    Uploading newer versions of tiles near the PCT to AWS
-  </a>
-  
-</li>
-      
-      
-      
-      
-      
-    </ul>
-  
 </nav>
                   </div>
                 </div>
@@ -511,106 +466,90 @@
             <article class="md-content__inner md-typeset">
               
                 
-                  <a href="https://github.com/nst-guide/data/blob/master/data/src/cli/quickstart/tiles.md" title="Edit this page" class="md-icon md-content__icon">&#xE3C9;</a>
+                  <a href="https://github.com/nst-guide/data/blob/master/data/src/cli/quickstart/wilderness.md" title="Edit this page" class="md-icon md-content__icon">&#xE3C9;</a>
                 
                 
-                <h1 id="tiles">Tiles<a class="headerlink" href="#tiles" title="Permanent link">&para;</a></h1>
-<h3 id="uploading-newer-versions-of-tiles-near-the-pct-to-aws">Uploading newer versions of tiles near the PCT to AWS<a class="headerlink" href="#uploading-newer-versions-of-tiles-near-the-pct-to-aws" title="Permanent link">&para;</a></h3>
-<p>Since I'm trying to have an app for the PCT specifically, I care about having
-updated OpenStreetMap data near the PCT, but further away from the trail and
-from trail towns is not as important. It's simple to update tiles for any
-arbitrary Geofabrik extract region, aka easy to update for the state of
-Washington, as I can just run OpenMapTiles for that region. The drawback of
-that, however, is that map tiles as a directory are thousands and thousands of
-very tiny files, so the PUT requests to AWS S3 actually add up.</p>
-<p>For example, for zooms 0-14, the state of Oregon makes up 191306 tiles. Since
-it's $0.005 per 1000 put requests, it's just shy of $1 each time I update the
-tiles. I calculated that if I were to upload tiles for the entire continental
-US, it would likely be just shy of $100 for each set of PUT requests.</p>
-<p>The following instructions show how to update tiles for just a given buffer
-around the PCT, which is on the order of $0.07 for each upload for each fifth of
-the trail.</p>
-<ol>
-<li>Create new tiles from e.g. the <a href="https://github.com/nst-guide/openmaptiles">OpenMapTiles repository</a>.</li>
-<li>
-<p>Export the <code>.mbtiles</code> file to a directory of tiles:</p>
-<div class="codehilite"><pre><span></span>mb-util tiles.mbtiles tiles --image_format<span class="o">=</span>pbf
-</pre></div>
-
-</li>
-<li>
-<p>Get tiles for a section of the PCT, e.g.</p>
+                <h1 id="wilderness-layer">Wilderness layer<a class="headerlink" href="#wilderness-layer" title="Permanent link">&para;</a></h1>
+<p>Properties:</p>
 <ul>
-<li><code>-t</code>: trail code</li>
-<li><code>-s</code>: trail section (optional)</li>
-<li><code>-z</code>: min zoom</li>
-<li><code>-Z</code>: max zoom</li>
-<li><code>-b</code>: buffer distance in miles around trail</li>
+<li><code>url</code>: url to wilderness.net page for the wilderness</li>
+<li><code>name</code>: full name for wilderness</li>
+<li><code>acreage</code>: # of acres in wilderness</li>
+<li><code>descriptio</code>: Wilderness.net description. Note that this is cut off; after a
+  given number of characters it just has <code>...</code>.</li>
+<li><code>agency</code>: the agency that runs the wilderness. For the PCT dataset it appears
+  only values of <code>NPS</code>, <code>FS</code>, and <code>BLM</code> exist.</li>
+<li><code>yeardesign</code>: year the area was federally designated as wilderness</li>
+<li><code>geometry</code>: Polygon/MultiPolygon of wilderness area</li>
+<li><code>length</code>: Length of trail inside park (in meters)</li>
+<li><code>wiki_image</code>: url to Wikipedia image. I try to select the best image but it
+  can be difficult sometimes.</li>
+<li><code>wiki_url</code>: url to wikipedia page</li>
+<li><code>wiki_summary</code>: summary of wikipedia page. Usually this is the first paragraph.</li>
 </ul>
-<div class="codehilite"><pre><span></span>python code/main.py tiles tiles-for-trail <span class="se">\</span>
-    -t pct <span class="se">\</span>
-    -s ca_south <span class="se">\</span>
-    -z <span class="m">0</span> <span class="se">\</span>
-    -Z <span class="m">14</span> <span class="se">\</span>
-    -b <span class="m">15</span> &gt; tiles_ca_south.txt
+<div class="codehilite"><pre><span></span><span class="c1"># Make temp directory</span>
+mkdir -p tmp
+<span class="c1"># Generate polygons</span>
+python code/main.py <span class="nb">export</span> wilderness <span class="se">\</span>
+    <span class="sb">`</span><span class="c1"># trail code, i.e. &#39;pct&#39;` \</span>
+    -t pct &gt; tmp/wilderness.geojson
+<span class="c1"># Generate labels</span>
+python code/main.py geom polylabel <span class="se">\</span>
+    <span class="sb">`</span><span class="c1"># include only the name attribute` \</span>
+    -y name <span class="se">\</span>
+    <span class="sb">`</span><span class="c1"># only keep labels for polygons that are &gt;=30% of MultiPolygon area` \</span>
+    --rank-filter <span class="m">0</span>.2 <span class="se">\</span>
+    tmp/wilderness.geojson &gt; tmp/wilderness_label.geojson
 </pre></div>
 
-</li>
-<li>
-<p>Loop over those tiles and copy them to a new directory</p>
-<p>It's <em>really</em> slow to run <code>aws s3 cp</code> a new time for each file, and much
-much faster to run <code>aws s3 cp --recursive</code> on a directory, so the best
-approach is to copy the desired tiles into a new directory, then <code>aws s3 cp</code>
-that directory to AWS.</p>
-<p>Remove the <code>[</code>, <code>,</code>, and <code>]</code> characters, and reorder <code>x,y,z</code> to <code>z,x,y</code>:</p>
-<div class="codehilite"><pre><span></span><span class="nv">fname</span><span class="o">=</span><span class="s2">&quot;tiles_ca_south.txt&quot;</span>
-<span class="c1"># Make sure to update .pbf to .png if you&#39;re working with non-vector tiles</span>
-<span class="nv">tiles</span><span class="o">=</span><span class="k">$(</span>cat <span class="nv">$fname</span> <span class="p">|</span> <span class="se">\</span>
-    tr -d <span class="s1">&#39;[,]&#39;</span> <span class="p">|</span> <span class="se">\</span>
-    awk <span class="s1">&#39;{print $3 &quot;/&quot; $1 &quot;/&quot; $2 &quot;.pbf&quot;}&#39;</span><span class="k">)</span>
-</pre></div>
-
-<p>Outputs:</p>
-<div class="codehilite"><pre><span></span>&gt; echo $tiles
-...
-14/6632/2892.pbf
-14/6632/2893.pbf
-14/6632/2894.pbf
-14/6632/2895.pbf
-14/6632/2896.pbf
-...
-</pre></div>
-
-<p>Then copy the tiles that exist into a new directory (note, you could
-probably make this faster by skipping the <code>if $tile</code> check, since <code>cp</code> will
-just print an error but not stop the loop. However, this might create empty
-directories if <code>$tile</code> doesn't actually exist.):</p>
-<div class="codehilite"><pre><span></span><span class="nv">new_dir</span><span class="o">=</span><span class="s2">&quot;../tiles_tmp&quot;</span>
-<span class="nb">echo</span> <span class="nv">$tiles</span> <span class="p">|</span> <span class="k">while</span> <span class="nb">read</span> tile<span class="p">;</span> <span class="k">do</span>
-    <span class="k">if</span> <span class="o">[</span> -f <span class="nv">$tile</span> <span class="o">]</span><span class="p">;</span> <span class="k">then</span>
-        <span class="nb">echo</span> <span class="s2">&quot;</span><span class="nv">$tile</span><span class="s2">&quot;</span><span class="p">;</span>
-        mkdir -p <span class="nv">$new_dir</span>/<span class="k">$(</span>dirname <span class="nv">$tile</span><span class="k">)</span>
-        cp <span class="nv">$tile</span> <span class="nv">$new_dir</span>/<span class="nv">$tile</span>
-    <span class="k">fi</span>
-<span class="k">done</span>
-</pre></div>
-
-</li>
-<li>
-<p>Upload to S3</p>
-<p>Apply one-week caching plus one-year stale while revalidate.</p>
+<p>Run tippecanoe on the GeoJSON to create vector tiles
+<div class="codehilite"><pre><span></span>rm -rf tmp/wilderness_tiles
+tippecanoe <span class="se">\</span>
+    <span class="sb">`</span><span class="c1"># Guess appropriate max zoom` \</span>
+    -zg <span class="se">\</span>
+    <span class="sb">`</span><span class="c1"># Export tiles to directory` \</span>
+    -e tmp/wilderness_tiles <span class="se">\</span>
+    <span class="sb">`</span><span class="c1"># Input geojson` \</span>
+    -L<span class="s1">&#39;{&quot;file&quot;:&quot;tmp/wilderness.geojson&quot;, &quot;layer&quot;:&quot;wilderness&quot;}&#39;</span> <span class="se">\</span>
+    -L<span class="s1">&#39;{&quot;file&quot;:&quot;tmp/wilderness_label.geojson&quot;, &quot;layer&quot;:&quot;wilderness_label&quot;}&#39;</span>
+</pre></div></p>
+<p>Convert the exported metadata.json to a JSON file conforming to the Tile JSON
+spec
+<div class="codehilite"><pre><span></span>python code/main.py util metadata-json-to-tile-json <span class="se">\</span>
+    <span class="sb">`</span><span class="c1"># Set tileset name` \</span>
+    --name <span class="s1">&#39;Designated Wilderness&#39;</span> <span class="se">\</span>
+    <span class="sb">`</span><span class="c1"># Set attribution string` \</span>
+    --attribution <span class="s1">&#39;&lt;a href=&quot;https://www.wilderness.net/&quot; target=&quot;_blank&quot;&gt;© Wilderness.net&lt;/a&gt;&#39;</span> <span class="se">\</span>
+    <span class="sb">`</span><span class="c1"># tile url paths` \</span>
+    --url <span class="s1">&#39;https://tiles.nst.guide/pct/wilderness/{z}/{x}/{y}.pbf&#39;</span> <span class="se">\</span>
+    <span class="sb">`</span><span class="c1"># Output file path` \</span>
+    -o tmp/wilderness.json <span class="se">\</span>
+    <span class="sb">`</span><span class="c1"># input JSON file` \</span>
+    tmp/wilderness_tiles/metadata.json
+<span class="c1"># Remove the unneeded `metadata.json`</span>
+rm tmp/wilderness_tiles/metadata.json
+</pre></div></p>
+<p>Remove existing vector tiles
+<div class="codehilite"><pre><span></span>aws s3 rm <span class="se">\</span>
+    --recursive <span class="se">\</span>
+    s3://tiles.nst.guide/pct/wilderness/
+</pre></div></p>
+<p>Add new vector tiles
 <div class="codehilite"><pre><span></span>aws s3 cp <span class="se">\</span>
-    <span class="nv">$new_dir</span> s3://tiles.nst.guide/openmaptiles/ <span class="se">\</span>
+    tmp/wilderness_tiles s3://tiles.nst.guide/pct/wilderness/ <span class="se">\</span>
     --recursive <span class="se">\</span>
     --content-type application/x-protobuf <span class="se">\</span>
     --content-encoding gzip <span class="se">\</span>
     <span class="sb">`</span><span class="c1"># Set to public read access` \</span>
     --acl public-read <span class="se">\</span>
-    --cache-control <span class="s2">&quot;public, max-age=604800, stale-while-revalidate=31536000&quot;</span>
-</pre></div>
-
-</li>
-</ol>
+    <span class="sb">`</span><span class="c1"># two hour cache; one day swr` \</span>
+    --cache-control <span class="s2">&quot;public, max-age=7200, stale-while-revalidate=86400&quot;</span>
+aws s3 cp <span class="se">\</span>
+    tmp/wilderness.json s3://tiles.nst.guide/pct/wilderness/tile.json <span class="se">\</span>
+    <span class="sb">`</span><span class="c1"># Set to public read access` \</span>
+    --acl public-read <span class="se">\</span>
+    --content-type application/json
+</pre></div></p>
                 
                   
                 
@@ -632,7 +571,7 @@ directories if <code>$tile</code> doesn't actually exist.):</p>
     <div class="md-footer-nav">
       <nav class="md-footer-nav__inner md-grid">
         
-          <a href="../" title="Overview" class="md-flex md-footer-nav__link md-footer-nav__link--prev" rel="prev">
+          <a href="../wildfire_historical/" title="Historical Wildfires" class="md-flex md-footer-nav__link md-footer-nav__link--prev" rel="prev">
             <div class="md-flex__cell md-flex__cell--shrink">
               <i class="md-icon md-icon--arrow-back md-footer-nav__button"></i>
             </div>
@@ -641,19 +580,19 @@ directories if <code>$tile</code> doesn't actually exist.):</p>
                 <span class="md-footer-nav__direction">
                   Previous
                 </span>
-                Overview
+                Historical Wildfires
               </span>
             </div>
           </a>
         
         
-          <a href="../national_parks/" title="National Parks" class="md-flex md-footer-nav__link md-footer-nav__link--next" rel="next">
+          <a href="../wikipedia/" title="Wikipedia" class="md-flex md-footer-nav__link md-footer-nav__link--next" rel="next">
             <div class="md-flex__cell md-flex__cell--stretch md-footer-nav__title">
               <span class="md-flex__ellipsis">
                 <span class="md-footer-nav__direction">
                   Next
                 </span>
-                National Parks
+                Wikipedia
               </span>
             </div>
             <div class="md-flex__cell md-flex__cell--shrink">
