@@ -57,7 +57,7 @@ class Wikipedia(DataSource):
         if point is not None:
             if not isinstance(point, Point):
                 raise TypeError('point must be of type Point')
-        if radius > 10000:
+        if radius is not None and radius > 10000:
             raise ValueError('max radius 10,000 meters')
 
         if point is None:
