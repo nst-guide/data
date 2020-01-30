@@ -26,6 +26,8 @@ python code/main.py export national-forests \
 python code/main.py geom polylabel \
     `# include only the forestname attribute` \
     -y forestname \
+    `# only keep labels for polygons that are >=30% of MultiPolygon area` \
+    --rank-filter 0.2 \
     tmp/nationalforests.geojson > tmp/nationalforests_label.geojson
 ```
 

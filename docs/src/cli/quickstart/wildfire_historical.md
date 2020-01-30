@@ -32,6 +32,8 @@ python code/main.py export wildfire-historical \
 python code/main.py geom polylabel \
     `# include only the name attribute` \
     -y name \
+    `# only keep labels for polygons that are >=30% of MultiPolygon area` \
+    --rank-filter 0.2 \
     tmp/wildfire_historical.geojson > tmp/wildfire_historical_label.geojson
 ```
 

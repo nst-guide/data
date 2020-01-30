@@ -21,6 +21,8 @@ python code/main.py export national-parks \
 python code/main.py geom polylabel \
     `# include only the name attribute` \
     -y fullName \
+    `# only keep labels for polygons that are >=30% of MultiPolygon area` \
+    --rank-filter 0.2 \
     tmp/nationalparks.geojson > tmp/nationalparks_label.geojson
 ```
 
