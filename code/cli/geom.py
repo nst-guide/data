@@ -36,11 +36,18 @@ from geom import validate_geojson
     default=False,
     required=False,
     help="Exclude all attributes and encode only geometries")
+@click.option(
+    '--rank-filter',
+    type=float,
+    default=None,
+    required=False,
+    help='Only include labels for geometries of >= this rank, between 0 and 1.'
+)
 @click.argument(
     'file',
     required=True,
     type=click.Path(exists=True, file_okay=True, dir_okay=False, readable=True))
-def polylabel(exclude, include, exclude_all, file):
+def polylabel(exclude, include, exclude_all, rank_filter, file):
     """Create point labels for polygon features
 
     Adds the 'rank' property, which is the percentage of the total area of a
@@ -51,6 +58,10 @@ def polylabel(exclude, include, exclude_all, file):
     if sum(map(bool, [exclude, include, exclude_all])) > 1:
         msg = 'Only one of exclude, include, and exclude_all may be provided'
         raise ValueError(msg)
+    if rank_filter is not None:
+        if rank_filter < 0 or rank_filter > 1:
+            raise ValueError('rank-filter must be between 0 and 1')
+
 
     with open(file) as f:
         gj = geojson.load(f)
@@ -85,7 +96,14 @@ def polylabel(exclude, include, exclude_all, file):
             total_area = sum(g.area for g in geometry)
             for polygon in geometry:
                 label_props = deepcopy(props)
-                label_props['rank'] = polygon.area / total_area
+                rank = polygon.area / total_area
+
+                # If rank is not high enough, don't include point
+                if rank_filter is not None:
+                    if not rank >= rank_filter:
+                        continue
+
+                label_props['rank'] = rank
                 label_geometry = polylabel_fn(polygon, tolerance=0.01)
                 f = geojson.Feature(
                     geometry=label_geometry, properties=label_props)
