@@ -113,6 +113,40 @@ def national_forests(trail_code):
     required=True,
     type=str,
     help='Code for desired trail, .e.g "pct"')
+def wildernesses(trail_code):
+    """Get wilderness info for trail
+    """
+    if trail_code != 'pct':
+        raise ValueError('invalid trail_code')
+
+    # Instantiate trail class
+    trail = Trail()
+
+    # Generate information for national parks the trail passes through
+    gdf = trail.wildernesses()
+
+    # Make column names lower case
+    gdf.columns = gdf.columns.str.lower()
+
+    # Keep desired columns
+    gdf = gdf.set_index('wid')
+    cols = [
+        'url', 'name', 'acreage', 'descriptio', 'agency', 'yeardesign',
+        'geometry', 'length', 'wiki_image', 'wiki_url', 'wiki_summary'
+    ]
+    gdf = gdf[cols]
+
+    # Print GeoJSON to stdout
+    click.echo(gdf.to_json())
+
+
+@click.command()
+@click.option(
+    '-t',
+    '--trail-code',
+    required=True,
+    type=str,
+    help='Code for desired trail, .e.g "pct"')
 def wildfire_historical(trail_code):
     """Get historical wildfire info for trail
     """

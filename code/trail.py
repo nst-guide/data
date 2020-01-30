@@ -166,34 +166,73 @@ class Trail:
         wild_bounds = wild_bounds.to_crs(epsg=3488)
 
         # Find portions of the trail that intersect with these boundaries
-        intersection = intersect_trail_with_polygons(
+        intersection_dict = intersect_trail_with_polygons(
             projected, wild_bounds, 'WID')
 
-        # Coerce to GeoDataFrame
-        gdf = gpd.GeoDataFrame.from_dict(intersection, orient='index')
-        gdf.crs = {'init': 'epsg:3488'}
+        # Merge this back onto fs_bounds
+        # Here I discard the linestring intersection of where the trail is
+        # inside the polygons
+        intersection_df = pd.DataFrame(
+            gpd.GeoDataFrame.from_dict(intersection_dict,
+                                       orient='index')['length'])
+        wild_bounds = pd.merge(
+            wild_bounds,
+            intersection_df,
+            how='left',
+            left_on='WID',
+            right_index=True,
+        )
 
-        # The Description column doesn't contain the full description for the
-        # park from Wilderness.net, so scrape Wilderness.net
-        scraper = data_source.WildernessConnectScraper()
-        all_regs = []
-        all_descs = []
-        for url in wild_bounds['URL']:
-            # Note, you need to navigate away or manually reload between the
-            # regulations and description pages, or else Chromedriver will
-            # stall. I think this is because the pages on the website are all
-            # HTML fragments, i.e. `#general`, and not actually pages.
-            #
-            # I actually still find that sometimes it gets stuck. If it seems
-            # like it's taking a while, try clicking "Management & Regulation"
-            # in the Chromedriver window, and that might fix it
-            regs = scraper.get_regulations(url)
-            desc = scraper.get_description(url)
+        # Search names in wikipedia
+        wiki = data_source.Wikipedia()
+        wiki_pages = []
+        for name in wild_bounds['NAME']:
+            page = wiki.find_page_by_name(name)
+            wiki_pages.append(page)
 
-            all_regs.append(regs)
-            all_descs.append(desc)
+        assert len(wiki_pages) == len(wild_bounds), 'Incorrect # from API'
 
-        # return d
+        wiki_images = []
+        wiki_urls = []
+        wiki_summaries = []
+        for page in wiki_pages:
+            if page is None:
+                wiki_images.append(None)
+                wiki_urls.append(None)
+                wiki_summaries.append(None)
+                continue
+
+            wiki_images.append(wiki.best_image_on_page(page))
+            wiki_urls.append(page.url)
+            wiki_summaries.append(page.summary)
+
+        wild_bounds['wiki_image'] = wiki_images
+        wild_bounds['wiki_url'] = wiki_urls
+        wild_bounds['wiki_summary'] = wiki_summaries
+
+        # For now I'm not going to try to deal with scraping wilderness.net
+        #
+        # # The Description column doesn't contain the full description for the
+        # # park from Wilderness.net, so scrape Wilderness.net
+        # scraper = data_source.WildernessConnectScraper()
+        # all_regs = []
+        # all_descs = []
+        # for url in wild_bounds['URL']:
+        #     # Note, you need to navigate away or manually reload between the
+        #     # regulations and description pages, or else Chromedriver will
+        #     # stall. I think this is because the pages on the website are all
+        #     # HTML fragments, i.e. `#general`, and not actually pages.
+        #     #
+        #     # I actually still find that sometimes it gets stuck. If it seems
+        #     # like it's taking a while, try clicking "Management & Regulation"
+        #     # in the Chromedriver window, and that might fix it
+        #     regs = scraper.get_regulations(url)
+        #     desc = scraper.get_description(url)
+        #
+        #     all_regs.append(regs)
+        #     all_descs.append(desc)
+
+        return wild_bounds
 
     def national_forests(self):
         # Get trail track as a single geometric line
