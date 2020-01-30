@@ -475,9 +475,17 @@
 </ul>
 <div class="codehilite"><pre><span></span><span class="c1"># Make temp directory</span>
 mkdir -p tmp
+<span class="c1"># Generate national forest polygons</span>
 python code/main.py <span class="nb">export</span> national-forests <span class="se">\</span>
     <span class="sb">`</span><span class="c1"># trail code, i.e. &#39;pct&#39;` \</span>
     -t pct &gt; tmp/nationalforests.geojson
+<span class="c1"># Generate point labels from those polygons</span>
+python code/main.py geom polylabel <span class="se">\</span>
+    <span class="sb">`</span><span class="c1"># include only the forestname attribute` \</span>
+    -y forestname <span class="se">\</span>
+    <span class="sb">`</span><span class="c1"># only keep labels for polygons that are &gt;=30% of MultiPolygon area` \</span>
+    --rank-filter <span class="m">0</span>.2 <span class="se">\</span>
+    tmp/nationalforests.geojson &gt; tmp/nationalforests_label.geojson
 </pre></div>
 
 <p>Run tippecanoe on the GeoJSON to create vector tiles
@@ -485,12 +493,11 @@ python code/main.py <span class="nb">export</span> national-forests <span class=
 tippecanoe <span class="se">\</span>
     <span class="sb">`</span><span class="c1"># Guess appropriate max zoom` \</span>
     -zg <span class="se">\</span>
-    <span class="sb">`</span><span class="c1"># Layer name` \</span>
-    -l nationalforests <span class="se">\</span>
     <span class="sb">`</span><span class="c1"># Export tiles to directory` \</span>
     -e tmp/nationalforests_tiles <span class="se">\</span>
     <span class="sb">`</span><span class="c1"># Input geojson` \</span>
-    tmp/nationalforests.geojson
+    -L<span class="s1">&#39;{&quot;file&quot;:&quot;tmp/nationalforests.geojson&quot;, &quot;layer&quot;:&quot;nationalforests&quot;}&#39;</span> <span class="se">\</span>
+    -L<span class="s1">&#39;{&quot;file&quot;:&quot;tmp/nationalforests_label.geojson&quot;, &quot;layer&quot;:&quot;nationalforests_label&quot;}&#39;</span>
 </pre></div></p>
 <p>Convert the exported metadata.json to a JSON file conforming to the Tile JSON
 spec

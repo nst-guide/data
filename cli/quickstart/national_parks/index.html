@@ -470,9 +470,17 @@
 </ul>
 <div class="codehilite"><pre><span></span><span class="c1"># Make temp directory</span>
 mkdir -p tmp
+<span class="c1"># Generate national park polygons</span>
 python code/main.py <span class="nb">export</span> national-parks <span class="se">\</span>
     <span class="sb">`</span><span class="c1"># trail code, i.e. &#39;pct&#39;` \</span>
     -t pct &gt; tmp/nationalparks.geojson
+<span class="c1"># Generate national park labels</span>
+python code/main.py geom polylabel <span class="se">\</span>
+    <span class="sb">`</span><span class="c1"># include only the name attribute` \</span>
+    -y fullName <span class="se">\</span>
+    <span class="sb">`</span><span class="c1"># only keep labels for polygons that are &gt;=30% of MultiPolygon area` \</span>
+    --rank-filter <span class="m">0</span>.2 <span class="se">\</span>
+    tmp/nationalparks.geojson &gt; tmp/nationalparks_label.geojson
 </pre></div>
 
 <p>Run tippecanoe on the GeoJSON to create vector tiles
@@ -480,12 +488,11 @@ python code/main.py <span class="nb">export</span> national-parks <span class="s
 tippecanoe <span class="se">\</span>
     <span class="sb">`</span><span class="c1"># Guess appropriate max zoom` \</span>
     -zg <span class="se">\</span>
-    <span class="sb">`</span><span class="c1"># Layer name` \</span>
-    -l nationalparks <span class="se">\</span>
     <span class="sb">`</span><span class="c1"># Export tiles to directory` \</span>
     -e tmp/nationalparks_tiles <span class="se">\</span>
     <span class="sb">`</span><span class="c1"># Input geojson` \</span>
-    tmp/nationalparks.geojson
+    -L<span class="s1">&#39;{&quot;file&quot;:&quot;tmp/nationalparks.geojson&quot;, &quot;layer&quot;:&quot;nationalparks&quot;}&#39;</span> <span class="se">\</span>
+    -L<span class="s1">&#39;{&quot;file&quot;:&quot;tmp/nationalparks_label.geojson&quot;, &quot;layer&quot;:&quot;nationalparks_label&quot;}&#39;</span>
 </pre></div></p>
 <p>Convert the exported metadata.json to a JSON file conforming to the Tile JSON
 spec
@@ -500,9 +507,8 @@ spec
     -o tmp/nationalparks.json <span class="se">\</span>
     <span class="sb">`</span><span class="c1"># input JSON file` \</span>
     tmp/nationalparks_tiles/metadata.json
-</pre></div></p>
-<p>Remove the unneeded <code>metadata.json</code>
-<div class="codehilite"><pre><span></span>rm tmp/nationalparks_tiles/metadata.json
+<span class="c1"># Remove the unneeded `metadata.json`</span>
+rm tmp/nationalparks_tiles/metadata.json
 </pre></div></p>
 <p>Remove existing vector tiles
 <div class="codehilite"><pre><span></span>aws s3 rm <span class="se">\</span>

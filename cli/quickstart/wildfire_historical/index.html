@@ -480,9 +480,17 @@ properties:</p>
 </ul>
 <div class="codehilite"><pre><span></span><span class="c1"># Make temp directory</span>
 mkdir -p tmp
+<span class="c1"># Generate polygons</span>
 python code/main.py <span class="nb">export</span> wildfire-historical <span class="se">\</span>
     <span class="sb">`</span><span class="c1"># trail code, i.e. &#39;pct&#39;` \</span>
     -t pct &gt; tmp/wildfire_historical.geojson
+<span class="c1"># generate labels</span>
+python code/main.py geom polylabel <span class="se">\</span>
+    <span class="sb">`</span><span class="c1"># include only the name attribute` \</span>
+    -y name <span class="se">\</span>
+    <span class="sb">`</span><span class="c1"># only keep labels for polygons that are &gt;=30% of MultiPolygon area` \</span>
+    --rank-filter <span class="m">0</span>.2 <span class="se">\</span>
+    tmp/wildfire_historical.geojson &gt; tmp/wildfire_historical_label.geojson
 </pre></div>
 
 <p>Run tippecanoe on the GeoJSON to create vector tiles
@@ -490,12 +498,11 @@ python code/main.py <span class="nb">export</span> wildfire-historical <span cla
 tippecanoe <span class="se">\</span>
     <span class="sb">`</span><span class="c1"># Guess appropriate max zoom` \</span>
     -zg <span class="se">\</span>
-    <span class="sb">`</span><span class="c1"># Layer name` \</span>
-    -l wildfire_historical <span class="se">\</span>
     <span class="sb">`</span><span class="c1"># Export tiles to directory` \</span>
     -e tmp/wildfire_historical_tiles <span class="se">\</span>
     <span class="sb">`</span><span class="c1"># Input geojson` \</span>
-    tmp/wildfire_historical.geojson
+    -L<span class="s1">&#39;{&quot;file&quot;:&quot;tmp/wildfire_historical.geojson&quot;, &quot;layer&quot;:&quot;wildfire_historical&quot;}&#39;</span> <span class="se">\</span>
+    -L<span class="s1">&#39;{&quot;file&quot;:&quot;tmp/wildfire_historical_label.geojson&quot;, &quot;layer&quot;:&quot;wildfire_historical_label&quot;}&#39;</span>
 </pre></div></p>
 <p>Convert the exported metadata.json to a JSON file conforming to the Tile JSON
 spec
