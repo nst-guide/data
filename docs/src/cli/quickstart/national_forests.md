@@ -18,9 +18,15 @@ Properties:
 ```bash
 # Make temp directory
 mkdir -p tmp
+# Generate national forest polygons
 python code/main.py export national-forests \
     `# trail code, i.e. 'pct'` \
     -t pct > tmp/nationalforests.geojson
+# Generate point labels from those polygons
+python code/main.py geom polylabel \
+    `# include only the forestname attribute` \
+    -y forestname \
+    tmp/nationalforests.geojson > tmp/nationalforests_label.geojson
 ```
 
 Run tippecanoe on the GeoJSON to create vector tiles
@@ -29,12 +35,11 @@ rm -rf tmp/nationalforests_tiles
 tippecanoe \
     `# Guess appropriate max zoom` \
     -zg \
-    `# Layer name` \
-    -l nationalforests \
     `# Export tiles to directory` \
     -e tmp/nationalforests_tiles \
     `# Input geojson` \
-    tmp/nationalforests.geojson
+    -L'{"file":"tmp/nationalforests.geojson", "layer":"nationalforests"}' \
+    -L'{"file":"tmp/nationalforests_label.geojson", "layer":"nationalforests_label"}'
 ```
 
 Convert the exported metadata.json to a JSON file conforming to the Tile JSON

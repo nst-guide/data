@@ -13,9 +13,15 @@ Properties:
 ```bash
 # Make temp directory
 mkdir -p tmp
+# Generate national park polygons
 python code/main.py export national-parks \
     `# trail code, i.e. 'pct'` \
     -t pct > tmp/nationalparks.geojson
+# Generate national park labels
+python code/main.py geom polylabel \
+    `# include only the name attribute` \
+    -y fullName \
+    tmp/nationalparks.geojson > tmp/nationalparks_label.geojson
 ```
 
 Run tippecanoe on the GeoJSON to create vector tiles
@@ -24,12 +30,11 @@ rm -rf tmp/nationalparks_tiles
 tippecanoe \
     `# Guess appropriate max zoom` \
     -zg \
-    `# Layer name` \
-    -l nationalparks \
     `# Export tiles to directory` \
     -e tmp/nationalparks_tiles \
     `# Input geojson` \
-    tmp/nationalparks.geojson
+    -L'{"file":"tmp/nationalparks.geojson", "layer":"nationalparks"}' \
+    -L'{"file":"tmp/nationalparks_label.geojson", "layer":"nationalparks_label"}'
 ```
 
 Convert the exported metadata.json to a JSON file conforming to the Tile JSON
@@ -46,10 +51,7 @@ python code/main.py util metadata-json-to-tile-json \
     -o tmp/nationalparks.json \
     `# input JSON file` \
     tmp/nationalparks_tiles/metadata.json
-```
-
-Remove the unneeded `metadata.json`
-```bash
+# Remove the unneeded `metadata.json`
 rm tmp/nationalparks_tiles/metadata.json
 ```
 

@@ -24,9 +24,15 @@ properties:
 ```bash
 # Make temp directory
 mkdir -p tmp
+# Generate polygons
 python code/main.py export wildfire-historical \
     `# trail code, i.e. 'pct'` \
     -t pct > tmp/wildfire_historical.geojson
+# generate labels
+python code/main.py geom polylabel \
+    `# include only the name attribute` \
+    -y name \
+    tmp/wildfire_historical.geojson > tmp/wildfire_historical_label.geojson
 ```
 
 Run tippecanoe on the GeoJSON to create vector tiles
@@ -35,12 +41,11 @@ rm -rf tmp/wildfire_historical_tiles
 tippecanoe \
     `# Guess appropriate max zoom` \
     -zg \
-    `# Layer name` \
-    -l wildfire_historical \
     `# Export tiles to directory` \
     -e tmp/wildfire_historical_tiles \
     `# Input geojson` \
-    tmp/wildfire_historical.geojson
+    -L'{"file":"tmp/wildfire_historical.geojson", "layer":"wildfire_historical"}' \
+    -L'{"file":"tmp/wildfire_historical_label.geojson", "layer":"wildfire_historical_label"}'
 ```
 
 Convert the exported metadata.json to a JSON file conforming to the Tile JSON
