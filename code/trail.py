@@ -1,4 +1,5 @@
 from typing import Union
+from math import isnan
 
 import geopandas as gpd
 import numpy as np
@@ -432,6 +433,23 @@ class Trail:
         bounds['wiki_url'] = wiki_urls
         bounds['wiki_summary'] = wiki_summaries
 
+        # Check if inciwebid's actually link to a page that exists
+        checked_ids = []
+        baseurl = 'https://inciweb.nwcg.gov/incident/'
+        for inciwebid in bounds['inciwebid']:
+            if not inciwebid:
+                checked_ids.append(None)
+                continue
+
+            url = baseurl + inciwebid
+            r = requests.get(url)
+            if r.status_code == 404:
+                checked_ids.append(None)
+                continue
+
+            checked_ids.append(inciwebid)
+
+        bounds['inciwebid'] = checked_ids
         return bounds
 
 
