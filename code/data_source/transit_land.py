@@ -28,35 +28,64 @@ class Transit(DataSource):
               intersecting the geometry, but then grabs all routes that serve
               the selected stop.
         """
+
+        # Get all stops in geometry by all providers
+        nearby_stops = self.get_stops_in_geometry(geometry)
+
+        # Get all routes that serve these stops
+        routes = self.get_routes_serving_stops(nearby_stops)
+
+        # Get all stops for all routes
+        all_stops = self.get_all_stops_for_routes(routes)
+
+        # Make sure I have all info about every stop
+        nearby_stops = self.update_stop_info(nearby_stops)
+        all_stops = self.update_stop_info(all_stops)
+
+        return nearby_stops, all_stops, routes
+
+    def get_stops_in_geometry(self, geometry):
+        """Get all stops for all providers that intersect geometry provided
+        """
         # Find operators that intersect provided geometry
-        operators_intersecting_geom = self.get_operators_intersecting_geometry(
+        operators_intersecting_geom = self._get_operators_intersecting_geometry(
             geometry)
 
         # For each operator, see if there are actually transit stops that
         # intersect the provided geometry
         _intersecting_stops = []
         for operator in operators_intersecting_geom:
-            stops = self.get_stops_intersecting_geometry(
+            stops = self._get_stops_intersecting_geometry(
                 geometry=geometry, operator_id=operator['onestop_id'])
             if len(stops) > 0:
                 _intersecting_stops.extend(stops)
 
+        nearby_stops = {}
+        for stop in _intersecting_stops:
+            nearby_stops[stop['onestop_id']] = stop
+
+        return nearby_stops
+
+    def get_routes_serving_stops(self, stops):
+        """Get all routes that stop and given stops
+        """
         # For each stop that intersects the geometry, add it to the nearby_stops
         # dict
         # For each route that stops at each nearby stop, get information about
         # the route and add it to the routes dict
-        nearby_stops = {}
         routes = {}
-        for stop in _intersecting_stops:
-            # Add stop to the self.nearby_stops dict
-            nearby_stops[stop['onestop_id']] = stop
-
+        for stop in stops.values():
             # Get more info about each route that stops at stop
             # Routes are added to self.routes
             for route_dict in stop['routes_serving_stop']:
                 route_id = route_dict['route_onestop_id']
                 routes[route_id] = self.get_route_from_id(route_id=route_id)
 
+        return routes
+
+    def get_all_stops_for_routes(self, routes):
+        """Get all stops served by the given routes
+        """
         # For each stop along each route, get the id's of all stops.
         # {stop_onestop_id: stop}
         all_stops = {}
@@ -67,12 +96,9 @@ class Transit(DataSource):
                 all_stops[route_stop_id] = self.get_stop_from_id(
                     stop_id=route_stop_id)
 
-        nearby_stops = self.update_stop_info(nearby_stops)
-        all_stops = self.update_stop_info(all_stops)
+        return all_stops
 
-        return nearby_stops, all_stops, routes
-
-    def get_operators_intersecting_geometry(self, geometry):
+    def _get_operators_intersecting_geometry(self, geometry):
         """Find transit operators with service area crossing provided geometry
 
         Using the transit.land API, you can find all transit operators within a
@@ -100,7 +126,7 @@ class Transit(DataSource):
 
         return operators_intersecting_geom
 
-    def get_stops_intersecting_geometry(self, geometry, operator_id):
+    def _get_stops_intersecting_geometry(self, geometry, operator_id):
         """Find all stops by operator that intersect geometry
 
         Args:
@@ -166,12 +192,12 @@ class Transit(DataSource):
         TODO figure out the best way to collect and store this
         """
         url = 'https://transit.land/api/v1/schedule_stop_pairs'
-        for route_id in self.routes.keys():
+        for route_id in routes.keys():
             params = {'route_onestop_id': route_id, 'per_page': 10000}
             d = self.request_transit_land(url, params=params)
 
     def get_geojson_for_routes(self, routes):
-        """Create FeatureCollection from self.routes for inspection
+        """Create FeatureCollection from routes for inspection
         """
         features = []
         for route_id, route in routes.items():
