@@ -242,6 +242,10 @@ def transit(trail_code, out_routes, out_stops):
         'geometry', 'tags', 'name', 'vehicle_type', 'color', 'operated_by_name',
         '_trail', '_town'
     ]
+    # _trail and _town do not necessarily exist
+    stops_cols = [x for x in stops_cols if x in stops_gdf.columns]
+    routes_cols = [x for x in routes_cols if x in routes_gdf.columns]
+
     stops_gdf = stops_gdf[stops_cols]
     routes_gdf = routes_gdf[routes_cols]
 
