@@ -552,11 +552,10 @@ class Trail:
         stops = {}
         for key, val in all_nearby_stops.items():
             stops[key] = stops.get(key, val)
-            stops['_nearby_stop'] = True
+            stops[key]['_nearby_stop'] = True
 
         for key, val in all_all_stops.items():
             stops[key] = stops.get(key, val)
-            stops['_all_stop'] = True
 
         stops_features = []
         for key, val in stops.items():
