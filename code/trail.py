@@ -569,7 +569,7 @@ class Trail:
             props = {k: v for k, v in val.items() if k != 'geometry'}
             f = geojson.Feature(
                 id=key, geometry=val['geometry'], properties=props)
-            stops_features.append(f)
+            routes_features.append(f)
 
         stops_fc = geojson.FeatureCollection(stops_features)
         routes_fc = geojson.FeatureCollection(routes_features)
