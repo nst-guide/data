@@ -11,7 +11,7 @@ for how to separate a click CLI into subfiles
 import click
 
 from cli.data_export import (
-    national_forests, national_parks, wikipedia, wilderness,
+    national_forests, national_parks, town_boundaries, wikipedia, wilderness,
     wildfire_historical)
 from cli.geom import polylabel
 from cli.photos import copy_using_xw, geotag_photos
@@ -38,11 +38,12 @@ def export():
     pass
 
 
-export.add_command(wikipedia)
-export.add_command(national_parks)
 export.add_command(national_forests)
-export.add_command(wildfire_historical)
+export.add_command(national_parks)
+export.add_command(town_boundaries)
+export.add_command(wikipedia)
 export.add_command(wilderness)
+export.add_command(wildfire_historical)
 
 
 @main.group()

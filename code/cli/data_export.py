@@ -168,3 +168,35 @@ def wildfire_historical(trail_code):
 
     # Print GeoJSON to stdout
     click.echo(gdf.to_json())
+
+
+@click.command()
+@click.option(
+    '-t',
+    '--trail-code',
+    required=True,
+    type=str,
+    help='Code for desired trail, .e.g "pct"')
+def town_boundaries(trail_code):
+    """Get town boundaries for trail
+    """
+    if trail_code != 'pct':
+        raise ValueError('invalid trail_code')
+
+    # Instantiate trail class
+    trail = Trail()
+
+    # Generate information for national parks the trail passes through
+    gdf = trail.towns()
+
+    # Make column names lower case
+    gdf.columns = gdf.columns.str.lower()
+
+    # Make section lower case
+    gdf['section'] = gdf['section'].str.lower()
+
+    # Set town id's as index
+    gdf = gdf.set_index('id')
+
+    # Print GeoJSON to stdout
+    click.echo(gdf.to_json())
