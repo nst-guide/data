@@ -211,16 +211,16 @@ def town_boundaries(trail_code):
     type=str,
     help='Code for desired trail, .e.g "pct"')
 @click.option(
-    '-r'
+    '-r',
     '--out-routes',
     required=True,
-    type=click.Path(exists=True, file_okay=True, dir_okay=False, readable=True),
+    type=click.Path(file_okay=True, writable=True),
     help='Path to output routes GeoJSON')
 @click.option(
-    '-s'
+    '-s',
     '--out-stops',
     required=True,
-    type=click.Path(exists=True, file_okay=True, dir_okay=False, readable=True),
+    type=click.Path(file_okay=True, writable=True),
     help='Path to output stops GeoJSON')
 def transit(trail_code, out_routes, out_stops):
     """Get town boundaries for trail
@@ -232,7 +232,7 @@ def transit(trail_code, out_routes, out_stops):
     trail = Trail()
 
     # Generate information for national parks the trail passes through
-    stops_fc, routes_fc = trail.towns()
+    stops_fc, routes_fc = trail.transit()
 
     stops_gdf = gpd.GeoDataFrame.from_features(stops_fc['features'])
     routes_gdf = gpd.GeoDataFrame.from_features(routes_fc['features'])
