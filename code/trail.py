@@ -538,15 +538,15 @@ class Trail:
                 # Add each dict to `all_${dict}`, but set the _trail key to True
                 for key, val in _nearby_stops.items():
                     all_nearby_stops[key] = all_nearby_stops.get(key, val)
-                    all_nearby_stops[key]['_trail'] = True
+                    all_nearby_stops[key]['_town'] = True
 
                 for key, val in _all_stops.items():
                     all_all_stops[key] = all_all_stops.get(key, val)
-                    all_all_stops[key]['_trail'] = True
+                    all_all_stops[key]['_town'] = True
 
                 for key, val in _routes.items():
                     all_routes[key] = all_routes.get(key, val)
-                    all_routes[key]['_trail'] = True
+                    all_routes[key]['_town'] = True
 
         # Combine all_all_stops and all_nearby_stops into single dict
         stops = {}
