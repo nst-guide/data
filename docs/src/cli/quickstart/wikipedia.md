@@ -13,7 +13,7 @@ flag.
 ```bash
 mkdir -p tmp
 # Entry point
-python code/main.py export wikipedia-for-trail \
+python code/main.py export wikipedia \
     `# select the PCT; at this point the only valid option ` \
     --trail-code pct \
     `# provide buffer distance in miles` \

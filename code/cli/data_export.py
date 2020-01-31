@@ -25,7 +25,7 @@ from trail import Trail
     help=
     'Wikipedia page attributes to keep. Supply each value one at a time with multiple flags. Options are: categories, content, html, images, links, original_title, pageid, parent_id, references, revision_id, sections, summary, title, url'
 )
-def wikipedia_for_trail(trail_code, buffer, attr):
+def wikipedia(trail_code, buffer, attr):
     """Get geotagged wikipedia articles near trail
     """
     # Instantiate trail class
