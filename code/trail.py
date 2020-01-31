@@ -1,6 +1,7 @@
 from typing import Union
 from math import isnan
 
+import geojson
 import geopandas as gpd
 import numpy as np
 import pandas as pd
@@ -493,6 +494,87 @@ class Trail:
 
         bounds['inciwebid'] = checked_ids
         return bounds
+
+    def transit(
+            self,
+            trail=True,
+            town=True,
+            trail_buffer_dist=1000,
+            trail_buffer_unit='meter'):
+        """Get transit information for trail
+        """
+
+        transit = data_source.Transit()
+
+        # Get all stops that intersect trail and town geometries
+        all_all_stops = {}
+        all_nearby_stops = {}
+        all_routes = {}
+        if trail:
+            for section_name, gdf in self.hm.trail_iter():
+                trail_buf = geom.buffer(
+                    gdf, distance=trail_buffer_dist,
+                    unit=trail_buffer_unit).unary_union
+
+                _nearby_stops, _all_stops, _routes = transit.download(trail_buf)
+
+                # Add each dict to `all_${dict}`, but set the _trail key to True
+                for key, val in _nearby_stops.items():
+                    all_nearby_stops[key] = all_nearby_stops.get(key, val)
+                    all_nearby_stops[key]['_trail'] = True
+
+                for key, val in _all_stops.items():
+                    all_all_stops[key] = all_all_stops.get(key, val)
+                    all_all_stops[key]['_trail'] = True
+
+                for key, val in _routes.items():
+                    all_routes[key] = all_routes.get(key, val)
+                    all_routes[key]['_trail'] = True
+
+        if town:
+            for polygon in self.towns().geometry:
+                _nearby_stops, _all_stops, _routes = transit.download(polygon)
+
+                # Add each dict to `all_${dict}`, but set the _trail key to True
+                for key, val in _nearby_stops.items():
+                    all_nearby_stops[key] = all_nearby_stops.get(key, val)
+                    all_nearby_stops[key]['_trail'] = True
+
+                for key, val in _all_stops.items():
+                    all_all_stops[key] = all_all_stops.get(key, val)
+                    all_all_stops[key]['_trail'] = True
+
+                for key, val in _routes.items():
+                    all_routes[key] = all_routes.get(key, val)
+                    all_routes[key]['_trail'] = True
+
+        # Combine all_all_stops and all_nearby_stops into single dict
+        stops = {}
+        for key, val in all_nearby_stops.items():
+            stops[key] = stops.get(key, val)
+            stops['_nearby_stop'] = True
+
+        for key, val in all_all_stops.items():
+            stops[key] = stops.get(key, val)
+            stops['_all_stop'] = True
+
+        stops_features = []
+        for key, val in stops.items():
+            props = {k: v for k, v in val.items() if k != 'geometry'}
+            f = geojson.Feature(
+                id=key, geometry=val['geometry'], properties=props)
+            stops_features.append(f)
+
+        routes_features = []
+        for key, val in all_routes.items():
+            props = {k: v for k, v in val.items() if k != 'geometry'}
+            f = geojson.Feature(
+                id=key, geometry=val['geometry'], properties=props)
+            stops_features.append(f)
+
+        stops_fc = geojson.FeatureCollection(stops_features)
+        routes_fc = geojson.FeatureCollection(routes_features)
+        return stops_fc, routes_fc
 
 
     def track(self, trail_section=None, alternates=False):
