@@ -1,4 +1,5 @@
 import click
+import geopandas as gpd
 
 from trail import Trail
 
@@ -200,3 +201,54 @@ def town_boundaries(trail_code):
 
     # Print GeoJSON to stdout
     click.echo(gdf.to_json())
+
+
+@click.command()
+@click.option(
+    '-t',
+    '--trail-code',
+    required=True,
+    type=str,
+    help='Code for desired trail, .e.g "pct"')
+@click.option(
+    '-r'
+    '--out-routes',
+    required=True,
+    type=click.Path(exists=True, file_okay=True, dir_okay=False, readable=True),
+    help='Path to output routes GeoJSON')
+@click.option(
+    '-s'
+    '--out-stops',
+    required=True,
+    type=click.Path(exists=True, file_okay=True, dir_okay=False, readable=True),
+    help='Path to output stops GeoJSON')
+def transit(trail_code, out_routes, out_stops):
+    """Get town boundaries for trail
+    """
+    if trail_code != 'pct':
+        raise ValueError('invalid trail_code')
+
+    # Instantiate trail class
+    trail = Trail()
+
+    # Generate information for national parks the trail passes through
+    stops_fc, routes_fc = trail.towns()
+
+    stops_gdf = gpd.GeoDataFrame.from_features(stops_fc['features'])
+    routes_gdf = gpd.GeoDataFrame.from_features(routes_fc['features'])
+
+    stops_cols = ['geometry', 'tags', '_trail', '_town', '_nearby_stop']
+    routes_cols = [
+        'geometry', 'tags', 'name', 'vehicle_type', 'color', 'operated_by_name',
+        '_trail', '_town'
+    ]
+    stops_gdf = stops_gdf[stops_cols]
+    routes_gdf = routes_gdf[routes_cols]
+
+    # Make column names lower case
+    stops_gdf.columns = stops_gdf.columns.str.lower()
+    routes_gdf.columns = routes_gdf.columns.str.lower()
+
+    # Write GeoJSON files to disk
+    stops_gdf.to_file(out_stops, driver='GeoJSON')
+    routes_gdf.to_file(out_routes, driver='GeoJSON')
