@@ -502,6 +502,9 @@
 <li><code>_trail</code>: <code>True</code> if the route was generated from the trail buffer pass</li>
 <li><code>_town</code>: <code>True</code> if the route was generated from the town polygon pass</li>
 </ul>
+<p>Note that the following command took about 1 hour 20 minutes for me, because the
+rate limit for <transit.land> is 60 requests per minute, so it takes a while to
+request a lot of routes.</p>
 <div class="codehilite"><pre><span></span><span class="c1"># Make temp directory</span>
 mkdir -p tmp
 <span class="c1"># Generate transit</span>
