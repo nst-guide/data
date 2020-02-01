@@ -548,7 +548,7 @@ rm tmp/transit_tiles/metadata.json
 </pre></div></p>
 <p>Add new vector tiles
 <div class="codehilite"><pre><span></span>aws s3 cp <span class="se">\</span>
-    tmp/nationalparks_tiles s3://tiles.nst.guide/pct/transit/ <span class="se">\</span>
+    tmp/transit_tiles s3://tiles.nst.guide/pct/transit/ <span class="se">\</span>
     --recursive <span class="se">\</span>
     --content-type application/x-protobuf <span class="se">\</span>
     --content-encoding gzip <span class="se">\</span>
@@ -557,7 +557,7 @@ rm tmp/transit_tiles/metadata.json
     <span class="sb">`</span><span class="c1"># two hour cache; one day swr` \</span>
     --cache-control <span class="s2">&quot;public, max-age=7200, stale-while-revalidate=86400&quot;</span>
 aws s3 cp <span class="se">\</span>
-    tmp/nationalparks.json s3://tiles.nst.guide/pct/transit/tile.json <span class="se">\</span>
+    tmp/transit.json s3://tiles.nst.guide/pct/transit/tile.json <span class="se">\</span>
     <span class="sb">`</span><span class="c1"># Set to public read access` \</span>
     --acl public-read <span class="se">\</span>
     --content-type application/json
