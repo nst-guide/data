@@ -75,7 +75,7 @@ aws s3 rm \
 Add new vector tiles
 ```bash
 aws s3 cp \
-    tmp/nationalparks_tiles s3://tiles.nst.guide/pct/transit/ \
+    tmp/transit_tiles s3://tiles.nst.guide/pct/transit/ \
     --recursive \
     --content-type application/x-protobuf \
     --content-encoding gzip \
@@ -84,7 +84,7 @@ aws s3 cp \
     `# two hour cache; one day swr` \
     --cache-control "public, max-age=7200, stale-while-revalidate=86400"
 aws s3 cp \
-    tmp/nationalparks.json s3://tiles.nst.guide/pct/transit/tile.json \
+    tmp/transit.json s3://tiles.nst.guide/pct/transit/tile.json \
     `# Set to public read access` \
     --acl public-read \
     --content-type application/json
