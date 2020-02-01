@@ -21,6 +21,10 @@ Properties:
 - `_trail`: `True` if the route was generated from the trail buffer pass
 - `_town`: `True` if the route was generated from the town polygon pass
 
+Note that the following command took about 1 hour 20 minutes for me, because the
+rate limit for <transit.land> is 60 requests per minute, so it takes a while to
+request a lot of routes.
+
 ```bash
 # Make temp directory
 mkdir -p tmp
