@@ -16,7 +16,7 @@ import constants
 import data_source
 import geom
 import osmnx as ox
-from constants import (TRAIL_HM_XW, VALID_TRAIL_CODES, VALID_TRAIL_SECTIONS)
+from constants import TRAIL_HM_XW, VALID_TRAIL_CODES, VALID_TRAIL_SECTIONS
 from data_source import (
     Halfmile, NationalElevationDataset, OpenStreetMap, Towns)
 from geom import reproject, to_2d
