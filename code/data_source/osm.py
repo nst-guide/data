@@ -37,7 +37,7 @@ class OpenStreetMap(DataSource):
                 simplify=simplify)
             print(f'Finished getting graph for section: {section_name}')
 
-    def get_relations_within_pct(self, trail_code):
+    def get_relations_for_trail(self, trail_code):
         """Get list of relations that make up sections within PCT
 
         Args:
@@ -55,13 +55,14 @@ class OpenStreetMap(DataSource):
         soup = BeautifulSoup(r.text, 'lxml')
         relations = soup.find_all('relation')
         assert len(relations) == 1, 'more than one top-level relation object'
+        relation = relations[0]
 
-        members = relations[0].find_all('member')
+        members = relation.find_all('member')
         relations = [x for x in members if x.attrs['type'] == 'relation']
         sections = [self.get_relation_info(x.attrs['ref']) for x in relations]
         return {d['short_name']: d['id'] for d in sections}
 
-    def get_alternates_within_pct(self, trail_id):
+    def get_alternates_for_trail(self, trail_code):
         """Get list of alternates within PCT
 
         Args:
@@ -78,6 +79,10 @@ class OpenStreetMap(DataSource):
                     'id': 337321382},
                     ...
         """
+        trail_id = self.trail_ids.get(trail_code)
+        if trail_id is None:
+            raise NotImplementedError('trail_code not defined')
+
         url = f'https://www.openstreetmap.org/api/0.6/relation/{trail_id}'
         r = self.session.get(url)
         soup = BeautifulSoup(r.text, 'lxml')
@@ -114,12 +119,19 @@ class OpenStreetMap(DataSource):
         soup = BeautifulSoup(r.text, 'lxml')
         tags = {tag.attrs['k']: tag.attrs['v'] for tag in soup.find_all('tag')}
 
-        states = ['California', 'Oregon', 'Washington']
-        regex_str = f"({'|'.join(states)})"
-        regex_str += r'\s+Section\s+([A-Z])$'
-        m = re.search(regex_str, tags['name'])
-        short_name = f'{m.groups()[0][:2].upper()}_{m.groups()[1].upper()}'
-        tags['short_name'] = short_name
+        # If the relation is a part of the PCT, generate a short name for the
+        # section. I.e. the `name` is generally `PCT - California Section A` and
+        # the short name would be `ca_a`
+        if tags.get('ref') == 'PCT':
+            states = ['California', 'Oregon', 'Washington']
+            regex_str = f"({'|'.join(states)})"
+            regex_str += r'\s+Section\s+([A-Z])$'
+            m = re.search(regex_str, tags['name'])
+            if m:
+                short_name = (
+                    f'{m.groups()[0][:2].upper()}_{m.groups()[1].upper()}')
+                tags['short_name'] = short_name.lower()
+
         tags['id'] = int(soup.find('relation').attrs['id'])
         return tags
 
