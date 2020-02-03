@@ -850,13 +850,13 @@ class TrailSection:
 
         raise NotImplementedError('Linestring not in correct direction')
 
-    def compute_deviance_of_two_lines(
+    def area_between_two_lines(
             self, line1: LineString, line2: LineString, crs=3488) -> float:
-        """Compute the deviance of two lines
+        """Compute area between two lines
 
         It's important to check how accurate the OSM track is compared to other
         tracks. So here I use two provided lines to create the polygons that
-        make up the deviations between the two lines, then I add those areas
+        make up the area between the two lines, then I add those areas
         together, and divide by the length of each line. Note that the two lines
         do need to be sorted in the same direction.
 
@@ -879,7 +879,7 @@ class TrailSection:
 
         # Check that lines are in the same direction
         # Get distance between start point of each line, then assert they're
-        # within 100m
+        # within 1000m
         start_dists = Point(line1.coords[0]).distance(Point(line2.coords[0]))
         msg = 'Beginning of two lines not within 1000m'
         assert start_dists <= 1000, msg
