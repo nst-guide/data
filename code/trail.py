@@ -1,5 +1,5 @@
-from typing import Union
 from math import isnan
+from typing import List, Union
 
 import geojson
 import geopandas as gpd
@@ -20,7 +20,6 @@ from constants.pct import TRAIL_HM_XW
 from data_source import (
     Halfmile, NationalElevationDataset, OpenStreetMap, Towns)
 from geom import reproject, to_2d
-
 
 
 class Trail:
@@ -647,16 +646,22 @@ class Trail:
         isnan(row.cuisine)
 
     def handle_sections(self, use_cache: bool = True):
-        hm = Halfmile()
-        for (section_name, trk), (_, wpt) in zip(hm.trail_iter(),
-                                                 hm.wpt_iter()):
-            buf = buffer(trk, distance=2, unit='mile').unary_union
-            self.handle_section(section_name=section_name,
-                                polygon=buf,
-                                wpt=wpt,
-                                use_cache=use_cache)
+        sections = VALID_TRAIL_SECTIONS[self.trail_code]
+        for section_name in sections:
+            hm_sections = TRAIL_HM_XW[section_name]
+            track = self.hm.trail_section(hm_sections, alternates=True)
+            wpt = self.hm.wpt_section(hm_sections)
 
-            self.handle_section(wpt=wpt, use_cache=use_cache)
+            buf = geom.buffer(track, distance=2, unit='mile').unary_union
+
+            # section =
+            # track
+
+            self = TrailSection(
+                buffer=buf, section_name=section_name, use_cache=use_cache)
+            self.main(wpt=wpt)
+
+            # self.handle_section(wpt=wpt, use_cache=use_cache)
 
 
 class TrailSection:
@@ -914,6 +919,76 @@ class TrailSection:
 
         return deviance
 
+    def parse_generated_osm_trail_data(self, nodes, edges, intersections):
+        """Iterate over OSM trail data to generate waypoints
+        """
+
+        # Mapping from OSM term to term used in description
+        # I.e. Join a "dirt road" or "unpaved road"
+        surface_tr = {
+            'dirt': 'dirt',
+            'unpaved': 'unpaved',
+            'ground': 'dirt',
+            'asphalt': 'paved',
+            'paved': 'paved',
+        }
+        highway_tr = {
+            'path': 'trail',
+            'bridleway': 'trail',
+            'residential': 'road',
+            'track': 'road',
+            'unclassified': 'road',
+            'footway': 'trail',
+            'service': 'road',
+            'primary': 'road',
+            'secondary': 'road',
+            'tertiary': 'road',
+        }
+
+        data_list = []
+        descriptions = {
+            'highway=track&surface=unpaved': 'Join unpaved road',
+        }
+
+        prev_surface = ''
+        prev_way_type = ''
+
+        for edge in edges.itertuples():
+            way_type = highway_tr.get(edge.highway)
+            assert way_type is not None, 'way_type is undefined'
+
+            # Check type of way
+            if way_type != prev_way_type:
+                # Trail changed from road to trail or trail to road
+                pass
+
+            # Check start node for intersections
+            start_node = edge.u
+
+            intersections
+
+            # if (edge.highway != prev_highway):
+            #     # Changing from
+            #
+            # edge
+
+            break
+
+        edges[edges['highway'] == 'unclassified']
+        edges[edges['highway'] == 'unclassified']
+        intersections[intersections['highway'] == 'secondary']
+        edges[(edges['surface'] != 'unpaved') & edges['surface'].notna()]
+
+        edges
+
+        nodes
+
+        edges
+        nodes
+        intersections
+
+        pass
+
     def intersect_hydrography(self, trail_line):
         # TODO: pass the trail + alternates
         # TODO pass full OSM path network near trail (take out railways), so
@@ -973,6 +1048,37 @@ class TrailSection:
         gdf = gdf.rename(columns={'GNIS_Name': 'name'})
         return gdf.to_dict('records')
 
+    def _hydro_point(self, hydro, files, buffer):
+        point = hydro.read_files(files=files, layer='NHDPoint')
+
+        SPRING = 45800
+        WATERFALL = 48700
+        WELL = 48800
+        keep = [SPRING, WATERFALL]
+        point = point[point['FCode'].isin(keep)]
+
+        point = sjoin(point, buffer, how='inner')
+        len(point)
+        point = to_2d(point)
+        point
+
+        point
+        if len(point) > 0:
+            raise NotImplementedError('Water points near trail')
+
+        areal = hydro.read_files(files=files, layer='NHDArea')
+        areal = sjoin(areal, trail, how='inner')
+        if len(point) > 0:
+            raise NotImplementedError('Areal near trail')
+
+        w_areal = hydro.read_files(files=files, layer='NHDWaterbody')
+        w_areal = sjoin(w_areal, trail, how='inner')
+        if len(point) > 0:
+            raise NotImplementedError('Areal near trail')
+
+        len(w_areal)
+        self.buffer
+
     def add_elevations_to_route(self):
         new_geoms = []
         for row in self.route.itertuples():
@@ -988,7 +1094,7 @@ class TrailSection:
         all_coords_z = [(x[0][0], x[0][1], x[1]) for x in zip(coords, elevs)]
         return LineString(all_coords_z)
 
-    def _create_route_no_elevation(self):
+    def _track_osm_api(self):
         """Create route from OSM data using API
 
         Using the OSM.org API is so so slow because it has to make so many
