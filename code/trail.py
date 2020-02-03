@@ -30,13 +30,15 @@ class Trail:
     Args:
         route:
     """
-    def __init__(self, trail_code='pct'):
+    def __init__(self, trail_code='pct', crs=3488):
         """
 
         Args:
-            route_iter: generator that yields general (non-exact) route for
-            trail. The idea is that this non-exact route is used to create a
-            buffer
+            - route_iter: generator that yields general (non-exact) route for
+              trail. The idea is that this non-exact route is used to create a
+              buffer
+            - crs: EPSG code for projected coordinate system to use. Projected
+              coordinates must be in meters.
         """
         super(Trail, self).__init__()
 
@@ -45,6 +47,7 @@ class Trail:
             raise ValueError(msg)
 
         self.trail_code = trail_code
+        self.crs = crs
 
         self.osm = OpenStreetMap()
         self.hm = Halfmile()
@@ -69,13 +72,13 @@ class Trail:
         # Get trail track as a single geometric line
         trail = self.hm.trail_full(alternates=False)
         merged = linemerge([*trail.geometry])
-        projected = reproject(merged, geom.WGS84, geom.CA_ALBERS)
+        projected = reproject(merged, geom.WGS84, self.crs)
 
         # Get NPS boundaries
         nps_bounds = data_source.NationalParkBoundaries().polygon()
 
-        # Reproject to EPSG 3488 for calculations in meters
-        nps_bounds = nps_bounds.to_crs(epsg=3488)
+        # Reproject to projected coordinate system for calculations in meters
+        nps_bounds = nps_bounds.to_crs(epsg=self.crs)
         nps_bounds['UNIT_CODE'] = nps_bounds['UNIT_CODE'].str.lower()
 
         # Find portions of the trail that intersect with these boundaries
@@ -85,7 +88,7 @@ class Trail:
         # Coerce to GeoDataFrame
         park_trail_intersections = gpd.GeoDataFrame.from_dict(
             park_trail_intersections, orient='index')
-        park_trail_intersections.crs = {'init': 'epsg:3488'}
+        park_trail_intersections.crs = {'init': f'epsg:{self.crs}'}
 
         # Apply xw to index
         idx = park_trail_intersections.index
@@ -159,12 +162,12 @@ class Trail:
         # Get trail track as a single geometric line
         trail = self.hm.trail_full(alternates=False)
         merged = linemerge([*trail.geometry])
-        projected = reproject(merged, geom.WGS84, geom.CA_ALBERS)
+        projected = reproject(merged, geom.WGS84, self.crs)
 
         # Get Wilderness boundaries
         wild_bounds = data_source.WildernessBoundaries().polygon()
-        # Reproject to EPSG 3488
-        wild_bounds = wild_bounds.to_crs(epsg=3488)
+        # Reproject to projected coordinate system in meters
+        wild_bounds = wild_bounds.to_crs(epsg=self.crs)
 
         # Find portions of the trail that intersect with these boundaries
         intersection_dict = intersect_trail_with_polygons(
@@ -242,12 +245,12 @@ class Trail:
         # Get trail track as a single geometric line
         trail = self.hm.trail_full(alternates=False)
         merged = linemerge([*trail.geometry])
-        projected = reproject(merged, geom.WGS84, geom.CA_ALBERS)
+        projected = reproject(merged, geom.WGS84, self.crs)
 
         # Get Wilderness boundaries
         fs_bounds = data_source.NationalForestBoundaries().polygon()
-        # Reproject to EPSG 3488
-        fs_bounds = fs_bounds.to_crs(epsg=3488)
+        # Reproject to projected coordinate system in meters
+        fs_bounds = fs_bounds.to_crs(epsg=self.crs)
 
         # Find portions of the trail that intersect with these boundaries
         intersection_dict = intersect_trail_with_polygons(
@@ -408,20 +411,20 @@ class Trail:
         gdf = gpd.GeoDataFrame(data, crs={'init': 'epsg:4326'})
         return gdf
 
-    def wildfire_historical(self):
+    def wildfire_historical(self, start_year):
         # Get trail track as a single geometric line
         trail_alt = self.hm.trail_full(alternates=True)
         trail_no_alt = self.hm.trail_full(alternates=False)
         merged = linemerge([*trail_no_alt.geometry])
-        projected = reproject(merged, geom.WGS84, geom.CA_ALBERS)
+        projected = reproject(merged, geom.WGS84, self.crs)
 
         # Get historical wildfire boundaries
         # I use trail_alt for the geometry to keep wildfires that intersect
         # alternates
         bounds = data_source.NIFC().perimeters(
-            geometry=trail_alt, start_year=2010)
-        # Reproject to EPSG 3488
-        bounds = bounds.to_crs(epsg=3488)
+            geometry=trail_alt, start_year=start_year)
+        # Reproject to projected coordinate system
+        bounds = bounds.to_crs(epsg=self.crs)
 
         # Find portions of the trail that intersect with these boundaries
         intersection_dict = intersect_trail_with_polygons(
@@ -809,7 +812,7 @@ class TrailSection:
         raise NotImplementedError('Linestring not in correct direction')
 
     def compute_deviance_of_two_lines(
-            self, line1: LineString, line2: LineString) -> float:
+            self, line1: LineString, line2: LineString, crs=3488) -> float:
         """Compute the deviance of two lines
 
         It's important to check how accurate the OSM track is compared to other
@@ -831,9 +834,9 @@ class TrailSection:
         Returns:
             - A float for the average distance in meters between the two lines
         """
-        # Reproject lines to California Albers
-        line1 = reproject(line1, geom.WGS84, geom.CA_ALBERS)
-        line2 = reproject(line2, geom.WGS84, geom.CA_ALBERS)
+        # Reproject lines to projected coordinate system
+        line1 = reproject(line1, geom.WGS84, crs)
+        line2 = reproject(line2, geom.WGS84, crs)
 
         # Check that lines are in the same direction
         # Get distance between start point of each line, then assert they're

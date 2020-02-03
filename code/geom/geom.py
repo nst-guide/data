@@ -17,28 +17,31 @@ from .smallest_enclosing_circle import make_circle
 
 ureg = pint.UnitRegistry()
 
-WGS84 = 'epsg:4326'
-WEB_MERCATOR = 'epsg:3857'
-UTM10 = 'epsg:6339'
-UTM11 = 'epsg:6340'
-CA_ALBERS = 'epsg:3488'
+WGS84 = 4326
+WEB_MERCATOR = 3857
+UTM10 = 6339
+UTM11 = 6340
+CA_ALBERS = 3488
 
 
-def buffer(gdf: gpd.GeoDataFrame, distance: float, unit: str) -> gpd.GeoSeries:
+def buffer(
+        gdf: gpd.GeoDataFrame, distance: float, unit: str,
+        crs: int = 3488) -> gpd.GeoSeries:
     """Create buffer around GeoDataFrame
 
     Args:
-        gdf: dataframe with geometry to take buffer around
+        gdf: dataframe with geometry to take buffer around. Source geometry
+            should be in epsg 4326
         distance: distance for buffer
         unit: units for buffer distance, either ['mile', 'meter', 'kilometer']
+        crs: local projected coordinate system to use for buffer calculations. I
+            tend to use 3488 for the PCT: https://epsg.io/3488.
 
     Returns:
         GeoDataFrame with buffer polygon
     """
-
-    # Reproject to EPSG 3488 (meter accuracy)
-    # https://epsg.io/3488
-    gdf = gdf.to_crs(epsg=3488)
+    # Reproject to projected coordinate system
+    gdf = gdf.to_crs(epsg=crs)
 
     # Find buffer distance in meters
     unit_dict = {
@@ -51,6 +54,7 @@ def buffer(gdf: gpd.GeoDataFrame, distance: float, unit: str) -> gpd.GeoSeries:
         raise ValueError(f'unit must be one of {list(unit_dict.keys())}')
 
     distance_m = (distance * pint_unit).to(ureg.meters).magnitude
+    # TODO: allow gdf or shapely geom to function
     buffer = gdf.buffer(distance_m)
 
     # Reproject back to EPSG 4326 for saving
@@ -211,24 +215,18 @@ def reproject_gdf(gdf, from_epsg, to_epsg):
     return gdf
 
 
-def reproject(obj, from_epsg, to_epsg):
+# TODO: update so that a single function reproject will reproject both a gdf and
+# a shapely geom
+def reproject(obj, from_epsg: int, to_epsg: int):
     project = partial(
-        pyproj.transform, pyproj.Proj(init=from_epsg),
-        pyproj.Proj(init=to_epsg))
+        pyproj.transform, pyproj.Proj(init=f'epsg:{from_epsg}'),
+        pyproj.Proj(init=f'epsg:{to_epsg}'))
 
     return transform(project, obj)
 
 
-def wgs_to_web_mercator(obj):
-    return reproject(obj, WGS84, WEB_MERCATOR)
-
-
-def web_mercator_to_wgs(obj):
-    return reproject(obj, WEB_MERCATOR, WGS84)
-
-
-def find_circles_that_tile_polygon(polygon,
-                                   radius) -> List[Tuple[Polygon, float]]:
+def find_circles_that_tile_polygon(polygon, radius,
+                                   crs=3488) -> List[Tuple[Polygon, float]]:
     """
     Following this article [0], I'll split into smaller and smaller rectangles
     until each rectangle is small enough to be circumscribed within `radius`.
@@ -238,6 +236,7 @@ def find_circles_that_tile_polygon(polygon,
     Args:
         - polygon: polygon in WGS84
         - radius: max radius of circle in meters
+        - crs: epsg code of projected coordinate system using meters
 
     Returns:
         - list of (circle Polygons, circle radius)
@@ -247,7 +246,7 @@ def find_circles_that_tile_polygon(polygon,
     box_diameter = (radius / sqrt(2)) * 2
 
     # First, reproject polygon so that I can work in meters
-    polygon = reproject(polygon, WGS84, CA_ALBERS)
+    polygon = reproject(polygon, WGS84, crs)
 
     # Split polygon into distinct pieces with max height or width `box_diameter`
     # These pieces tile the original geometry
@@ -272,9 +271,7 @@ def find_circles_that_tile_polygon(polygon,
     radii = [x[2] for x in circles]
 
     # Reproject back to WGS84
-    reprojected_points = [
-        reproject(point, CA_ALBERS, WGS84) for point in points
-    ]
+    reprojected_points = [reproject(point, crs, WGS84) for point in points]
     return reprojected_points, radii
 
 
