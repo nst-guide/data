@@ -7,12 +7,16 @@ geojson
 geopandas
 gpxpy
 jupyter
+keplergl_quickvis
 lxml
 mercantile
 mkdocs
 mkdocs-material
+networkx
 numpy
+opencage
 osmnx
+osxphotos
 pandas
 pint
 pip
@@ -22,6 +26,7 @@ pyshp
 python-chromedriver-binary
 python-dateutil
 python-dotenv
+python-language-server[all]
 python>=3.6
 pytz
 rasterio
@@ -32,7 +37,3 @@ shapely
 supermercado
 wikipedia
 xlrd
-keplergl_quickvis
-opencage
-osxphotos
-python-language-server[all]

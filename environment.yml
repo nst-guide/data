@@ -15,6 +15,7 @@ dependencies:
   - mercantile
   - mkdocs
   - mkdocs-material
+  - networkx
   - numpy
   - osmnx
   - pandas
