@@ -22,12 +22,9 @@ from data_source import (
 from geom import reproject, to_2d
 
 
-class Trail:
-    """
-    Combine multiple data sources to create all necessary data for trail.
 
-    Args:
-        route:
+class Trail:
+    """Combine multiple data sources to create all necessary data for trail.
     """
     def __init__(self, trail_code='pct'):
         """
@@ -572,7 +569,6 @@ class Trail:
         routes_fc = geojson.FeatureCollection(routes_features)
         return stops_fc, routes_fc
 
-
     def track(self, trail_section=None, alternates=False):
         """Load LineStrings of trail as GeoDataFrame
         """
@@ -600,6 +596,55 @@ class Trail:
             gdf = gdf[gdf['section'].str.lower().isin(hm_sections)]
 
         return gdf
+
+    def town_waypoints(self, trail_section=None):
+        """Get town waypoints from OSM
+        """
+        towns = self.towns(trail_section=trail_section)
+        osm = data_source.OpenStreetMap()
+
+        all_data = []
+        for town in towns.itertuples():
+            pois = osm.get_town_pois_for_polygon(town.geometry)
+            pois['town_id'] = town.id
+            pois['town_name'] = town.name
+            all_data.append(pois)
+
+        gdf = gpd.GeoDataFrame(pd.concat(all_data))
+
+        # for row in gdf.itertuples():
+        #     self._handle_town_poi(row)
+
+    def _handle_town_poi(self, row):
+        """Classify OSM tags into simpler categories
+        """
+        restaurant_amenities = [
+            'bar', 'biergarten', 'fast_food', 'ice_cream', 'pub', 'restaurant'
+        ]
+        poi_type = None
+        poi_details = {}
+        if row.amenity in restaurant_amenities:
+            poi_type = 'food'
+        elif row.amenity in ['cafe']:
+            poi_type = 'cafe'
+        elif row.amenity in ['atm', 'bank']:
+            poi_type = 'bank'
+        elif row.amenity in ['clinic', 'hospital']:
+            poi_type = 'hospital'
+        elif row.amenity in ['pharmacy']:
+            poi_type = 'pharmacy'
+        elif row.amenity in ['post_office']:
+            poi_type = 'post_office'
+        elif row.amenity in ['ranger_station']:
+            poi_type = 'ranger_station'
+        elif row.amenity in ['shower']:
+            poi_type = 'shower'
+        elif row.amenity in ['toilets']:
+            poi_type = 'toilets'
+        elif row.amenity in ['drinking_water']:
+            poi_type = 'drinking_water'
+
+        isnan(row.cuisine)
 
     def handle_sections(self, use_cache: bool = True):
         hm = Halfmile()
