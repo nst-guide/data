@@ -1,5 +1,6 @@
 import re
 
+import geojson
 import requests
 from bs4 import BeautifulSoup
 from shapely.geometry import Polygon
@@ -160,6 +161,26 @@ class OpenStreetMap(DataSource):
             tags['lon'] = float(soup.attrs['lon'])
 
         return tags
+
+    def get_geojson_for_way(self, way_id):
+        """Construct GeoJSON Feature with LineString geometry for way
+
+        Args:
+            - way_id: OSM way id
+
+        Returns:
+            geojson.Feature with LineString geometry of way
+        """
+        way_info = self.get_info(way=way_id)
+        node_ids = self.get_node_ids_for_way(way_id)
+
+        points = []
+        for node_id in node_ids:
+            node_info = self.get_info(node=node_id)
+            points.append([node_info['lon'], node_info['lat']])
+
+        line = geojson.LineString(points)
+        return geojson.Feature(id=way_id, geometry=line, properties=way_info)
 
     def get_ways_for_polygon(
             self,
