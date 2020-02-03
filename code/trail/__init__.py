@@ -1,0 +1,1 @@
+from .trail import Trail
