@@ -185,6 +185,9 @@ def to_2d(obj):
     if isinstance(obj, gpd.GeoDataFrame):
         return _to_2d_gdf(obj)
 
+    if isinstance(obj, gpd.GeoSeries):
+        return _to_2d_gdf(obj)
+
     try:
         return transform(_to_2d_transform, obj)
     except TypeError:
@@ -221,6 +224,9 @@ def reproject(geometry, to_epsg: int, from_epsg: int = None):
         - from_epsg: old crs, not necessary for gdf
     """
     if isinstance(geometry, gpd.GeoDataFrame):
+        return geometry.to_crs(epsg=to_epsg)
+
+    if isinstance(geometry, gpd.GeoSeries):
         return geometry.to_crs(epsg=to_epsg)
 
     if from_epsg is None:
