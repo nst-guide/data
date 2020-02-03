@@ -1,10 +1,12 @@
 import re
 from typing import List
 
-import osmnx as ox
 import requests
 from bs4 import BeautifulSoup
 from shapely.geometry import Polygon
+
+import osmnx as ox
+from constants import TRAIL_OSM_RELATION_XW
 
 from .base import DataSource
 from .halfmile import Halfmile
@@ -14,7 +16,7 @@ class OpenStreetMap(DataSource):
     """docstring for OpenStreetMap"""
     def __init__(self):
         super(OpenStreetMap, self).__init__()
-        self.trail_ids = {'pct': 1225378}
+        self.trail_ids = TRAIL_OSM_RELATION_XW
         self.raw_dir = self.data_dir / 'raw' / 'osm'
         self.raw_dir.mkdir(parents=True, exist_ok=True)
         self.session = requests.Session()
@@ -35,15 +37,19 @@ class OpenStreetMap(DataSource):
                 simplify=simplify)
             print(f'Finished getting graph for section: {section_name}')
 
-    def get_relations_within_pct(self, trail_id):
+    def get_relations_within_pct(self, trail_code):
         """Get list of relations that make up sections within PCT
 
         Args:
-            trail_id: relation for entire trail
+            trail_code: standard trail code, e.g. `pct` or `at`
 
         Returns:
             dict: {'CA_A': 1234567, ...}
         """
+        trail_id = self.trail_ids.get(trail_code)
+        if trail_id is None:
+            raise NotImplementedError('trail_code not defined')
+
         url = f'https://www.openstreetmap.org/api/0.6/relation/{trail_id}'
         r = self.session.get(url)
         soup = BeautifulSoup(r.text, 'lxml')
