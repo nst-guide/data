@@ -3,7 +3,6 @@ from math import isnan
 
 import geojson
 import geopandas as gpd
-import numpy as np
 import pandas as pd
 import requests
 from geopandas.tools import sjoin
@@ -16,7 +15,8 @@ import constants
 import data_source
 import geom
 import osmnx as ox
-from constants import TRAIL_HM_XW, VALID_TRAIL_CODES, VALID_TRAIL_SECTIONS
+from constants import VALID_TRAIL_CODES, VALID_TRAIL_SECTIONS
+from constants.pct import TRAIL_HM_XW
 from data_source import (
     Halfmile, NationalElevationDataset, OpenStreetMap, Towns)
 from geom import reproject, to_2d
@@ -922,7 +922,7 @@ class TrailSection:
         trail = gpd.GeoDataFrame([], geometry=[trail_line])
         buffer = gpd.GeoDataFrame([], geometry=[self.buffer])
 
-        hydro = USGSHydrography()
+        hydro = data_source.USGSHydrography()
         files = hydro.nhd_files_for_geometry(trail_line)
 
     def _hydro_line(self, hydro, files, trail, buffer):

@@ -1,10 +1,3 @@
-VALID_TRAIL_CODES = ['pct']
-VALID_TRAIL_SECTIONS = {
-    'pct': ['ca_south', 'ca_central', 'ca_north', 'or', 'wa']
-}
-TRAIL_EPSG_XW = {
-    'pct': 3488,
-}
 TRAIL_HM_XW = {
     'ca_south': ['ca_a', 'ca_b', 'ca_c', 'ca_d', 'ca_e'],
     'ca_central': ['ca_f', 'ca_g', 'ca_h', 'ca_i', 'ca_j', 'ca_k'],
