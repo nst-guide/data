@@ -12,12 +12,11 @@ from shapely.geometry import (
     GeometryCollection, LineString, MultiLineString, Point, Polygon)
 from shapely.ops import linemerge, nearest_points, polygonize
 
+import constants
 import data_source
 import geom
 import osmnx as ox
-from constants import (
-    FIRE_NAME_WIKIPEDIA_XW, TRAIL_HM_XW, VALID_TRAIL_CODES,
-    VALID_TRAIL_SECTIONS)
+from constants import (TRAIL_HM_XW, VALID_TRAIL_CODES, VALID_TRAIL_SECTIONS)
 from data_source import (
     Halfmile, NationalElevationDataset, OpenStreetMap, Towns)
 from geom import reproject, to_2d
@@ -30,15 +29,10 @@ class Trail:
     Args:
         route:
     """
-    def __init__(self, trail_code='pct', crs=3488):
+    def __init__(self, trail_code='pct'):
         """
-
         Args:
-            - route_iter: generator that yields general (non-exact) route for
-              trail. The idea is that this non-exact route is used to create a
-              buffer
-            - crs: EPSG code for projected coordinate system to use. Projected
-              coordinates must be in meters.
+            - trail_code: code for trail of interest, e.g. `pct`
         """
         super(Trail, self).__init__()
 
@@ -47,7 +41,7 @@ class Trail:
             raise ValueError(msg)
 
         self.trail_code = trail_code
-        self.crs = crs
+        self.crs = constants.TRAIL_EPSG_XW[trail_code]
 
         self.osm = OpenStreetMap()
         self.hm = Halfmile()
@@ -450,7 +444,7 @@ class Trail:
         # Get titles from predefined crosswalk
         wiki = data_source.Wikipedia()
         wiki_titles = bounds['name'].apply(
-            lambda x: FIRE_NAME_WIKIPEDIA_XW.get(x, None))
+            lambda x: constants.FIRE_NAME_WIKIPEDIA_XW.get(x, None))
         wiki_pages = []
         for title in wiki_titles:
             if title is None:
