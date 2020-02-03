@@ -14,12 +14,18 @@ from .halfmile import Halfmile
 
 class OpenStreetMap(DataSource):
     """docstring for OpenStreetMap"""
-    def __init__(self):
+    def __init__(self, trail_code, use_cache=True):
         super(OpenStreetMap, self).__init__()
-        self.trail_ids = TRAIL_OSM_RELATION_XW
+
+        self.trail_code = trail_code
+        self.trail_id = TRAIL_OSM_RELATION_XW.get(trail_code)
+        if self.trail_id is None:
+            raise ValueError('invalid trail_code')
+
         self.raw_dir = self.data_dir / 'raw' / 'osm'
         self.raw_dir.mkdir(parents=True, exist_ok=True)
         self.session = requests.Session()
+        self.use_cache = use_cache
 
     def cache_section_graphs(self, overwrite=False, simplify=False):
         """Wrapper to download graphs for each section of trail
@@ -37,8 +43,8 @@ class OpenStreetMap(DataSource):
                 simplify=simplify)
             print(f'Finished getting graph for section: {section_name}')
 
-    def get_relations_for_trail(self, trail_code):
-        """Get list of relations that make up sections within PCT
+    def get_relations_for_trail(self):
+        """Get list of relations that make up trail sections
 
         Args:
             trail_code: standard trail code, e.g. `pct` or `at`
@@ -46,13 +52,7 @@ class OpenStreetMap(DataSource):
         Returns:
             dict: {'CA_A': 1234567, ...}
         """
-        trail_id = self.trail_ids.get(trail_code)
-        if trail_id is None:
-            raise NotImplementedError('trail_code not defined')
-
-        url = f'https://www.openstreetmap.org/api/0.6/relation/{trail_id}'
-        r = self.session.get(url)
-        soup = BeautifulSoup(r.text, 'lxml')
+        soup = self._osm_api(relation=self.trail_id)
         relations = soup.find_all('relation')
         assert len(relations) == 1, 'more than one top-level relation object'
         relation = relations[0]
@@ -62,8 +62,8 @@ class OpenStreetMap(DataSource):
         sections = [self.get_relation_info(x.attrs['ref']) for x in relations]
         return {d['short_name']: d['id'] for d in sections}
 
-    def get_alternates_for_trail(self, trail_code):
-        """Get list of alternates within PCT
+    def get_alternates_for_trail(self):
+        """Get list of way alternates for trail
 
         Args:
             trail_id: relation for entire trail
@@ -79,13 +79,7 @@ class OpenStreetMap(DataSource):
                     'id': 337321382},
                     ...
         """
-        trail_id = self.trail_ids.get(trail_code)
-        if trail_id is None:
-            raise NotImplementedError('trail_code not defined')
-
-        url = f'https://www.openstreetmap.org/api/0.6/relation/{trail_id}'
-        r = self.session.get(url)
-        soup = BeautifulSoup(r.text, 'lxml')
+        soup = self._osm_api(relation=self.trail_id)
         relations = soup.find_all('relation')
         assert len(relations) == 1, 'more than one top-level relation object'
 
@@ -114,15 +108,13 @@ class OpenStreetMap(DataSource):
              'wikipedia': 'en:Pacific Crest Trail',
              'id': 1246902}
         """
-        url = f'https://www.openstreetmap.org/api/0.6/relation/{relation_id}'
-        r = self.session.get(url)
-        soup = BeautifulSoup(r.text, 'lxml')
+        soup = self._osm_api(relation=relation_id)
         tags = {tag.attrs['k']: tag.attrs['v'] for tag in soup.find_all('tag')}
 
         # If the relation is a part of the PCT, generate a short name for the
         # section. I.e. the `name` is generally `PCT - California Section A` and
         # the short name would be `ca_a`
-        if tags.get('ref') == 'PCT':
+        if self.trail_code == 'pct':
             states = ['California', 'Oregon', 'Washington']
             regex_str = f"({'|'.join(states)})"
             regex_str += r'\s+Section\s+([A-Z])$'
@@ -153,9 +145,7 @@ class OpenStreetMap(DataSource):
              'wikipedia': 'en:Pacific Crest Trail',
              'id': 1246902}
         """
-        url = f'https://www.openstreetmap.org/api/0.6/way/{way_id}'
-        r = self.session.get(url)
-        soup = BeautifulSoup(r.text, 'lxml')
+        soup = self._osm_api(way=way_id)
         tags = {tag.attrs['k']: tag.attrs['v'] for tag in soup.find_all('tag')}
         tags['id'] = int(soup.find('way').attrs['id'])
         return tags
@@ -163,13 +153,12 @@ class OpenStreetMap(DataSource):
     def get_node_info(self, node_id) -> dict:
         """Get OSM node information given node id
 
+        Given node id, get location and tags about node
+
         Args:
             - node_id: OSM node id
-        Given node id, get location and tags about node
         """
-        url = f'https://www.openstreetmap.org/api/0.6/node/{node_id}'
-        r = self.session.get(url)
-        soup = BeautifulSoup(r.text, 'lxml')
+        soup = self._osm_api(node=node_id)
         node = soup.find('node')
         d = node.attrs
         d.update({n.attrs['k']: n.attrs['v'] for n in node.find_all('tag')})
@@ -184,9 +173,7 @@ class OpenStreetMap(DataSource):
         Returns:
             - list of integers representing node ids
         """
-        url = f'https://www.openstreetmap.org/api/0.6/way/{way_id}'
-        r = self.session.get(url)
-        soup = BeautifulSoup(r.text, 'lxml')
+        soup = self._osm_api(way=way_id)
         node_ids = [int(x['ref']) for x in soup.find_all('nd')]
         return node_ids
 
@@ -269,11 +256,12 @@ class OpenStreetMap(DataSource):
         g.remove_edges_from(ways_to_drop)
         g = ox.remove_isolated_nodes(g)
 
-        ox.save_graphml(g, graphml_path)
+        # Save graph object to cache
+        ox.save_graphml(g, cache_path)
         return g
 
-    def get_way_ids_for_section(self, section_name,
-                                alternates=False) -> List[int]:
+    def get_way_ids_for_section(
+            self, trail_code, section_name, alternates=False) -> List[int]:
         """Get OSM way ids given section name
 
         Args:
@@ -283,7 +271,8 @@ class OpenStreetMap(DataSource):
         Returns:
             - list of integers representing way ids
         """
-        section_ids = self.get_relations_within_pct(self.trail_ids['pct'])
+        section_ids = self.get_relations_for_trail(trail_code)
+        section_ids = osm.get_relations_for_trail('pct')
         section_id = section_ids.get(section_name)
         if section_id is None:
             raise ValueError(f'invalid section name: {section_name}')
@@ -301,9 +290,7 @@ class OpenStreetMap(DataSource):
         Returns:
             - list of integers representing way ids
         """
-        url = f'https://www.openstreetmap.org/api/0.6/relation/{relation_id}'
-        r = self.session.get(url)
-        soup = BeautifulSoup(r.text, 'lxml')
+        soup = self._osm_api(relation=relation_id)
         members = soup.find_all('member')
 
         # Restrict members based on alternates setting
@@ -445,3 +432,18 @@ class OpenStreetMap(DataSource):
 
         # TODO: keep only useful columns?
         return gdf
+
+    def _osm_api(self, relation=None, way=None, node=None):
+        url = 'https://www.openstreetmap.org/api/0.6/'
+        if sum(map(bool, [relation, way, node])) > 1:
+            raise ValueError('only one of relation, way, and node allowed')
+
+        if relation:
+            url += f'relation/{relation}'
+        if way:
+            url += f'way/{way}'
+        if node:
+            url += f'node/{node}'
+
+        r = self.session.get(url)
+        return BeautifulSoup(r.text, 'lxml')
