@@ -1,5 +1,4 @@
 import re
-from typing import List
 
 import requests
 from bs4 import BeautifulSoup
@@ -43,139 +42,124 @@ class OpenStreetMap(DataSource):
                 simplify=simplify)
             print(f'Finished getting graph for section: {section_name}')
 
-    def get_relations_for_trail(self):
-        """Get list of relations that make up trail sections
+    def get_relation_ids_for_trail(self):
+        """Get list of relation ids that make up trail sections
 
         Args:
             trail_code: standard trail code, e.g. `pct` or `at`
 
         Returns:
-            dict: {'CA_A': 1234567, ...}
+            List[str] of relation ids
         """
-        soup = self._osm_api(relation=self.trail_id)
-        relations = soup.find_all('relation')
-        assert len(relations) == 1, 'more than one top-level relation object'
-        relation = relations[0]
-
+        relation = self._osm_api(relation=self.trail_id)
         members = relation.find_all('member')
         relations = [x for x in members if x.attrs['type'] == 'relation']
-        sections = [self.get_relation_info(x.attrs['ref']) for x in relations]
-        return {d['short_name']: d['id'] for d in sections}
+        return [x.attrs['ref'] for x in relations]
 
-    def get_alternates_for_trail(self):
-        """Get list of way alternates for trail
-
-        Args:
-            trail_id: relation for entire trail
-
-        Returns:
-            list: [{'bicycle': 'no',
-                    'highway': 'path',
-                    'horse': 'no',
-                    'lit': 'no',
-                    'name': 'Pacific Crest Trail (alternate)',
-                    'ref': 'PCT alt.',
-                    'surface': 'ground',
-                    'id': 337321382},
-                    ...
-        """
-        soup = self._osm_api(relation=self.trail_id)
-        relations = soup.find_all('relation')
-        assert len(relations) == 1, 'more than one top-level relation object'
-
-        # Alternates are `ways`
-        members = relations[0].find_all('member')
-        alternates = [x for x in members if x.attrs['role'] == 'alternate']
-        msg = 'alternate not way type'
-        assert all(x.attrs['type'] == 'way' for x in alternates), msg
-        return [self.get_way_info(x.attrs['ref']) for x in alternates]
-
-    def get_relation_info(self, relation_id):
-        """Get metadata about relation_id
+    def get_way_ids_for_relation(self, relation_id, alternates=None):
+        """Get OSM way ids given relation id
 
         Args:
             relation_id: OSM relation id
+            alternates: if None, returns all; if True, returns only alternates;
+                if False returns only non-alternates
 
         Returns:
-            dict:
-            {'name': 'PCT - California Section A',
-             'short_name': 'CA_A',
-             'network': 'rwn',
-             'ref': 'PCT',
-             'route': 'foot',
-             'type': 'route',
-             'wikidata': 'Q2003736',
-             'wikipedia': 'en:Pacific Crest Trail',
-             'id': 1246902}
+            - List[str] of way ids
         """
-        soup = self._osm_api(relation=relation_id)
-        tags = {tag.attrs['k']: tag.attrs['v'] for tag in soup.find_all('tag')}
+        relation = self._osm_api(relation=relation_id)
+        members = relation.find_all('member')
+        ways = [x for x in members if x.attrs['type'] == 'way']
 
-        # If the relation is a part of the PCT, generate a short name for the
-        # section. I.e. the `name` is generally `PCT - California Section A` and
-        # the short name would be `ca_a`
-        if self.trail_code == 'pct':
-            states = ['California', 'Oregon', 'Washington']
-            regex_str = f"({'|'.join(states)})"
-            regex_str += r'\s+Section\s+([A-Z])$'
-            m = re.search(regex_str, tags['name'])
-            if m:
-                short_name = (
-                    f'{m.groups()[0][:2].upper()}_{m.groups()[1].upper()}')
-                tags['short_name'] = short_name.lower()
+        # Restrict members based on alternates setting
+        if alternates is True:
+            ways = [x for x in ways if x['role'] == 'alternate']
+        elif alternates is False:
+            ways = [x for x in ways if x['role'] != 'alternate']
 
-        tags['id'] = int(soup.find('relation').attrs['id'])
-        return tags
+        return [x.attrs['ref'] for x in ways]
 
-    def get_way_info(self, way_id):
-        """Get metadata about way_id
+    def get_way_ids_for_section(self, section_name, alternates=None):
+        """Get OSM way ids given section name
 
         Args:
-            way_id: OSM way id
+            section_name: canonical PCT section name, i.e. 'CA_A' or 'OR_C'
+            alternates: if None, returns all; if True, returns only alternates;
+                if False returns only non-alternates
 
         Returns:
-            dict:
-            {'name': 'PCT - California Section A',
-             'short_name': 'CA_A',
-             'network': 'rwn',
-             'ref': 'PCT',
-             'route': 'foot',
-             'type': 'route',
-             'wikidata': 'Q2003736',
-             'wikipedia': 'en:Pacific Crest Trail',
-             'id': 1246902}
+            - list of integers representing way ids
         """
-        soup = self._osm_api(way=way_id)
-        tags = {tag.attrs['k']: tag.attrs['v'] for tag in soup.find_all('tag')}
-        tags['id'] = int(soup.find('way').attrs['id'])
-        return tags
+        section_ids = self.get_relation_ids_for_trail()
 
-    def get_node_info(self, node_id) -> dict:
-        """Get OSM node information given node id
+        section_infos = [
+            self.get_info(relation=section_id) for section_id in section_ids
+        ]
+        section_info = [
+            x for x in section_infos
+            if x.get('short_name') == section_name.lower()
+        ][0]
 
-        Given node id, get location and tags about node
+        return self.get_way_ids_for_relation(
+            relation_id=section_info['id'], alternates=alternates)
 
-        Args:
-            - node_id: OSM node id
-        """
-        soup = self._osm_api(node=node_id)
-        node = soup.find('node')
-        d = node.attrs
-        d.update({n.attrs['k']: n.attrs['v'] for n in node.find_all('tag')})
-        return d
-
-    def get_nodes_for_way(self, way_id) -> List[int]:
+    def get_node_ids_for_way(self, way_id):
         """Get OSM node ids given way id
 
         Args:
             - way_id: OSM way id
 
         Returns:
-            - list of integers representing node ids
+            - List[str] of node ids
         """
-        soup = self._osm_api(way=way_id)
-        node_ids = [int(x['ref']) for x in soup.find_all('nd')]
-        return node_ids
+        way = self._osm_api(way=way_id)
+        nodes = way.find_all('nd')
+        return [x.attrs['ref'] for x in nodes]
+
+    def get_info(self, relation=None, way=None, node=None):
+        """Get info for given OSM id
+
+
+        Returns:
+            For relation:
+            dict:
+            {'name': 'PCT - California Section A',
+             'short_name': 'CA_A',
+             'network': 'rwn',
+             'ref': 'PCT',
+             'route': 'foot',
+             'type': 'route',
+             'wikidata': 'Q2003736',
+             'wikipedia': 'en:Pacific Crest Trail',
+             'id': 1246902}
+
+        """
+        if sum(map(bool, [relation, way, node])) > 1:
+            raise ValueError('only one of relation, way, and node allowed')
+
+        soup = self._osm_api(relation=relation, way=way, node=node)
+        tags = {tag.attrs['k']: tag.attrs['v'] for tag in soup.find_all('tag')}
+        tags['id'] = soup.attrs['id']
+
+        if relation:
+            # If the relation is a part of the PCT, generate a short name for
+            # the section. I.e. the `name` is generally `PCT - California
+            # Section A` and the short name would be `ca_a`
+            if self.trail_code == 'pct':
+                states = ['California', 'Oregon', 'Washington']
+                regex_str = f"({'|'.join(states)})"
+                regex_str += r'\s+Section\s+([A-Z])$'
+                m = re.search(regex_str, tags['name'])
+                if m:
+                    short_name = (
+                        f'{m.groups()[0][:2].upper()}_{m.groups()[1].upper()}')
+                    tags['short_name'] = short_name.lower()
+
+        if node:
+            tags['lat'] = float(soup.attrs['lat'])
+            tags['lon'] = float(soup.attrs['lon'])
+
+        return tags
 
     def get_ways_for_polygon(
             self,
@@ -259,46 +243,6 @@ class OpenStreetMap(DataSource):
         # Save graph object to cache
         ox.save_graphml(g, cache_path)
         return g
-
-    def get_way_ids_for_section(
-            self, trail_code, section_name, alternates=False) -> List[int]:
-        """Get OSM way ids given section name
-
-        Args:
-            section_name: canonical PCT section name, i.e. 'CA_A' or 'OR_C'
-            alternates: whether to include ways designated role=alternate
-
-        Returns:
-            - list of integers representing way ids
-        """
-        section_ids = self.get_relations_for_trail(trail_code)
-        section_ids = osm.get_relations_for_trail('pct')
-        section_id = section_ids.get(section_name)
-        if section_id is None:
-            raise ValueError(f'invalid section name: {section_name}')
-
-        return self.get_way_ids_for_relation(section_id, alternates=alternates)
-
-    def get_way_ids_for_relation(self, relation_id,
-                                 alternates=False) -> List[int]:
-        """Get OSM way ids given relation id
-
-        Args:
-            relation_id: OSM relation id
-            alternates: whether to include ways designated role=alternate
-
-        Returns:
-            - list of integers representing way ids
-        """
-        soup = self._osm_api(relation=relation_id)
-        members = soup.find_all('member')
-
-        # Restrict members based on alternates setting
-        if not alternates:
-            members = [x for x in members if x['role'] != 'alternate']
-
-        way_ids = [int(x['ref']) for x in members if x['type'] == 'way']
-        return way_ids
 
     def get_town_pois_for_polygon(self, polygon: Polygon):
         """Get Point of Interests from OSM for polygon
@@ -446,4 +390,17 @@ class OpenStreetMap(DataSource):
             url += f'node/{node}'
 
         r = self.session.get(url)
-        return BeautifulSoup(r.text, 'lxml')
+        soup = BeautifulSoup(r.text, 'lxml')
+
+        if relation:
+            relations = soup.find_all('relation')
+            assert len(relations) == 1
+            return relations[0]
+        if way:
+            ways = soup.find_all('way')
+            assert len(ways) == 1
+            return ways[0]
+        if node:
+            nodes = soup.find_all('node')
+            assert len(nodes) == 1
+            return nodes[0]
