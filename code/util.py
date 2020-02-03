@@ -31,10 +31,16 @@ def osm_poly_to_geojson(lines):
     return feature_collection
 
 
-def multipolygon_to_osm_poly(multipolygon):
-    """Generate OSM .poly file from Shapely MultiPolygon"""
+def polygon_to_osm_poly(geometry):
+    """Generate OSM .poly file from shapely Polygon or MultiPolygon"""
     lines = ['poly_name']
     section_counter = 1
+
+    if geometry.type == 'Polygon':
+        multipolygon = [geometry]
+    elif geometry.type == 'MultiPolygon':
+        multipolygon = geometry
+
     for polygon in multipolygon:
         lines.append(str(section_counter))
         section_counter += 1
