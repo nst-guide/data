@@ -25,41 +25,46 @@ CA_ALBERS = 3488
 
 
 def buffer(
-        gdf: gpd.GeoDataFrame, distance: float, unit: str,
-        crs: int = 3488) -> gpd.GeoSeries:
-    """Create buffer around GeoDataFrame
+        geometry, distance: float, unit: str, crs: int = 3488) -> gpd.GeoSeries:
+    """Create buffer around geometry
 
     Args:
-        gdf: dataframe with geometry to take buffer around. Source geometry
-            should be in epsg 4326
-        distance: distance for buffer
-        unit: units for buffer distance, either ['mile', 'meter', 'kilometer']
+        geometry: geometry to take buffer around. Can be either GeoDataFrame or
+            shapely geometry. Source geometry must be in epsg 4326
+        distance: distance magnitude for buffer
+        unit: units for buffer distance, one of:
+            ['mile', 'mi', 'meter', 'm', 'kilometer', 'km']
         crs: local projected coordinate system to use for buffer calculations. I
             tend to use 3488 for the PCT: https://epsg.io/3488.
 
     Returns:
-        GeoDataFrame with buffer polygon
+        If given GeoDataFrame:
+            - GeoDataFrame with buffer polygon
+
+        If given Shapely object:
+            - Shapely polygon
     """
     # Reproject to projected coordinate system
-    gdf = gdf.to_crs(epsg=crs)
+    geometry = reproject(geometry, to_epsg=crs, from_epsg=4326)
 
     # Find buffer distance in meters
     unit_dict = {
         'mile': ureg.mile,
+        'mi': ureg.mile,
         'meter': ureg.meter,
+        'm': ureg.meter,
         'kilometer': ureg.kilometer,
+        'km': ureg.kilometer,
     }
     pint_unit = unit_dict.get(unit)
     if pint_unit is None:
         raise ValueError(f'unit must be one of {list(unit_dict.keys())}')
 
     distance_m = (distance * pint_unit).to(ureg.meters).magnitude
-    # TODO: allow gdf or shapely geom to function
-    buffer = gdf.buffer(distance_m)
+    buffer = geometry.buffer(distance_m)
 
     # Reproject back to EPSG 4326 for saving
-    buffer = buffer.to_crs(epsg=4326)
-
+    buffer = reproject(buffer, to_epsg=4326, from_epsg=crs)
     return buffer
 
 
@@ -207,22 +212,26 @@ def _to_2d_transform(x, y, z):
     return tuple(filter(None, [x, y]))
 
 
-def reproject_gdf(gdf, from_epsg, to_epsg):
-    gdf[gdf.geometry.name] = gdf.apply(
-        lambda row: reproject(
-            row.geometry, from_epsg=from_epsg, to_epsg=to_epsg),
-        axis=1)
-    return gdf
+def reproject(geometry, to_epsg: int, from_epsg: int = None):
+    """Reproject geometric object to new coordinate system
 
+    Args:
+        - geometry: either GeoDataFrame or shapely geometry
+        - to_epsg: new crs, should be epsg integer
+        - from_epsg: old crs, not necessary for gdf
+    """
+    if isinstance(geometry, gpd.GeoDataFrame):
+        return geometry.to_crs(epsg=to_epsg)
 
-# TODO: update so that a single function reproject will reproject both a gdf and
-# a shapely geom
-def reproject(obj, from_epsg: int, to_epsg: int):
+    if from_epsg is None:
+        msg = 'from_epsg must be provided when geometry is not gdf'
+        raise ValueError(msg)
+
     project = partial(
         pyproj.transform, pyproj.Proj(init=f'epsg:{from_epsg}'),
         pyproj.Proj(init=f'epsg:{to_epsg}'))
 
-    return transform(project, obj)
+    return transform(project, geometry)
 
 
 def find_circles_that_tile_polygon(polygon, radius,
