@@ -16,3 +16,6 @@ TRAIL_OSM_RELATION_XW = {
     'pnt': 3718820,
     'trt': 3094865,
 }
+TRAIL_STATES_XW = {
+    'pct': ['california', 'oregon', 'washington'],
+}

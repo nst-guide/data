@@ -1,4 +1,8 @@
 import re
+from pathlib import Path
+from subprocess import run
+from tempfile import mkdtemp
+from urllib.request import urlretrieve
 
 import geojson
 import requests
@@ -6,7 +10,8 @@ from bs4 import BeautifulSoup
 from shapely.geometry import Polygon
 
 import osmnx as ox
-from constants import TRAIL_OSM_RELATION_XW
+from constants import TRAIL_OSM_RELATION_XW, TRAIL_STATES_XW
+from util import polygon_to_osm_poly
 
 from .base import DataSource
 from .halfmile import Halfmile
@@ -24,8 +29,79 @@ class OpenStreetMap(DataSource):
 
         self.raw_dir = self.data_dir / 'raw' / 'osm'
         self.raw_dir.mkdir(parents=True, exist_ok=True)
+        self.geofabrik_dir = self.raw_dir / 'geofabrik'
+        self.geofabrik_dir.mkdir(exist_ok=True, parents=True)
         self.session = requests.Session()
         self.use_cache = use_cache
+
+    def download_geofabrik(self, overwrite=False):
+
+        baseurl = 'https://download.geofabrik.de/north-america/us/'
+        states = TRAIL_STATES_XW.get(self.trail_code)
+        for stub in states:
+            fname = stub + '-latest.osm.pbf'
+            url = baseurl + fname
+            local_path = self.geofabrik_dir / fname
+            if overwrite or (not local_path.exists()):
+                urlretrieve(url, str(local_path))
+
+    def load_geofabrik(self, polygon):
+        path = self._filter_geofabrik(polygon)
+        return ox.graph_from_file(path, retain_all=True, simplify=False)
+
+    def _filter_geofabrik(self, polygon):
+        """Filter geofabrik files by polygon
+
+        Note, for now this filters to include only highways. You could filter a
+        different way type in the future.
+        """
+        # Create temp dir
+        tmpdir = Path(mkdtemp())
+
+        # Create and write out poly file
+        poly_str = polygon_to_osm_poly(polygon)
+        poly_path = tmpdir / 'extract.poly'
+        with open(poly_path, 'w') as f:
+            f.write(poly_str)
+
+        # For each state, run osmconvert on that state using the .poly polygon
+        states = TRAIL_STATES_XW.get(self.trail_code)
+        extracted_paths = []
+        for stub in states:
+            fname_orig = stub + '-latest.osm.pbf'
+            fname_new = stub + '-extract.o5m'
+
+            orig_path = self.geofabrik_dir / fname_orig
+            assert orig_path.exists(), 'geofabrik download does not exist'
+
+            extracted_path = tmpdir / fname_new
+            extracted_paths.append(extracted_path)
+
+            cmd = [
+                'osmconvert',
+                str(orig_path),
+                '--drop-author',
+                '--complete-ways',
+                f'-B={poly_path}',
+                f'-o={str(extracted_path)}',
+            ]
+            run(cmd, check=True)
+
+        # Now merge the extracts from each of the above states
+        joined_path = tmpdir / 'joined.o5m'
+        cmd = ['osmconvert']
+        # input files
+        cmd.extend(map(str, extracted_paths))
+        # output file
+        cmd.append(f'-o={str(joined_path)}')
+        run(cmd, check=True)
+
+        # Run osmfilter on this joined file to keep only highways
+        filtered_path = tmpdir / 'filtered.osm'
+        cmd = f'osmfilter --keep="highway=" {str(joined_path)} > {str(filtered_path)}'
+        run(cmd, check=True, shell=True)
+
+        return filtered_path
 
     def cache_section_graphs(self, overwrite=False, simplify=False):
         """Wrapper to download graphs for each section of trail
@@ -186,8 +262,9 @@ class OpenStreetMap(DataSource):
             self,
             polygon,
             section_name,
-            way_types=['highway', 'railway'],
-            overwrite=False):
+            source='geofabrik',
+            way_types=['highway'],
+            use_cache=True):
         """Retrieve graph of OSM nodes and ways for given polygon
 
         I tested out downloading more than just ways tagged "highway"; to also
@@ -201,48 +278,54 @@ class OpenStreetMap(DataSource):
         NHD directly for streams.
 
         Args:
-            - polygon: buffer or bbox around trail, used to filter OSM data.
-              Generally is a buffer of a section of trail, but a town boundary
-              could also be passed.
+            - polygon: shapely polygon. Usually a buffer around trail, used to
+              filter OSM data.
             - section_name: Name of section, i.e. 'CA_A' or 'OR_C'
+            - source: either 'geofabrik' or 'overpass'. The former uses
+              geofabrik downloads + osmconvert + osmfilter to more quickly get
+              data extracts (after the initial Geofabrik data download). The
+              latter uses the Overpass API through osmnx, which is considerably
+              slower for large area requests.
             - way_types: names of OSM keys that are applied to ways that should
               be kept
-            - overwrite: if True, re-downloads data instead of using cached data
-
-              For that reason, I think it's generally better to leave
-              `simplify=False`, so that you don't have to deal with nested lists
-              in the DataFrame.
+            - use_cache: if True, attempts to use cached data. Only for
+              source='overpass'
 
         Returns:
-            - osmnx graph
+            - networkx/osmnx graph
         """
         fname = f"{section_name}_way_types={','.join(way_types)}.graphml"
         graphml_path = self.raw_dir / fname
-        if not overwrite and (graphml_path.exists()):
+        if use_cache and (source == 'overpass') and (graphml_path.exists()):
             return ox.load_graphml(graphml_path)
 
-        # Set osmnx configuration to download desired attributes of nodes and
-        # ways
-        useful_tags_node = ox.settings.useful_tags_node
-        useful_tags_node.extend(['historic', 'wikipedia'])
-        useful_tags_path = ox.settings.useful_tags_path
-        useful_tags_path.extend(['surface', 'wikipedia'])
-        useful_tags_path.extend(way_types)
-        ox.config(
-            useful_tags_node=useful_tags_node,
-            useful_tags_path=useful_tags_path)
+        if source == 'geofabrik':
+            g = self.load_geofabrik(polygon)
+        elif source == 'overpass':
+            # Set osmnx configuration to download desired attributes of nodes and
+            # ways
+            useful_tags_node = ox.settings.useful_tags_node
+            useful_tags_node.extend(['historic', 'wikipedia'])
+            useful_tags_path = ox.settings.useful_tags_path
+            useful_tags_path.extend(['surface', 'wikipedia'])
+            useful_tags_path.extend(way_types)
+            ox.config(
+                useful_tags_node=useful_tags_node,
+                useful_tags_path=useful_tags_path)
 
-        # Get all ways, then restrict to ways of type `way_types`
-        # https://github.com/gboeing/osmnx/issues/151#issuecomment-379491607
-        g = ox.graph_from_polygon(
-            polygon,
-            simplify=False,
-            clean_periphery=True,
-            retain_all=True,
-            network_type='all_private',
-            truncate_by_edge=True,
-            name=section_name,
-            infrastructure='way')
+            # Get all ways, then restrict to ways of type `way_types`
+            # https://github.com/gboeing/osmnx/issues/151#issuecomment-379491607
+            g = ox.graph_from_polygon(
+                polygon,
+                simplify=False,
+                clean_periphery=True,
+                retain_all=True,
+                network_type='all_private',
+                truncate_by_edge=True,
+                name=section_name,
+                infrastructure='way')
+        else:
+            raise ValueError('source must be geofabrik or overpass')
 
         # strict=False is very important so that `osmid` in the resulting edges
         # DataFrame is never a List
@@ -255,14 +338,15 @@ class OpenStreetMap(DataSource):
         # Currently the graph g has every line ("way") in OSM in the area of
         # polygon. I only want the ways of type `way_types` that were provided
         # as an argument, so find all the other-typed ways and drop them
-        ways_to_drop = [(u, v, k)
-                        for u, v, k, d in g.edges(keys=True, data=True)
-                        if all(key not in d for key in way_types)]
-        g.remove_edges_from(ways_to_drop)
-        g = ox.remove_isolated_nodes(g)
+        if source == 'overpass':
+            ways_to_drop = [(u, v, k)
+                            for u, v, k, d in g.edges(keys=True, data=True)
+                            if all(key not in d for key in way_types)]
+            g.remove_edges_from(ways_to_drop)
+            g = ox.remove_isolated_nodes(g)
 
         # Save graph object to cache
-        ox.save_graphml(g, cache_path)
+        ox.save_graphml(g, graphml_path)
         return g
 
     def get_town_pois_for_polygon(self, polygon: Polygon):
