@@ -18,6 +18,17 @@ class TrailNetwork(object):
             trail_alternates=False,
             buffer_dist=2,
             buffer_unit='mi'):
+        """TrailNetwork
+
+        Args:
+            - trail_code: code for trail, e.g. 'pct' or 'at'
+            - trail_section: section of trail, e.g. 'ca_south'
+            - trail_alternates: include alternates
+            - buffer_dist: distance used for buffer when getting trail network
+              from OSM
+            - buffer_unit: unit used for buffer when getting trail network from
+              OSM
+        """
         super(TrailNetwork, self).__init__()
 
         if trail_code != 'pct':
@@ -41,7 +52,10 @@ class TrailNetwork(object):
 
         self.osm = OpenStreetMap(trail_code)
 
-    def _get_osm_network(self, buffer_dist, buffer_unit):
+        self.G = self.get_osm_network(
+            buffer_dist=buffer_dist, buffer_unit=buffer_unit)
+
+    def get_osm_network(self, buffer_dist, buffer_unit):
         """Use osmnx to get network of roads/trails around trail geometry
         """
         # Take buffer of approximate trail
@@ -55,7 +69,10 @@ class TrailNetwork(object):
         approx_trail_buffer = approx_trail_buffer_gdf.unary_union
 
         # Get graph
-        G = self.osm.get_ways_for_polygon(approx_trail_buffer)
+        G = self.osm.get_ways_for_polygon(
+            polygon=approx_trail_buffer,
+            section_name=self.trail_section,
+            source='geofabrik')
 
         # Get way ids that are part of the trail
         trail_way_ids = self._get_osm_way_ids_for_trail()
@@ -83,9 +100,19 @@ class TrailNetwork(object):
             values={(u, v, k): True
                     for u, v, k in trail_edges})
 
-        nodes, edges = ox.graph_to_gdfs(G)
+        return G
 
     def _get_osm_way_ids_for_trail(self, alternates=False):
+        """Get OSM way ids for trail
+
+        Args:
+            - alternates: whether to include alternates. If True, includes only
+              alternates, if False, does not include alternates, if None,
+              includes both main trail and alternates.
+
+        Returns:
+            List[int]: way ids in trail relation. Not necessarily sorted
+        """
         trail_relation_id = constants.TRAIL_OSM_RELATION_XW[self.trail_code]
         return self.osm.get_way_ids_for_relation(
             trail_relation_id, alternates=alternates)
