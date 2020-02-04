@@ -55,7 +55,7 @@ class TrailNetwork(object):
         self.G = self.get_osm_network(
             buffer_dist=buffer_dist, buffer_unit=buffer_unit)
 
-    def get_osm_network(self, buffer_dist, buffer_unit):
+    def get_osm_network(self, buffer_dist, buffer_unit, use_cache=True):
         """Use osmnx to get network of roads/trails around trail geometry
         """
         # Take buffer of approximate trail
@@ -72,7 +72,8 @@ class TrailNetwork(object):
         G = self.osm.get_ways_for_polygon(
             polygon=approx_trail_buffer,
             section_name=self.trail_section,
-            source='geofabrik')
+            source='geofabrik',
+            use_cache=use_cache)
 
         # Get way ids that are part of the trail
         trail_way_ids = self._get_osm_way_ids_for_trail()
