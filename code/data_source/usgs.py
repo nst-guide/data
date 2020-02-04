@@ -12,6 +12,7 @@ import requests
 from geopandas import GeoDataFrame as GDF
 from geopandas.tools import sjoin
 from shapely.geometry import LineString, Polygon
+from shapely.ops import transform
 
 from .base import DataSource
 
@@ -114,6 +115,24 @@ class NationalElevationDataset(DataSource):
             out_dir = zip_fname.parents[0]
             cmd = ['unzip', '-o', zip_fname, img_name, '-d', out_dir]
             run(cmd, check=True)
+
+    def query_geom(self, geometry, interp_kind=None):
+        """Add elevations to Shapely geometry
+
+        Args:
+            - geometry: shapely geometry of any type
+            - interp_kind: kind of interpolation. Passed to
+                scipy.interpolate.interp2d. Can be [None, 'linear’, ‘cubic’,
+                ‘quintic']
+
+        Returns:
+            geometry of same type with z values added
+        """
+        dem_paths = self.files()
+        query = demquery.Query(dem_paths)
+        fn = lambda x, y, z=None: query.query_points([(x, y)],
+                                                     interp_kind=interp_kind)
+        return transform(fn, geometry)
 
     def query(self, coords, interp_kind=None):
         """Query elevation data for coordinates
