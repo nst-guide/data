@@ -188,11 +188,7 @@ def to_2d(obj):
     if isinstance(obj, gpd.GeoSeries):
         return _to_2d_gdf(obj)
 
-    try:
-        return transform(_to_2d_transform, obj)
-    except TypeError:
-        # Means already 2D
-        return obj
+    return transform(_to_2d_transform, obj)
 
 
 def _to_2d_gdf(obj):
@@ -211,7 +207,7 @@ def _to_2d_gdf(obj):
     return obj
 
 
-def _to_2d_transform(x, y, z):
+def _to_2d_transform(x, y, z=None):
     return tuple(filter(None, [x, y]))
 
 
