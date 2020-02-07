@@ -6,7 +6,11 @@ before_install:
       exit;
     fi
 install:
-  - pip install pygments mkdocs mkdocs-material
+  # Install separately because of version conflicts
+  # https://github.com/JuliaDocs/Documenter.jl/issues/590#issuecomment-339427788
+  - pip install pygments
+  - pip install mkdocs
+  - pip install mkdocs-material
 script:
   - git clean -f -d -x
 after_success:
@@ -14,4 +18,4 @@ after_success:
   - git config user.email "kylebarron2@gmail.com"
   - git remote add gh-token "https://${GH_TOKEN}@github.com/nst-guide/data.git";
   - git fetch gh-token && git fetch gh-token gh-pages:gh-pages;
-  - cd docs && mkdocs gh-deploy -v --clean --remote-name gh-token;
+  - cd docs && mkdocs gh-deploy -v --clean --remote-name gh-token --force;
